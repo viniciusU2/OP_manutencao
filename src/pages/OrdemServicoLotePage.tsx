@@ -172,7 +172,7 @@ export function OrdemServicoLotePage() {
         data_fim_execucao: form.data_fim_execucao || null,
       };
 
-      await api.post("os/lote-por-tipo-ativo", payload);
+      await api.post("/os/lote-por-tipo-ativo", payload);
 
       alert("OS em lote criada com sucesso!");
       navigate("/os");
@@ -195,10 +195,7 @@ export function OrdemServicoLotePage() {
         {/* IDENTIFICAÇÃO */}
         <SectionTitle>Identificação</SectionTitle>
         <FormGrid>
-          <FormGroup>
-            <label>Nº OS</label>
-            <input name="numero_os" onChange={handleChange} value={form.numero_os} />
-          </FormGroup>
+     
 
           <FormGroup>
             <label>Nº SI</label>
@@ -215,10 +212,7 @@ export function OrdemServicoLotePage() {
             </select>
           </FormGroup>
 
-          <FormGroup>
-            <label>Nº APR</label>
-            <input name="numero_apr" onChange={handleChange} value={form.numero_apr} />
-          </FormGroup>
+    
         </FormGrid>
 
         {/* LOCALIZAÇÃO */}

@@ -7,7 +7,7 @@ import { AtivoDetalhe } from "./pages/Ativo_por_id";
 import { OrdemServicoPage } from "./pages/OrdemServiço";
 import { CreateItemInspecaoForm } from "./pages/CreateItemInspecaoForm";
 import ControleOrdemServico from "./pages/dashboard-os";
-import { CreateInspecaoForm } from "./pages/CreateInspecaoForm";
+
 import { OrdemServicoLotePage } from "./pages/OrdemServicoLotePage"
 
 import { Dashboard } from "./pages/dashboard";
@@ -121,7 +121,7 @@ function AppContent() {
           <Route path="/controle" element={<ControleOrdemServico />} />
           <Route path="/iteminspecao" element={<CreateItemInspecaoForm />} />
 
-          <Route path="/tipoativo/:tipo" element={<CreateInspecaoForm />} />
+
           <Route path="/os/:id" element={<OrdemServicoPage />} />
           <Route path="/si" element={<SIPage />} />
           <Route path="/ss" element={<SSPage />} />
