@@ -27,11 +27,6 @@ interface ResultadoItem {
   observacao_item?: string;
 }
 
-interface TipoAtivo {
-  id_tipo_ativo: number;
-  nome: string;
-}
-
 interface Ativo {
   id_ativo: number;
   codigo_ativo: string;
@@ -118,7 +113,6 @@ const Actions = styled.div`
 
 // ================= COMPONENT =================
 export default function InspecaoForm() {
-  const [tipos, setTipos] = useState<TipoAtivo[]>([]);
   const [ativos, setAtivos] = useState<Ativo[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
 
@@ -134,12 +128,8 @@ export default function InspecaoForm() {
   useEffect(() => {
     const loadInitial = async () => {
       try {
-        const [tiposRes, ativosRes] = await Promise.all([
-          api.get("/tipo-ativo"),
-          api.get("/ativo"),
-        ]);
+        const [ativosRes] = await Promise.all([api.get("/ativo")]);
 
-        setTipos(tiposRes.data);
         setAtivos(ativosRes.data);
       } catch {
         toast.error("Erro ao carregar dados");
@@ -202,7 +192,10 @@ export default function InspecaoForm() {
     value: any
   ) => {
     const novos = [...form.resultados];
-    novos[index] = { ...novos[index], [field]: value };
+    const atual = novos[index];
+    if (!atual) return;
+
+    novos[index] = { ...atual, [field]: value };
 
     setForm((prev) => ({ ...prev, resultados: novos }));
   };
@@ -292,7 +285,7 @@ export default function InspecaoForm() {
             <h2>Checklist</h2>
 
             {templates.map((item, index) => {
-              const status = form.resultados[index]?.status_item;
+              const status = form.resultados[index]?.status_item ?? "NA";
 
               return (
                 <CardItem key={item.id_item_template} status={status}>

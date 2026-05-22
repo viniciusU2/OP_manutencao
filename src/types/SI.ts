@@ -2,6 +2,7 @@ export interface SI {
   id_si: number;
 
   numero_si: string;
+  numero_os?: string;
   numero_sgi?: string;
 
   id_subestacao?: number | null;
@@ -62,6 +63,16 @@ export interface SI {
   status_operacao?: string;
 
   criado_em: string;
+
+
+  tipo_programacao?: string;
+  dias_excecao?: string;
+  tempo_retorno?: string;
+  disponivel?: string;
+  natureza?: string;
+  caracteristica_intervencao?: string;
+
+
 }
 
 export type SICreate = Omit<SI, "id_si" | "criado_em">;

@@ -161,8 +161,11 @@ export function OrdemServicoLotePage() {
 
   async function salvarOuEditar() {
     try {
+      const { numero_os: _numeroOs, ...formSemNumeroOs } = form;
+      void _numeroOs;
+
       const payload = {
-        ...form,
+        ...formSemNumeroOs,
         emissor: usuario?.nome,
 
         data_abertura_ss: form.data_abertura_ss || null,

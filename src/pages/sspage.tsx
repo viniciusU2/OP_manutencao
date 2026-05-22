@@ -10,41 +10,6 @@ import api from "../api/api";
 
 
 
-/* HEADER */
-
-const PageHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-`;
-
-const TitleBlock = styled.div`
-  h2 {
-    margin: 0;
-    font-weight: 600;
-  }
-
-  p {
-    margin: 4px 0 0;
-    color: #6b7280;
-    font-size: 14px;
-  }
-`;
-
-const Button = styled.button`
-  background: #2563eb;
-  color: white;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 6px;
-  cursor: pointer;
-
-  &:hover {
-    background: #1e40af;
-  }
-`;
-
 /* FILTER CARD */
 
 const FilterCard = styled.div`
@@ -94,7 +59,7 @@ export function SSPage() {
   
     useEffect(() => {
     if (subestacao.length > 0) {
-      setSubestacaoSelecionada(subestacao[0].id_subestacao.toString());
+      setSubestacaoSelecionada(String(subestacao[0]?.id_subestacao ?? "all"));
     }
   }, [subestacao]);
   
@@ -141,7 +106,7 @@ export function SSPage() {
   {subestacao.map((s) => (
     <option
       key={s.id_subestacao}
-      value={s.id_subestacao}
+      value={String(s.id_subestacao ?? "")}
     >
       {s.nome}
     </option>

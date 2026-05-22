@@ -7,6 +7,7 @@ import { Button } from "../components/ui/button";
 import { ArrowLeft, Edit, Trash2, Calendar, User } from "lucide-react";
 
 import api from "../api/api";
+import { OnlyAdmin, OnlyMaintainerOrAdmin } from "../components/onlyAdmin";
 
 interface ItemInspecao {
   item: string;
@@ -71,14 +72,18 @@ export function InspecaoDetalhe() {
         </div>
 
         <div className="flex gap-2">
-          <Button asChild variant="outline">
-            <Link to={`/inspecoes/${id}/editar`}>
-              <Edit className="mr-2 h-4 w-4" /> Editar
-            </Link>
-          </Button>
-          <Button variant="destructive">
-            <Trash2 className="mr-2 h-4 w-4" /> Excluir
-          </Button>
+          <OnlyMaintainerOrAdmin>
+            <Button asChild variant="outline">
+              <Link to={`/inspecoes/${id}/editar`}>
+                <Edit className="mr-2 h-4 w-4" /> Editar
+              </Link>
+            </Button>
+          </OnlyMaintainerOrAdmin>
+          <OnlyAdmin>
+            <Button variant="destructive">
+              <Trash2 className="mr-2 h-4 w-4" /> Excluir
+            </Button>
+          </OnlyAdmin>
         </div>
       </div>
 

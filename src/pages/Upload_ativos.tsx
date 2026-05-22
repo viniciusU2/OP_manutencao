@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { AxiosError } from "axios";
 import api from "../api/api";
 import { toast } from "sonner"; // já que você usa sonner
 
 export function ImportarAtivos() {
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState<File | null>(null);
   const [msg, setMsg] = useState("");
 
   async function handleUpload() {
@@ -30,7 +31,10 @@ export function ImportarAtivos() {
       toast.success(response.data.msg);
 
     } catch (err) {
-      const erro = err.response?.data?.detail || "Erro ao importar";
+      const erro =
+        err instanceof AxiosError
+          ? err.response?.data?.detail ?? "Erro ao importar"
+          : "Erro ao importar";
       setMsg(erro);
       toast.error(erro);
     }
@@ -43,7 +47,7 @@ export function ImportarAtivos() {
       <input
         type="file"
         accept=".xlsx"
-        onChange={(e) => setFile(e.target.files[0])}
+        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
       />
 
       <br /><br />

@@ -9,9 +9,10 @@ interface Props {
   search: string;
   status: string;
   subestacao: string;
+  esquema_servicos:string;
 }
 
-export function OsPage1({ search, status, subestacao }: Props) {
+export function OsPage1({ search, status, subestacao,esquema_servicos }: Props) {
 
   const [data, setData] = useState<OrdemServico[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,14 +21,13 @@ export function OsPage1({ search, status, subestacao }: Props) {
   const [osSelecionada, setOsSelecionada] = useState<number | null>(null);
 
 
-  function extrairCodigoInstalacao(instalacao?: string) {
-  if (!instalacao) return "SEM";
 
   // remove "SE " do início
-  return instalacao.replace(/^SE\s+/i, "").trim();
-
+function nomeSeguro(texto: string) {
+  return texto.replace(/[^a-zA-Z0-9_-]/g, "_");
 }
 
+/*
 function getAnoOS(os: OrdemServico) {
   const data =
     os.data_inicio_programado ||
@@ -42,6 +42,7 @@ function getAnoOS(os: OrdemServico) {
 function nomeSeguro(texto: string) {
   return texto.replace(/[^a-zA-Z0-9_-]/g, "_");
 }
+*/
 
   /* ===============================
      ABRIR MODAL
@@ -64,9 +65,6 @@ function nomeSeguro(texto: string) {
 
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
-
-    const codigoInstalacao = extrairCodigoInstalacao(os.instalacao).toUpperCase();
-    const ano = getAnoOS(os);
 
     const nomeArquivo = `${os.numero_os}`;
 
@@ -145,11 +143,18 @@ function nomeSeguro(texto: string) {
 
     const matchStatus =
       status === "all" || os.status === status;
+
+   const matchEsquema =
+  esquema_servicos === "all" ||
+  (os.esquema_servicos ?? "")
+    .trim()
+    .toLowerCase()
+    .includes(esquema_servicos.trim().toLowerCase());
     
     const matchSubestacao =
       subestacao === "all" || os.id_subestacao === Number(subestacao);
 
-    return matchSearch && matchStatus && matchSubestacao;
+    return matchSearch && matchStatus && matchSubestacao && matchEsquema;
   });
 
   /* ===============================

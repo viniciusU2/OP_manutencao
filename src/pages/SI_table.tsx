@@ -14,25 +14,35 @@ interface Props {
 export function SIPage1({ search, status, subestacao }: Props) {
   const [data, setData] = useState<SI[]>([]);
 
-  async function baixarSI(si:SI) {
-  const response = await api.get(`/si/${si.id_si}/download`, {
-    responseType: "blob",
-  }); 
+async function baixarSI(si: SI) {
+  try {
+    const response = await api.get(`/si/${si.id_si}/download`, {
+      responseType: "blob",
+    });
 
+    const blob = new Blob([response.data], {
+      type: "application/vnd.ms-excel.sheet.macroEnabled.12",
+    });
 
-  const blob = new Blob([response.data], {
-    type: "application/vnd.ms-excel.sheet.macroEnabled.12",
-  });
+    const url = window.URL.createObjectURL(blob);
 
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
+    const link = document.createElement("a");
 
-  link.href = url;
-  link.setAttribute("download", `${si.numero_si}.xlsx`);
+    link.href = url;
+    link.setAttribute("download", `${si.numero_si}.xlsx`);
 
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+    document.body.appendChild(link);
+
+    link.click();
+
+    link.remove();
+
+    window.URL.revokeObjectURL(url);
+
+  } catch (error) {
+    console.error("Erro ao baixar SI:", error);
+    toast.error("Erro ao baixar SI");
+  }
 }
 
   async function fetch() {

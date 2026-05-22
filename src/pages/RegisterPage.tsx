@@ -63,6 +63,19 @@ const FormGroup = styled.div`
       border-color: #2563eb;
     }
   }
+
+  select {
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    font-size: 14px;
+    background: white;
+
+    &:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+  }
 `;
 
 const Actions = styled.div`
@@ -101,6 +114,7 @@ export function RegisterPage() {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [role, setRole] = useState("usuario");
   const [erro, setErro] = useState("");
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -112,6 +126,7 @@ export function RegisterPage() {
         nome,
         email,
         senha,
+        role,
       });
 
       alert("Usuário criado com sucesso!");
@@ -160,6 +175,14 @@ export function RegisterPage() {
                   onChange={(e) => setSenha(e.target.value)}
                   required
                 />
+              </FormGroup>
+
+              <FormGroup>
+                <label>Perfil</label>
+                <select value={role} onChange={(e) => setRole(e.target.value)}>
+                  <option value="usuario">Usuario</option>
+                  <option value="mantenedor">Mantenedor</option>
+                </select>
               </FormGroup>
             </FormGrid>
 

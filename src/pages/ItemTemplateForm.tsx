@@ -93,9 +93,12 @@ export default function ItemTemplateForm() {
   // ================= DEFAULT AUTOMÁTICO =================
   useEffect(() => {
     if (tiposAtivo.length > 0 && form.id_tipo_ativo === 0) {
+      const firstId = tiposAtivo[0]?.id_tipo_ativo;
+      if (!firstId) return;
+
       setForm((prev) => ({
         ...prev,
-        id_tipo_ativo: tiposAtivo[0].id_tipo_ativo,
+        id_tipo_ativo: firstId,
       }));
     }
   }, [tiposAtivo]);

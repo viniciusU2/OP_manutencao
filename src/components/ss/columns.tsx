@@ -1,39 +1,38 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import { Link } from "react-router-dom";
+import { Download, Trash2 } from "lucide-react";
+
 import type { SS } from "../../types/SS";
-import { useNavigate } from "react-router-dom";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
-import { Eye, Trash2 } from "lucide-react";
+import { OnlyAdmin } from "../onlyAdmin";
 
-/* ==============================
-HELPER STATUS
-============================== */
 function getStatusVariant(status: string) {
   const s = status?.toUpperCase();
 
-  if (s === "CONCLUIDA") return "success";
+  if (s === "ENCERRADA") return "default";
   if (s === "CANCELADA") return "secondary";
-  if (s === "EM ANDAMENTO") return "warning";
+  if (s === "EM_EXECUCAO") return "outline";
 
   return "default";
 }
 
-/* ==============================
-COLUMNS
-============================== */
-
-export const columns = (onDownload: ( ss: SS) => void): ColumnDef<SS>[] => [
-  
+export const columns = (
+  onDownload: (ss: SS) => void,
+  onDelete: (ss: SS) => void
+): ColumnDef<SS>[] => [
   {
     accessorKey: "numero_ss",
-    header: "Número",
+    header: "SS",
     cell: ({ row }) => (
-      <span className="font-medium">
-        SS {row.original.numero_ss}
-      </span>
+      <Link
+        to={`/ss/${row.original.id_ss}`}
+        className="font-medium text-blue-600 hover:underline"
+      >
+        {row.original.numero_ss}
+      </Link>
     ),
   },
-
   {
     accessorKey: "status",
     header: "Status",
@@ -43,31 +42,35 @@ export const columns = (onDownload: ( ss: SS) => void): ColumnDef<SS>[] => [
       </Badge>
     ),
   },
-
   {
-    accessorKey: "descricao",
-    header: "Descrição",
+    accessorKey: "prioridade",
+    header: "Prioridade",
+  },
+  {
+    accessorKey: "solicitante",
+    header: "Solicitante",
+  },
+  {
+    accessorKey: "descricao_problema",
+    header: "Descricao",
     cell: ({ row }) => (
-      <span className="truncate max-w-[250px] block">
-        {row.original.descricao || "-"}
+      <span className="truncate max-w-[280px] block">
+        {row.original.descricao_problema || "-"}
       </span>
     ),
   },
-
   {
-    accessorKey: "criado_em",
-    header: "Criado em",
+    accessorKey: "data_hora_solicitacao",
+    header: "Solicitacao",
     cell: ({ row }) => {
-      const data = row.original.criado_em;
+      const data = row.original.data_hora_solicitacao;
       if (!data) return "-";
-
       return new Date(data).toLocaleDateString("pt-BR");
     },
   },
-
   {
     id: "actions",
-    header: "Ações",
+    header: "Acoes",
     cell: ({ row }) => {
       const ss = row.original;
 
@@ -76,22 +79,22 @@ export const columns = (onDownload: ( ss: SS) => void): ColumnDef<SS>[] => [
           <Button
             size="icon"
             variant="ghost"
-           
+            onClick={() => onDownload(ss)}
+            title="Baixar SS"
           >
-            <Eye size={16} />
+            <Download size={16} />
           </Button>
 
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => {
-              if (confirm("Deseja excluir esta SS?")) {
-                console.log("Excluir SS:", ss.numero_ss);
-              }
-            }}
-          >
-            <Trash2 size={16} />
-          </Button>
+          <OnlyAdmin>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => onDelete(ss)}
+              title="Excluir SS"
+            >
+              <Trash2 size={16} />
+            </Button>
+          </OnlyAdmin>
         </div>
       );
     },

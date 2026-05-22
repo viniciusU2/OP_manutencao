@@ -9,12 +9,14 @@ import {
   FileText,
   ClipboardList,
   Calendar,
+  Download,
   LogOut,
-  BookA,
-  Menu, LampFloor, Palette
+  Menu,
+  Wrench
 } from "lucide-react"
 
 import { useAuth } from "../context/AuthContext"
+import { canManage } from "../lib/permissions"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 
 /* ================= CONFIG ================= */
@@ -137,6 +139,21 @@ const UserBox = styled.div<{ collapsed: boolean }>`
   }
 `
 
+const UserInfo = styled.div<{ collapsed: boolean }>`
+  display: ${({ collapsed }) => (collapsed ? "none" : "grid")};
+  gap: 2px;
+
+  span {
+    display: inline;
+  }
+
+  small {
+    color: #94a3b8;
+    font-size: 11px;
+    text-transform: capitalize;
+  }
+`
+
 const LogoutButton = styled.button<{ collapsed: boolean }>`
   width: 100%;
   background: #ef4444;
@@ -202,15 +219,15 @@ const CollapseButton = styled.div`
 /* ================= MENU ================= */
 
 const menu = [
-  { name: "Dashboard", path: "/", icon: LayoutDashboard },
-  { name: "Instalações", path: "/subestacaoPage", icon: Building2 },
-  { name: "Ativos", path: "/ativo", icon: Zap },
-  { name: "OS", path: "/controle", icon: ClipboardList },
-  { name: "SS", path: "/ss", icon: FileText },
-  { name: "SI", path: "/si", icon: Calendar },
-  { name: "Nota Informativa", path: "/lr", icon: BookA },
-  { name: "item-template", path: "/item-template", icon: LampFloor },
-  { name: "inspecao", path: "/inspecao", icon: Palette },
+  { name: "Dashboard", path: "/", icon: LayoutDashboard, restricted: false },
+  { name: "Instalações", path: "/subestacaoPage", icon: Building2, restricted: true },
+  { name: "Ativos", path: "/ativo", icon: Zap, restricted: true },
+  { name: "OS", path: "/controle", icon: ClipboardList, restricted: true },
+  { name: "SS", path: "/ss", icon: FileText, restricted: true },
+  { name: "SI", path: "/si", icon: Calendar, restricted: true },
+  { name: "Plano Manut.", path: "/planos-manutencao", icon: Wrench, restricted: true },
+  { name: "Downloads", path: "/downloads", icon: Download, restricted: true },
+
 
 ]
 
@@ -222,6 +239,7 @@ export default function Layout() {
 
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const visibleMenu = menu.filter((item) => !item.restricted || canManage(usuario?.role))
 
   // Persistência
   useEffect(() => {
@@ -249,7 +267,7 @@ export default function Layout() {
         </CollapseButton>
 
         <Nav>
-          {menu.map((item) => {
+          {visibleMenu.map((item) => {
             const Icon = item.icon
             const active = location.pathname === item.path
 
@@ -275,7 +293,10 @@ export default function Layout() {
                 <AvatarImage src={usuario.foto} />
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>
-              <span>{usuario.nome}</span>
+              <UserInfo collapsed={collapsed}>
+                <span>{usuario.nome}</span>
+                <small>{usuario.role}</small>
+              </UserInfo>
             </UserBox>
           )}
 

@@ -7,6 +7,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import type {Ativo} from "../types/Ativo"
 import type {Subestacao} from "../types/Subestacao"
 import { useAuth } from "../context/AuthContext";
+import { toast } from "sonner";
 
 
 
@@ -37,7 +38,7 @@ const FormGrid = styled.div`
   gap: 20px;
 `;
 
-const FormGroup = styled.div`
+const FormGroup = styled.div<{ $invalid?: boolean }>`
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -50,7 +51,7 @@ const FormGroup = styled.div`
   input, textarea, select {
     padding: 10px;
     border-radius: 6px;
-    border: 1px solid #d1d5db;
+    border: 1px solid ${({ $invalid }) => ($invalid ? "#ef4444" : "#d1d5db")};
     font-size: 14px;
 
     &:focus {
@@ -63,6 +64,23 @@ const FormGroup = styled.div`
     resize: vertical;
     min-height: 80px;
   }
+`;
+
+const ReadOnlyValue = styled.div`
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 14px;
+`;
+
+const ErrorText = styled.span`
+  color: #dc2626;
+  font-size: 12px;
 `;
 
 const Actions = styled.div`
@@ -82,7 +100,14 @@ const Button = styled.button`
   &:hover {
     background: #1e40af;
   }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
 `;
+
+type FieldErrors = Partial<Record<keyof OrdemServico | "periodo_programado" | "periodo_execucao", string>>;
 
 /* ================= COMPONENT ================= */
 
@@ -97,6 +122,8 @@ export  function OrdemServicoPage() {
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
   const [ativos, setAtivos] = useState<Ativo[]>([]);
   const { usuario } = useAuth();
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState<OrdemServico>({
     numero_os: "",
@@ -172,6 +199,8 @@ export  function OrdemServicoPage() {
       api
         .get(`/ativos/${form.id_subestacao}`)
         .then((res) => setAtivos(res.data));
+    } else {
+      setAtivos([]);
     }
   }, [form.id_subestacao]);
 
@@ -203,43 +232,168 @@ export  function OrdemServicoPage() {
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >
   ) {
-
-
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({
+      ...prev,
+      [name]: undefined,
+      ...(name === "data_inicio_programado" || name === "data_fim_programado"
+        ? { periodo_programado: undefined }
+        : {}),
+      ...(name === "data_inicio_execucao" || name === "data_fim_execucao"
+        ? { periodo_execucao: undefined }
+        : {}),
+    }));
+
+    setForm((prev) => {
+      if (name === "id_subestacao") {
+        return {
+          ...prev,
+          id_subestacao: value ? Number(value) : null,
+          id_ativo: null,
+        };
+      }
+
+      if (name === "id_ativo") {
+        return {
+          ...prev,
+          id_ativo: value ? Number(value) : null,
+        };
+      }
+
+      return { ...prev, [name]: value };
+    });
+  }
+
+  function isAfter(start?: string | null, end?: string | null) {
+    if (!start || !end) return true;
+    return new Date(end).getTime() >= new Date(start).getTime();
+  }
+
+  function validateForm() {
+    const nextErrors: FieldErrors = {};
+
+    if (!form.id_subestacao) {
+      nextErrors.id_subestacao = "Selecione a instalacao.";
+    }
+
+    if (!form.id_ativo) {
+      nextErrors.id_ativo = "Selecione o ativo.";
+    }
+
+    if (!form.especie?.trim()) {
+      nextErrors.especie = "Selecione a especie.";
+    }
+
+    if (!form.esquema_servicos?.trim()) {
+      nextErrors.esquema_servicos = "Selecione o esquema de servicos.";
+    }
+
+    if (!form.prioridade?.trim()) {
+      nextErrors.prioridade = "Selecione a prioridade.";
+    }
+
+    if (!form.status?.trim()) {
+      nextErrors.status = "Selecione o status.";
+    }
+
+    if (!form.responsavel?.trim()) {
+      nextErrors.responsavel = "Selecione o responsavel.";
+    }
+
+    if (!form.descricao_servicos?.trim()) {
+      nextErrors.descricao_servicos = "Descreva os servicos.";
+    }
+
+    if (!isAfter(form.data_inicio_programado, form.data_fim_programado)) {
+      nextErrors.periodo_programado = "A data fim programada deve ser posterior ao inicio.";
+    }
+
+    if (!isAfter(form.data_inicio_execucao, form.data_fim_execucao)) {
+      nextErrors.periodo_execucao = "A data fim da execucao deve ser posterior ao inicio.";
+    }
+
+    if (form.status === "PROGRAMADA") {
+      if (!form.data_inicio_programado) {
+        nextErrors.data_inicio_programado = "Informe o inicio programado.";
+      }
+      if (!form.data_fim_programado) {
+        nextErrors.data_fim_programado = "Informe o fim programado.";
+      }
+    }
+
+    if (form.status === "EM_EXECUCAO") {
+      if (!form.data_inicio_execucao) {
+        nextErrors.data_inicio_execucao = "Informe o inicio da execucao.";
+      }
+      if (!form.responsavel_manutencao?.trim()) {
+        nextErrors.responsavel_manutencao = "Selecione o responsavel da manutencao.";
+      }
+    }
+
+    if (form.status === "ENCERRADA") {
+      if (!form.data_inicio_execucao) {
+        nextErrors.data_inicio_execucao = "Informe o inicio da execucao.";
+      }
+      if (!form.data_fim_execucao) {
+        nextErrors.data_fim_execucao = "Informe o fim da execucao.";
+      }
+      if (!form.responsavel_manutencao?.trim()) {
+        nextErrors.responsavel_manutencao = "Selecione o responsavel da manutencao.";
+      }
+      if (!form.responsavel_operacao?.trim()) {
+        nextErrors.responsavel_operacao = "Selecione o responsavel da operacao.";
+      }
+    }
+
+    setErrors(nextErrors);
+    return nextErrors;
   }
 
   /* ===============================
      SALVAR OU EDITAR
   =============================== */
   async function salvarOuEditar() {
+    const validationErrors = validateForm();
+
+    if (Object.keys(validationErrors).length > 0) {
+      toast.error("Revise os campos obrigatorios da OS.");
+      return;
+    }
+
+    setSaving(true);
     try {
 
 
 
-      const payload = {
-    ...form,
-    // Garante que campos vazios virem null (ou omita o campo se o backend preferir)
-    data_abertura_ss: form.data_abertura_ss?.trim() || null,
-    data_inicio_programado: form.data_inicio_programado?.trim() || null,
-    data_fim_programado: form.data_fim_programado?.trim() || null,
-    data_inicio_execucao: form.data_inicio_execucao?.trim() || null,
-    data_fim_execucao: form.data_fim_execucao?.trim() || null,
-    emissor: usuario?.nome,
+      const { numero_os: _numeroOs, ...formSemNumeroOs } = form;
+      void _numeroOs;
 
-  };
+      const payload = {
+        ...formSemNumeroOs,
+        // Garante que campos vazios virem null (ou omita o campo se o backend preferir)
+        data_abertura_ss: form.data_abertura_ss?.trim() || null,
+        data_inicio_programado: form.data_inicio_programado?.trim() || null,
+        data_fim_programado: form.data_fim_programado?.trim() || null,
+        data_inicio_execucao: form.data_inicio_execucao?.trim() || null,
+        data_fim_execucao: form.data_fim_execucao?.trim() || null,
+        emissor: usuario?.nome,
+      };
 
 
 
       if (isEdicao) {
         await api.put(`/os/${id}`,  payload);
+        toast.success("OS atualizada com sucesso!");
       } else {
         await api.post("/os",  payload);
+        toast.success("OS cadastrada com sucesso!");
       }
-alert("OS cadastrada com sucesso!");
       navigate("/os");
     } catch (err) {
       console.error("Erro ao salvar OS:", err);
+      toast.error("Erro ao salvar OS.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -259,7 +413,9 @@ alert("OS cadastrada com sucesso!");
         <FormGrid>
           <FormGroup>
             <label>Nº OS</label>
-            <input name="numero_os" onChange={handleChange} value={form.numero_os} />
+            <ReadOnlyValue>
+              {form.numero_os || "Gerado automaticamente ao salvar"}
+            </ReadOnlyValue>
           </FormGroup>
 
           <FormGroup>
@@ -267,11 +423,12 @@ alert("OS cadastrada com sucesso!");
             <input name="numero_si" onChange={handleChange} value={form.numero_si}/>
           </FormGroup>
 
-          <FormGroup>
+          <FormGroup $invalid={!!errors.especie}>
             <label>Espécie</label>
     
 
             <select name="especie" onChange={handleChange} value={form.especie}>
+              <option value="">Selecione</option>
               <option value="EAT">EAT</option>
               <option value="SPCS">SPCS</option>
               <option value="TELECON">TELECON</option>
@@ -279,6 +436,7 @@ alert("OS cadastrada com sucesso!");
               <option value="GERAL">GERAL</option>
 
             </select>
+            {errors.especie && <ErrorText>{errors.especie}</ErrorText>}
           </FormGroup>
 
           <FormGroup>
@@ -290,7 +448,7 @@ alert("OS cadastrada com sucesso!");
         {/* ===== LOCALIZAÇÃO / INSTALAÇÃO ===== */}
         <SectionTitle>Localização</SectionTitle>
         <FormGrid>
-          <FormGroup>
+          <FormGroup $invalid={!!errors.id_subestacao}>
             <label>Instalação (Subestação)</label>
             <select
               name="id_subestacao"
@@ -301,15 +459,16 @@ alert("OS cadastrada com sucesso!");
               {subestacoes.map((s) => (
                 <option
                   key={s.id_subestacao}
-                  value={s.id_subestacao}
+                  value={String(s.id_subestacao ?? "")}
                 >
                   {s.nome}
                 </option>
               ))}
             </select>
+            {errors.id_subestacao && <ErrorText>{errors.id_subestacao}</ErrorText>}
           </FormGroup>
 
-          <FormGroup>
+          <FormGroup $invalid={!!errors.id_ativo}>
             <label>Ativo</label>
       
             <select
@@ -320,11 +479,12 @@ alert("OS cadastrada com sucesso!");
             >
               <option value="">Selecione</option>
               {ativos.map((a) => (
-                <option key={a.id_ativo} value={a.id_ativo}>
+                <option key={a.id_ativo} value={String(a.id_ativo ?? "")}>
                   {a.codigo_ativo} – {a.fase}-{a.vao}
                 </option>
               ))}
             </select>
+            {errors.id_ativo && <ErrorText>{errors.id_ativo}</ErrorText>}
           </FormGroup>
 
           <FormGroup>
@@ -358,16 +518,18 @@ alert("OS cadastrada com sucesso!");
             <textarea name="defeito" onChange={handleChange} value={form.defeito ?? ""}/>
           </FormGroup>
 
-          <FormGroup>
+          <FormGroup $invalid={!!errors.esquema_servicos}>
             <label>Esquema de Serviços</label>
             
 
               <select name="esquema_servicos" onChange={handleChange} value={form.esquema_servicos ?? ""}>
+              <option value="">Selecione</option>
               <option value="MANUTENÇÃO PREVENTIVA">Manutenção Preventiva</option>
               <option value="MANUTENÇÃO CORRETIVA">Manutenção Corretiva</option>
               <option value="Monitoramento">Monitoramento</option>
               <option value="Atendimento Recomendação">Atendimento Recomendação</option>
             </select>
+            {errors.esquema_servicos && <ErrorText>{errors.esquema_servicos}</ErrorText>}
           </FormGroup>
         </FormGrid>
 
@@ -399,24 +561,27 @@ alert("OS cadastrada com sucesso!");
             />
           </FormGroup>
 
-          <FormGroup>
+          <FormGroup $invalid={!!errors.data_inicio_programado || !!errors.periodo_programado}>
             <label>Início Programado</label>
             <input
               type="datetime-local"
               name="data_inicio_programado"
               onChange={handleChange}
-              value={form.data_inicio_programado}
+              value={form.data_inicio_programado ?? ""}
             />
+            {errors.data_inicio_programado && <ErrorText>{errors.data_inicio_programado}</ErrorText>}
+            {errors.periodo_programado && <ErrorText>{errors.periodo_programado}</ErrorText>}
           </FormGroup>
 
-          <FormGroup>
+          <FormGroup $invalid={!!errors.data_fim_programado || !!errors.periodo_programado}>
             <label>Fim Programado</label>
             <input
               type="datetime-local"
               name="data_fim_programado"
               onChange={handleChange}
-              value={form.data_fim_programado}
+              value={form.data_fim_programado ?? ""}
             />
+            {errors.data_fim_programado && <ErrorText>{errors.data_fim_programado}</ErrorText>}
           </FormGroup>
         </FormGrid>
 
@@ -425,18 +590,20 @@ alert("OS cadastrada com sucesso!");
         {/* ===== CONTROLE ===== */}
         <SectionTitle>Controle</SectionTitle>
         <FormGrid>
-          <FormGroup>
+          <FormGroup $invalid={!!errors.prioridade}>
             <label>Prioridade</label>
             <select name="prioridade" onChange={handleChange} value={form.prioridade}>
               <option value="BAIXA">Baixa</option>
               <option value="MEDIA">Média</option>
               <option value="ALTA">Alta</option>
             </select>
+            {errors.prioridade && <ErrorText>{errors.prioridade}</ErrorText>}
           </FormGroup>
 
-          <FormGroup>
+          <FormGroup $invalid={!!errors.responsavel}>
             <label>Responsável</label>
   <select name="responsavel" onChange={handleChange} value={form.responsavel}>
+              <option value="">Selecione</option>
               <option value="ALDENIR">ALDENIR PEREIRA DE LIMA</option>
               <option value="ALESSANDRO PEREREIA">ALESSANDRO PEREIRA</option>
               <option value="EDINEI ROCHA">EDINEI ROCHA</option>
@@ -449,6 +616,7 @@ alert("OS cadastrada com sucesso!");
 
 
             </select>
+            {errors.responsavel && <ErrorText>{errors.responsavel}</ErrorText>}
           </FormGroup>
 
           <FormGroup>
@@ -456,6 +624,7 @@ alert("OS cadastrada com sucesso!");
          
 
               <select name="substituto" onChange={handleChange} value={form.substituto}>
+              <option value="">Selecione</option>
               <option value="ALDENIR">ALDENIR PEREIRA DE LIMA</option>
               <option value="ALESSANDRO PEREREIA">ALESSANDRO PEREIRA</option>
               <option value="EDINEI ROCHA">EDINEI ROCHA</option>
@@ -475,7 +644,7 @@ alert("OS cadastrada com sucesso!");
             <input name="centro_custos" onChange={handleChange} value={"RIALMA TRANSMISSORA V"}/>
           </FormGroup>
 
-          <FormGroup>
+          <FormGroup $invalid={!!errors.status}>
             <label>Status</label>
             <select name="status" onChange={handleChange} value={form.status}>
               <option value="ABERTA">Aberta</option>
@@ -483,13 +652,14 @@ alert("OS cadastrada com sucesso!");
               <option value="EM_EXECUCAO">Em Execução</option>
               <option value="ENCERRADA">Encerrada</option>
             </select>
+            {errors.status && <ErrorText>{errors.status}</ErrorText>}
           </FormGroup>
         </FormGrid>
 
         {/* ===== LIBERAÇÃO PARA MANUTENÇÃO  ===== */}
         <SectionTitle>Liberação para manutenção</SectionTitle>
         <FormGrid>
-          <FormGroup>
+          <FormGroup $invalid={!!errors.data_inicio_execucao || !!errors.periodo_execucao}>
             <label>Data/hora </label>
             <input
               type="datetime-local"
@@ -498,12 +668,15 @@ alert("OS cadastrada com sucesso!");
               value={form.data_inicio_execucao ?? ""}
             
             />
+            {errors.data_inicio_execucao && <ErrorText>{errors.data_inicio_execucao}</ErrorText>}
+            {errors.periodo_execucao && <ErrorText>{errors.periodo_execucao}</ErrorText>}
           </FormGroup>
 
-             <FormGroup>
+             <FormGroup $invalid={!!errors.responsavel_manutencao}>
             <label>Responsável Manutenção</label>
         
               <select name="responsavel_manutencao" onChange={handleChange} value={form.responsavel_manutencao}>
+              <option value="">Selecione</option>
               <option value="ALDENIR">ALDENIR PEREIRA DE LIMA</option>
               <option value="ALESSANDRO PEREREIA">ALESSANDRO PEREIRA</option>
               <option value="EDINEI ROCHA">EDINEI ROCHA</option>
@@ -514,6 +687,7 @@ alert("OS cadastrada com sucesso!");
               <option value="WILSON MOREIRA JUNIOR">WILSON MOREIRA</option>
 
             </select>
+            {errors.responsavel_manutencao && <ErrorText>{errors.responsavel_manutencao}</ErrorText>}
           </FormGroup>
 
 
@@ -523,7 +697,7 @@ alert("OS cadastrada com sucesso!");
         {/* ===== LIBERAÇÃO PARA MANUTENÇÃO  ===== */}
         <SectionTitle>Liberação para operação</SectionTitle>
         <FormGrid>
-          <FormGroup>
+          <FormGroup $invalid={!!errors.data_fim_execucao || !!errors.periodo_execucao}>
             <label>Data/hora </label>
             <input
               type="datetime-local"
@@ -532,12 +706,14 @@ alert("OS cadastrada com sucesso!");
               value={form.data_fim_execucao ?? ""}
             
             />
+            {errors.data_fim_execucao && <ErrorText>{errors.data_fim_execucao}</ErrorText>}
           </FormGroup>
 
-             <FormGroup>
+             <FormGroup $invalid={!!errors.responsavel_operacao}>
             <label>Responsável Liberação</label>
         
               <select name="responsavel_operacao" onChange={handleChange} value={form.responsavel_operacao}>
+              <option value="">Selecione</option>
               <option value="ALDENIR">ALDENIR PEREIRA DE LIMA</option>
               <option value="ALESSANDRO PEREREIA">ALESSANDRO PEREIRA</option>
               <option value="EDINEI ROCHA">EDINEI ROCHA</option>
@@ -548,6 +724,7 @@ alert("OS cadastrada com sucesso!");
               <option value="WILSON MOREIRA JUNIOR">WILSON MOREIRA</option>
 
             </select>
+            {errors.responsavel_operacao && <ErrorText>{errors.responsavel_operacao}</ErrorText>}
           </FormGroup>
 
 
@@ -559,13 +736,14 @@ alert("OS cadastrada com sucesso!");
         {/* ===== ENCERRAMENTO ===== */}
         <SectionTitle>Encerramento</SectionTitle>
         <FormGrid>
-          <FormGroup>
+          <FormGroup $invalid={!!errors.descricao_servicos}>
             <label>Descrição dos Serviços</label>
             <textarea
               name="descricao_servicos"
               onChange={handleChange}
               value={form.descricao_servicos}
             />
+            {errors.descricao_servicos && <ErrorText>{errors.descricao_servicos}</ErrorText>}
           </FormGroup>
 
           <FormGroup>
@@ -576,8 +754,8 @@ alert("OS cadastrada com sucesso!");
         </FormGrid>
 
         <Actions>
-         <Button onClick={salvarOuEditar}>
-  {isEdicao ? "Editar Ordem de Serviço" : "Salvar Ordem de Serviço"}
+         <Button onClick={salvarOuEditar} disabled={saving}>
+  {saving ? "Salvando..." : isEdicao ? "Editar Ordem de Serviço" : "Salvar Ordem de Serviço"}
 </Button>
 
         </Actions>

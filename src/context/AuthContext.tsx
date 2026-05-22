@@ -1,10 +1,12 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import type { UserRole } from "../lib/permissions";
 
 interface Usuario {
   id: number;
   nome: string;
   email: string;
-  role:string;
+  role: UserRole;
+  foto?: string;
 }
 
 interface AuthContextType {

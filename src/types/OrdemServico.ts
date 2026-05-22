@@ -3,8 +3,8 @@ export interface OrdemServico {
   numero_si?: string;
 
   // 🔹 RELACIONAMENTOS
-  id_subestacao?: number;
-  id_ativo?: number;
+  id_subestacao?: number | null;
+  id_ativo?: number | null;
   id_os?: number;
   tipo_ativo?: string;   
 

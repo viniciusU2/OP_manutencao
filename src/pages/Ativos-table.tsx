@@ -50,6 +50,15 @@ export function AtivoPage1({
           .includes(search.toLowerCase()) ||
         (ativo.modelo ?? "")
           .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        (ativo.numero_serie ?? "")
+          .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        (ativo.fase ?? "")
+          .toLowerCase()
+          .includes(search.toLowerCase()) ||
+        (ativo.vao ?? "")
+          .toLowerCase()
           .includes(search.toLowerCase());
 
       const matchStatus =

@@ -38,10 +38,10 @@ export const columns = (
     header: "Emissor",
   },
   {
-    accessorKey: "prioridade",
-    header: "Prioridade",
+    accessorKey: "esquema_servico",
+    header: "Esquema de serviço",
     cell: ({ row }) => {
-      return <StatusBadge status={row.original.prioridade} />;
+      return <StatusBadge status={row.original.esquema_servicos} />;
     },
   },
   {
@@ -100,7 +100,7 @@ export const columns = (
       
   
           <button
-            onClick={() => onDelete(os.id_os)}
+            onClick={() => os.id_os && onDelete(os.id_os)}
             className="text-red-500 hover:text-red-700 transition"
             title="Excluir OS"
           >

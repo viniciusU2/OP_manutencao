@@ -24,6 +24,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import "./index.css";
 import type { JSX } from "react";
 import { Toaster } from "./components/ui/sonner"
+import { FULL_ACCESS_ROLES } from "./lib/permissions";
 import { SIPage } from "./pages/SIPage";
 import SIForm from "./pages/SIForm";
 import { SSForm } from "./pages/SSForm"
@@ -33,6 +34,9 @@ import { ImportarAtivos } from "./pages/Upload_ativos"
 import ItemTemplateForm from "./pages/ItemTemplateForm";
 import InspecaoForm from "./pages/InspecaoForm";
 import { InspecaoDetalhe } from "./pages/InspecaoDetalhe";
+import PlanoManutencaoForm from "./pages/PlanoManutencaoForm";
+import PlanosManutencaoPage from "./pages/PlanosManutencaoPage";
+import DownloadsPage from "./pages/DownloadsPage";
 
 /* ================= STYLES ================= */
 
@@ -63,7 +67,7 @@ function ProtectedRoute({ children }: { children: JSX.Element }) {
 function RoleRoute({ allowedRoles }: { allowedRoles: string[] }) {
   const { usuario } = useAuth();
 
-  if (!allowedRoles.includes(usuario?.role)) {
+  if (!usuario || !allowedRoles.includes(usuario.role)) {
     return <Navigate to="/" replace />;
   }
 
@@ -110,7 +114,7 @@ function AppContent() {
 
         {/* 🔒 ADMIN */}
         <Route
-          element={<RoleRoute allowedRoles={["admin"]} />}
+          element={<RoleRoute allowedRoles={FULL_ACCESS_ROLES} />}
         >
           <Route path="/subestacao" element={<Subestacao />} />
           <Route path="/subestacaoPage" element={<SubestacoesPage />} />
@@ -128,12 +132,15 @@ function AppContent() {
           <Route path="/lr" element={<LivroRegistro />} />
           <Route path="/importar-ativos" element={<ImportarAtivos />} />
           <Route path="/item-template" element={<ItemTemplateForm />} />
+          <Route path="/planos-manutencao" element={<PlanosManutencaoPage />} />
+          <Route path="/planos-manutencao/novo" element={<PlanoManutencaoForm />} />
           <Route path="/inspecao" element={<InspecaoForm />} />
           <Route path="/ss/nova" element={<SSForm />} />
           <Route path="/inspecoes/:id" element={<InspecaoDetalhe />} />
           <Route path="/ss/:id" element={<SSForm />} />
           <Route path="/si/nova" element={<SIForm />} />
           <Route path="/si/:id" element={<SIForm />} />
+          <Route path="/downloads" element={<DownloadsPage />} />
         </Route>
       </Route>
 

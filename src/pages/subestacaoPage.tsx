@@ -9,7 +9,7 @@ import { Input } from "../components/ui/input";
 import { useNavigate } from "react-router-dom";
 
 import {StatusBadge} from "../components/statusBadge"
-import { OnlyAdmin } from "../components/onlyAdmin";
+import { OnlyAdmin, OnlyMaintainerOrAdmin } from "../components/onlyAdmin";
 //import SubstationFormDialog from "../components/SubstationFormDialog";
 
 interface Subestacao {
@@ -31,6 +31,8 @@ export  function SubestacoesPage() {
 
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const navigate = useNavigate();
+  void formOpen;
+  void editing;
 
   useEffect(() => {
     fetchSubestacoes();
@@ -77,7 +79,7 @@ export  function SubestacoesPage() {
             {subestacoes.length} subestações cadastradas
           </p>
         </div>
-        <OnlyAdmin>
+        <OnlyMaintainerOrAdmin>
 <Button
           onClick={() => navigate("/subestacao")}
         >
@@ -85,7 +87,7 @@ export  function SubestacoesPage() {
           Nova Subestação
         </Button>
 
-        </OnlyAdmin>
+        </OnlyMaintainerOrAdmin>
 
         
 
@@ -174,7 +176,7 @@ export  function SubestacoesPage() {
 
 
             <div className="mt-4 pt-3 border-t flex justify-end gap-1">
-               <OnlyAdmin>
+               <OnlyMaintainerOrAdmin>
 
               <Button
                 variant="ghost"
@@ -187,11 +189,11 @@ export  function SubestacoesPage() {
 
                 <Pencil className="w-4 h-4 mr-1" />
                 Editar
- 
+
               </Button>
 
               
-            </OnlyAdmin>
+            </OnlyMaintainerOrAdmin>
            
    <OnlyAdmin>
               <Button

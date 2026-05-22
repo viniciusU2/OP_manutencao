@@ -5,7 +5,7 @@ import { OsPage1 } from "./Os_table";
 import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 import type { Subestacao } from "../types/Subestacao";
-import ImportarOSButton from "../components/ImportarOSButton";
+
 
 
 /* HEADER */
@@ -81,6 +81,7 @@ const Select = styled.select`
 export default function ControleOrdemServicoPage() {
 
   const [search, setSearch] = useState("");
+  const [esquema_servicos, setEsquema_servicos] = useState("");
   const [subestacao, setSubestacao] = useState<Subestacao[]>([]);
   const [subestacaoSelecionada, setSubestacaoSelecionada] = useState("");
   const [status, setStatus] = useState("all");
@@ -101,7 +102,7 @@ export default function ControleOrdemServicoPage() {
 
   useEffect(() => {
   if (subestacao.length > 0) {
-    setSubestacaoSelecionada(subestacao[0].id_subestacao.toString());
+    setSubestacaoSelecionada(String(subestacao[0]?.id_subestacao ?? "all"));
   }
 }, [subestacao]);
 
@@ -149,6 +150,19 @@ export default function ControleOrdemServicoPage() {
           <option value="EM_EXECUCAO">Em execucão</option>
         </Select>
 
+  <Select
+          value={esquema_servicos}
+          onChange={(e) => setEsquema_servicos(e.target.value)}
+        >
+          <option value="all">Todos esquema de serviço</option>
+              <option value="MANUTENÇÃO PREVENTIVA">Manutenção Preventiva</option>
+              <option value="MANUTENÇÃO CORRETIVA">Manutenção Corretiva</option>
+              <option value="Monitoramento">Monitoramento</option>
+              <option value="Atendimento Recomendação">Atendimento Recomendação</option>
+        </Select>
+
+        
+
 <Select
   value={subestacaoSelecionada}
   onChange={(e) => setSubestacaoSelecionada(e.target.value)}
@@ -158,7 +172,7 @@ export default function ControleOrdemServicoPage() {
   {subestacao.map((s) => (
     <option
       key={s.id_subestacao}
-      value={s.id_subestacao}
+      value={String(s.id_subestacao ?? "")}
     >
       {s.nome}
     </option>
@@ -170,7 +184,8 @@ export default function ControleOrdemServicoPage() {
       <OsPage1
         search={search}
         status={status}
-        subestacao={subestacaoSelecionada} 
+        subestacao={subestacaoSelecionada}
+        esquema_servicos={esquema_servicos}
       />
 
 

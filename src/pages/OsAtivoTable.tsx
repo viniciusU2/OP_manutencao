@@ -23,9 +23,11 @@ export function OsAtivoTable({ idAtivo }: Props) {
     setOpenDelete(true);
   }
 
-  async function baixarOS(id: number) {
+  async function baixarOS(os: OrdemServico) {
+  if (!os.id_os) return;
+
   try {
-    const response = await api.get(`/os/${id}/download`, {
+    const response = await api.get(`/os/${os.id_os}/download`, {
       responseType: "blob",
     });
 
@@ -33,7 +35,7 @@ export function OsAtivoTable({ idAtivo }: Props) {
     const link = document.createElement("a");
 
     link.href = url;
-    link.setAttribute("download", `OS_${id}.xlsm`);
+    link.setAttribute("download", `OS_${os.id_os}.xlsm`);
 
     document.body.appendChild(link);
     link.click();

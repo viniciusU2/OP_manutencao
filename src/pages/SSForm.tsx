@@ -64,6 +64,18 @@ const FormGroup = styled.div`
   }
 `;
 
+const ReadOnlyValue = styled.div`
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 14px;
+`;
+
 const Actions = styled.div`
   margin-top: 32px;
   display: flex;
@@ -177,7 +189,7 @@ export function SSForm() {
   setForm(prev => ({
     ...prev,
     [name]: name === "id_ativo" || name === "id_subestacao"
-      ? Number(value)
+      ? value === "" ? null : Number(value)
       : value
   }));
 
@@ -191,11 +203,12 @@ async function salvarOuEditar() {
 
   try {
 
-    const { id_subestacao, ...dadosEnvio } = form;
+    const { numero_ss: _numeroSs, ...dadosEnvio } = form;
+    void _numeroSs;
 
     const payload = {
       ...dadosEnvio,
-      id_ativo: Number(dadosEnvio.id_ativo)
+      id_ativo: dadosEnvio.id_ativo ? Number(dadosEnvio.id_ativo) : null
     };
 
     if (isEdicao) {
@@ -232,11 +245,9 @@ async function salvarOuEditar() {
 
           <FormGroup>
             <label>Nº SS</label>
-            <input
-              name="numero_ss"
-              value={form.numero_ss}
-              onChange={handleChange}
-            />
+            <ReadOnlyValue>
+              {form.numero_ss || "Gerado automaticamente ao salvar"}
+            </ReadOnlyValue>
           </FormGroup>
 
           <FormGroup>
@@ -286,7 +297,7 @@ async function salvarOuEditar() {
               <option value="">Selecione</option>
 
               {subestacoes.map(s => (
-                <option key={s.id_subestacao} value={s.id_subestacao}>
+                <option key={s.id_subestacao} value={String(s.id_subestacao ?? "")}>
                   {s.nome}
                 </option>
               ))}
@@ -309,7 +320,7 @@ async function salvarOuEditar() {
               <option value="">Selecione</option>
 
               {ativos.map(a => (
-                <option key={a.id_ativo} value={a.id_ativo}>
+                <option key={a.id_ativo} value={String(a.id_ativo ?? "")}>
                   {a.codigo_ativo}
                 </option>
               ))}
