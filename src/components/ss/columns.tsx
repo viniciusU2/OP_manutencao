@@ -1,6 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
-import { Download, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 import type { SS } from "../../types/SS";
 import { Badge } from "../../components/ui/badge";
@@ -18,7 +18,6 @@ function getStatusVariant(status: string) {
 }
 
 export const columns = (
-  onDownload: (ss: SS) => void,
   onDelete: (ss: SS) => void
 ): ColumnDef<SS>[] => [
   {
@@ -45,6 +44,11 @@ export const columns = (
   {
     accessorKey: "prioridade",
     header: "Prioridade",
+  },
+  {
+    accessorKey: "esquema_servico",
+    header: "Esquema",
+    cell: ({ row }) => row.original.esquema_servico || "-",
   },
   {
     accessorKey: "solicitante",
@@ -76,15 +80,6 @@ export const columns = (
 
       return (
         <div className="flex gap-2">
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => onDownload(ss)}
-            title="Baixar SS"
-          >
-            <Download size={16} />
-          </Button>
-
           <OnlyAdmin>
             <Button
               size="icon"

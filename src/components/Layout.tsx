@@ -31,9 +31,9 @@ const Container = styled.div`
   min-height: 100vh;
 `
 
-const Sidebar = styled.aside<{ open: boolean; collapsed: boolean }>`
-  width: ${({ collapsed }) =>
-    collapsed ? `${SIDEBAR_COLLAPSED}px` : `${SIDEBAR_EXPANDED}px`};
+const Sidebar = styled.aside<{ $open: boolean; $collapsed: boolean }>`
+  width: ${({ $collapsed }) =>
+    $collapsed ? `${SIDEBAR_COLLAPSED}px` : `${SIDEBAR_EXPANDED}px`};
 
   background: #0f172a;
   color: white;
@@ -46,30 +46,30 @@ const Sidebar = styled.aside<{ open: boolean; collapsed: boolean }>`
   transition: all 0.25s ease;
 
   @media (max-width: 768px) {
-    transform: ${({ open }) =>
-      open ? "translateX(0)" : "translateX(-100%)"};
+    transform: ${({ $open }) =>
+      $open ? "translateX(0)" : "translateX(-100%)"};
     width: ${SIDEBAR_EXPANDED}px;
   }
 `
 
-const Overlay = styled.div<{ open: boolean }>`
+const Overlay = styled.div<{ $open: boolean }>`
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.4);
   z-index: 40;
-  display: ${({ open }) => (open ? "block" : "none")};
+  display: ${({ $open }) => ($open ? "block" : "none")};
 
   @media (min-width: 769px) {
     display: none;
   }
 `
 
-const Logo = styled.div<{ collapsed: boolean }>`
+const Logo = styled.div<{ $collapsed: boolean }>`
   height: 70px;
   display: flex;
   align-items: center;
-  justify-content: ${({ collapsed }) =>
-    collapsed ? "center" : "flex-start"};
+  justify-content: ${({ $collapsed }) =>
+    $collapsed ? "center" : "flex-start"};
   gap: 12px;
   padding: 0 22px;
   border-bottom: 1px solid #1e293b;
@@ -84,7 +84,7 @@ const Nav = styled.nav`
   flex: 1;
 `
 
-const NavItem = styled(Link)<{ $active?: boolean; collapsed?: boolean }>`
+const NavItem = styled(Link)<{ $active?: boolean; $collapsed?: boolean }>`
   display: flex;
   align-items: center;
   gap: 12px;
@@ -94,8 +94,8 @@ const NavItem = styled(Link)<{ $active?: boolean; collapsed?: boolean }>`
   font-size: 14px;
   position: relative;
 
-  justify-content: ${({ collapsed }) =>
-    collapsed ? "center" : "flex-start"};
+  justify-content: ${({ $collapsed }) =>
+    $collapsed ? "center" : "flex-start"};
 
   color: ${(p) => (p.$active ? "#60a5fa" : "#94a3b8")};
   background: ${(p) =>
@@ -107,7 +107,7 @@ const NavItem = styled(Link)<{ $active?: boolean; collapsed?: boolean }>`
   }
 
   span {
-    display: ${({ collapsed }) => (collapsed ? "none" : "inline")};
+    display: ${({ $collapsed }) => ($collapsed ? "none" : "inline")};
   }
 
   &::before {
@@ -126,17 +126,17 @@ const Footer = styled.div`
   padding: 16px;
 `
 
-const UserBox = styled.div<{ collapsed: boolean }>`
+const UserBox = styled.div<{ $collapsed: boolean }>`
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
-  justify-content: ${({ collapsed }) =>
-    collapsed ? "center" : "flex-start"};
+  justify-content: ${({ $collapsed }) =>
+    $collapsed ? "center" : "flex-start"};
 `
 
-const UserInfo = styled.div<{ collapsed: boolean }>`
-  display: ${({ collapsed }) => (collapsed ? "none" : "grid")};
+const UserInfo = styled.div<{ $collapsed: boolean }>`
+  display: ${({ $collapsed }) => ($collapsed ? "none" : "grid")};
   gap: 2px;
 
   span {
@@ -150,7 +150,7 @@ const UserInfo = styled.div<{ collapsed: boolean }>`
   }
 `
 
-const LogoutButton = styled.button<{ collapsed: boolean }>`
+const LogoutButton = styled.button<{ $collapsed: boolean }>`
   width: 100%;
   background: #ef4444;
   border: none;
@@ -166,14 +166,14 @@ const LogoutButton = styled.button<{ collapsed: boolean }>`
   gap: 6px;
 
   span {
-    display: ${({ collapsed }) => (collapsed ? "none" : "inline")};
+    display: ${({ $collapsed }) => ($collapsed ? "none" : "inline")};
   }
 `
 
-const Content = styled.main<{ collapsed: boolean }>`
+const Content = styled.main<{ $collapsed: boolean }>`
   flex: 1;
-  margin-left: ${({ collapsed }) =>
-    collapsed ? `${SIDEBAR_COLLAPSED}px` : `${SIDEBAR_EXPANDED}px`};
+  margin-left: ${({ $collapsed }) =>
+    $collapsed ? `${SIDEBAR_COLLAPSED}px` : `${SIDEBAR_EXPANDED}px`};
 
   background: #f1f5f9;
   padding: 40px;
@@ -251,8 +251,8 @@ export default function Layout() {
   return (
     <Container>
 
-      <Sidebar open={open} collapsed={collapsed}>
-        <Logo collapsed={collapsed}>
+      <Sidebar $open={open} $collapsed={collapsed}>
+        <Logo $collapsed={collapsed}>
           <Zap size={20} />
           {!collapsed && "O&M"}
         </Logo>
@@ -271,7 +271,7 @@ export default function Layout() {
                 key={item.path}
                 to={item.path}
                 $active={active}
-                collapsed={collapsed}
+                $collapsed={collapsed}
                 onClick={() => setOpen(false)}
               >
                 <Icon size={18} />
@@ -283,28 +283,28 @@ export default function Layout() {
 
         <Footer>
           {usuario && (
-            <UserBox collapsed={collapsed}>
+            <UserBox $collapsed={collapsed}>
               <Avatar>
                 <AvatarImage src={usuario.foto} />
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>
-              <UserInfo collapsed={collapsed}>
+              <UserInfo $collapsed={collapsed}>
                 <span>{usuario.nome}</span>
                 <small>{usuario.role}</small>
               </UserInfo>
             </UserBox>
           )}
 
-          <LogoutButton collapsed={collapsed} onClick={logout}>
+          <LogoutButton $collapsed={collapsed} onClick={logout}>
             <LogOut size={16} />
             <span>Sair</span>
           </LogoutButton>
         </Footer>
       </Sidebar>
 
-      <Overlay open={open} onClick={() => setOpen(false)} />
+      <Overlay $open={open} onClick={() => setOpen(false)} />
 
-      <Content collapsed={collapsed}>
+      <Content $collapsed={collapsed}>
         <Topbar>
           <Menu size={22} onClick={() => setOpen(true)} />
         </Topbar>

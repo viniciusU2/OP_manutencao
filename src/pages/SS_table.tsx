@@ -15,32 +15,6 @@ export function SSPage1({ search, status, subestacao }: Props) {
   void subestacao;
   const [data, setData] = useState<SS[]>([]);
 
-  async function baixarSS(ss: SS) {
-    try {
-      const response = await api.get(`/ss/${ss.id_ss}/download`, {
-        responseType: "blob",
-      });
-
-
-      const blob = new Blob([response.data], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-
-      link.href = url;
-      link.setAttribute("download", `${ss.numero_ss}.xlsx`);
-
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch {
-      toast.error("Erro ao baixar SS");
-    }
-  }
-
   async function deletarSS(ss: SS) {
     if (!confirm(`Deseja excluir a SS ${ss.numero_ss}?`)) return;
 
@@ -89,7 +63,7 @@ export function SSPage1({ search, status, subestacao }: Props) {
 
   return (
     <div className="container mx-auto py-6">
-      <DataTable columns={columns(baixarSS, deletarSS)} data={filteredData} />
+      <DataTable columns={columns(deletarSS)} data={filteredData} />
     </div>
   );
 }

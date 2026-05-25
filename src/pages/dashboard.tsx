@@ -393,6 +393,19 @@ function priorityScore(priority?: string) {
   return 1;
 }
 
+function asArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[];
+
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    for (const key of ["data", "items", "results", "rows"]) {
+      if (Array.isArray(record[key])) return record[key] as T[];
+    }
+  }
+
+  return [];
+}
+
 export function Dashboard() {
   const navigate = useNavigate();
 
@@ -418,11 +431,11 @@ export function Dashboard() {
         api.get("/subestacao"),
       ]);
 
-      setAtivos(ativosRes.data || []);
-      setOS(osRes.data || []);
-      setSS(ssRes.data || []);
-      setSI(siRes.data || []);
-      setSubestacoes(subRes.data || []);
+      setAtivos(asArray<Ativo>(ativosRes.data));
+      setOS(asArray<OS>(osRes.data));
+      setSS(asArray<SS>(ssRes.data));
+      setSI(asArray<SI>(siRes.data));
+      setSubestacoes(asArray<Subestacao>(subRes.data));
     } catch {
       setError("Nao foi possivel carregar todos os indicadores.");
     } finally {

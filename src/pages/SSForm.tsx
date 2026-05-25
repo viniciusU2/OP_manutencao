@@ -214,7 +214,6 @@ async function salvarOuEditar() {
     if (isEdicao) {
       await api.put(`/ss/${id}`, payload);
     } else {
-        console.log(payload)
       await api.post("/ss", payload);
     }
 
@@ -386,6 +385,26 @@ async function salvarOuEditar() {
               <option value="BAIXA">Baixa</option>
               <option value="MEDIA">Média</option>
               <option value="ALTA">Alta</option>
+
+            </select>
+
+          </FormGroup>
+
+
+          <FormGroup>
+            <label>Esquema de Serviço</label>
+
+            <select
+              name="esquema_servico"
+              value={form.esquema_servico}
+              onChange={handleChange}
+            >
+
+              <option value="">Selecione</option>
+              <option value="MANUTENÇÃO PREVENTIVA">Manutenção Preventiva</option>
+              <option value="MANUTENÇÃO CORRETIVA">Manutenção Corretiva</option>
+              <option value="Monitoramento">Monitoramento</option>
+              <option value="Atendimento Recomendação">Atendimento Recomendação</option>
 
             </select>
 
