@@ -50,11 +50,7 @@ const AppWrapper = styled.div`
 
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return <div style={{ textAlign: "center", padding: "100px" }}>Carregando...</div>;
-  }
+  const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

@@ -133,10 +133,6 @@ const UserBox = styled.div<{ collapsed: boolean }>`
   margin-bottom: 12px;
   justify-content: ${({ collapsed }) =>
     collapsed ? "center" : "flex-start"};
-
-  span {
-    display: ${({ collapsed }) => (collapsed ? "none" : "inline")};
-  }
 `
 
 const UserInfo = styled.div<{ collapsed: boolean }>`
@@ -166,8 +162,7 @@ const LogoutButton = styled.button<{ collapsed: boolean }>`
 
   display: flex;
   align-items: center;
-  justify-content: ${({ collapsed }) =>
-    collapsed ? "center" : "center"};
+  justify-content: center;
   gap: 6px;
 
   span {
