@@ -109,6 +109,21 @@ const Button = styled.button`
 
 type FieldErrors = Partial<Record<keyof OrdemServico | "periodo_programado" | "periodo_execucao", string>>;
 
+const LOCALIZACOES_FISICAS = [
+  { value: "Bom Jesus da Lapa-BA", label: "Bom Jesus da Lapa" },
+  { value: "Gentio do Ouro-BA", label: "Gentio do Ouro" },
+  { value: "Jaiba-MG", label: "Jaiba" },
+  { value: "Jaíba-MG", label: "Jaiba" },
+  { value: "BURITIZEIRO-MG", label: "Buritizeiro" },
+];
+
+const ESQUEMAS_SERVICO = [
+  { value: "MANUTENÇÃO PREVENTIVA", label: "Manutencao Preventiva" },
+  { value: "MANUTENÇÃO CORRETIVA", label: "Manutencao Corretiva" },
+  { value: "Monitoramento", label: "Monitoramento" },
+  { value: "Atendimento Recomendação", label: "Atendimento Recomendacao" },
+];
+
 /* ================= COMPONENT ================= */
 
 export  function OrdemServicoPage() {
@@ -210,15 +225,24 @@ export  function OrdemServicoPage() {
   =============================== */
   useEffect(() => {
     if (isEdicao) {
-      api.get(`/os/${id}`).then((res) => {
+      api.get(`/os/${id}`).then(async (res) => {
+        const os = res.data;
+        let idSubestacao = os.id_subestacao ?? null;
+
+        if (!idSubestacao && os.id_ativo) {
+          const ativoRes = await api.get(`/ativo/${os.id_ativo}`);
+          idSubestacao = ativoRes.data.id_subestacao ?? null;
+        }
+
         setForm({
-        ...res.data,
-        status: res.data.status || "ABERTA",
-        prioridade: res.data.prioridade || "MEDIA",
-        especie:res.data.especie,
-        localizacao:res.data.localizacao,
-        esquema_servicos: res.data.esquema_servico,
-        centro_custos: res.data.centro_custos || "RIALMA TRANSMISSORA V"
+        ...os,
+        id_subestacao: idSubestacao,
+        status: os.status || "ABERTA",
+        prioridade: os.prioridade || "MEDIA",
+        especie: os.especie,
+        localizacao: os.localizacao,
+        esquema_servicos: os.esquema_servicos ?? os.esquema_servico ?? "",
+        centro_custos: os.centro_custos || "RIALMA TRANSMISSORA V"
       });
 
       });
@@ -492,6 +516,11 @@ export  function OrdemServicoPage() {
            
             
               <select name="localizacao" onChange={handleChange} value={form.localizacao ?? ""}>
+              <option value="">Selecione</option>
+              {form.localizacao &&
+                !LOCALIZACOES_FISICAS.some((local) => local.value === form.localizacao) && (
+                  <option value={form.localizacao}>{form.localizacao}</option>
+                )}
               <option value="Bom Jesus da Lapa-BA">Bom Jesus da Lapa</option>
               <option value="Gentio do Ouro-BA">Gentio do Ouro</option>
               <option value="Jaíba-MG">Jaíba</option>
@@ -524,6 +553,10 @@ export  function OrdemServicoPage() {
 
               <select name="esquema_servicos" onChange={handleChange} value={form.esquema_servicos ?? ""}>
               <option value="">Selecione</option>
+              {form.esquema_servicos &&
+                !ESQUEMAS_SERVICO.some((esquema) => esquema.value === form.esquema_servicos) && (
+                  <option value={form.esquema_servicos}>{form.esquema_servicos}</option>
+                )}
               <option value="MANUTENÇÃO PREVENTIVA">Manutenção Preventiva</option>
               <option value="MANUTENÇÃO CORRETIVA">Manutenção Corretiva</option>
               <option value="Monitoramento">Monitoramento</option>

@@ -104,6 +104,20 @@ const Button = styled.button`
   }
 `;
 
+const ESPECIES_SI = [
+  { value: "EAT", label: "EAT" },
+  { value: "SPCS", label: "SPCS" },
+  { value: "TELECON", label: "TELECON" },
+  { value: "SERVIÇO AUXÍLIAR", label: "SERVICO AUXILIAR" },
+  { value: "GERAL", label: "GERAL" },
+];
+
+const TIPOS_SI = [
+  { value: "PROGRAMADA", label: "Programada" },
+  { value: "URGÊNCIA", label: "Urgencia" },
+  { value: "EMERGÊNCIA", label: "Emergencia" },
+];
+
 /* ================= COMPONENT ================= */
 
 export default function SIForm() {
@@ -197,39 +211,48 @@ export default function SIForm() {
     if (isEdit) {
       api
         .get(`/si/${id}`)
-        .then((res) => {
+        .then(async (res) => {
+          const si = res.data;
+          let idSubestacao = si.id_subestacao ?? null;
+
+          if (!idSubestacao && si.id_ativo) {
+            const ativoRes = await api.get(`/ativo/${si.id_ativo}`);
+            idSubestacao = ativoRes.data.id_subestacao ?? null;
+          }
+
           setForm({
-            ...res.data,
+            ...si,
+            id_subestacao: idSubestacao,
 
-            numero_os: res.data.numero_os ?? "",
-            numero_si: res.data.numero_si ?? "",
-            numero_sgi: res.data.numero_sgi ?? "",
+            numero_os: si.numero_os ?? "",
+            numero_si: si.numero_si ?? "",
+            numero_sgi: si.numero_sgi ?? "",
 
-            especie: res.data.especie ?? "",
-            numero_apr: res.data.numero_apr ?? "",
-            tipo: res.data.tipo ?? "",
+            especie: si.especie ?? "",
+            numero_apr: si.numero_apr ?? "",
+            tipo: si.tipo ?? "",
 
             status_manutencao:
-              res.data.status_manutencao ?? "ABERTA",
+              si.status_manutencao ?? "ABERTA",
 
             descricao_servicos:
-              res.data.descricao_servicos ?? "",
-            observacoes: res.data.observacoes ?? "",
+              si.descricao_servicos ?? "",
+            observacoes: si.observacoes ?? "",
 
-            responsavel: res.data.responsavel ?? "",
-            substituto: res.data.substituto ?? "",
+            responsavel: si.responsavel ?? "",
+            substituto: si.substituto ?? "",
 
-            aproveitamento: res.data.aproveitamento ?? "",
-            inclusao_servico: res.data.inclusao_servico ?? "",
-            orgaos: res.data.orgaos ?? "",
-            tipo_programacao: res.data.tipo_programacao ?? "",
-            dias_excecao: res.data.dias_excecao ?? "",
-            tempo_retorno: res.data.tempo_retorno ?? "",
-            disponivel: res.data.disponivel ?? "",
+            aproveitamento: si.aproveitamento ?? "",
+            inclusao_servico: si.inclusao_servico ?? "",
+            orgaos: si.orgaos ?? "",
+            tipo_programacao: si.tipo_programacao ?? "",
+            dias_excecao: si.dias_excecao ?? "",
+            tempo_retorno: si.tempo_retorno ?? "",
+            disponivel: si.disponivel ?? "",
             risco_desligamento:
-              res.data.risco_desligamento ?? "",
+              si.risco_desligamento ?? "",
             condicoes_climaticas:
-              res.data.condicoes_climaticas ?? "",
+              si.condicoes_climaticas ?? "",
           });
         })
         .catch((err) => {
@@ -246,10 +269,19 @@ export default function SIForm() {
   ) {
     const { name, value } = e.target;
 
+    if (name === "id_subestacao") {
+      setForm((prev) => ({
+        ...prev,
+        id_subestacao: value === "" ? null : Number(value),
+        id_ativo: null,
+      }));
+      return;
+    }
+
     setForm((prev) => ({
       ...prev,
       [name]:
-        name === "id_subestacao" || name === "id_ativo"
+        name === "id_ativo"
           ? value === ""
             ? null
             : Number(value)
@@ -393,6 +425,10 @@ export default function SIForm() {
               value={form.especie ?? ""}
             >
               <option value="">Selecione</option>
+              {form.especie &&
+                !ESPECIES_SI.some((especie) => especie.value === form.especie) && (
+                  <option value={form.especie}>{form.especie}</option>
+                )}
               <option value="EAT">EAT</option>
               <option value="SPCS">SPCS</option>
               <option value="TELECON">TELECON</option>
@@ -421,6 +457,10 @@ export default function SIForm() {
               value={form.tipo ?? ""}
             >
               <option value="">Selecione</option>
+              {form.tipo &&
+                !TIPOS_SI.some((tipo) => tipo.value === form.tipo) && (
+                  <option value={form.tipo}>{form.tipo}</option>
+                )}
               <option value="PROGRAMADA">Programada</option>
               <option value="URGÊNCIA">Urgência</option>
               <option value="EMERGÊNCIA">Emergência</option>

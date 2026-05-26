@@ -18,6 +18,20 @@ const PRIORIDADES_SS = [
   { value: "NIVEL_6", label: "Nivel 6 - Monitoramento: conforme planejamento da O&M" },
 ];
 
+const LOCALIZACOES_FISICAS = [
+  { value: "Bom Jesus da Lapa-BA", label: "Bom Jesus da Lapa" },
+  { value: "Gentio do Ouro-BA", label: "Gentio do Ouro" },
+  { value: "Jaiba-MG", label: "Jaiba" },
+  { value: "BURITIZEIRO-MG", label: "Buritizeiro" },
+];
+
+const ESQUEMAS_SERVICO_SS = [
+  { value: "MANUTENÇÃO PREVENTIVA", label: "Manutencao Preventiva" },
+  { value: "MANUTENÇÃO CORRETIVA", label: "Manutencao Corretiva" },
+  { value: "Monitoramento", label: "Monitoramento" },
+  { value: "Atendimento Recomendação", label: "Atendimento Recomendacao" },
+];
+
 function normalizarPrioridadeSS(prioridade?: string | null) {
   if (prioridade === "ALTA") return "NIVEL_1";
   if (prioridade === "MEDIA") return "NIVEL_3";
@@ -176,6 +190,8 @@ export function SSForm() {
     if (form.id_subestacao) {
       api.get(`/ativos/${form.id_subestacao}`)
         .then(res => setAtivos(res.data));
+    } else {
+      setAtivos([]);
     }
   }, [form.id_subestacao]);
 
@@ -185,10 +201,19 @@ export function SSForm() {
   =============================== */
   useEffect(() => {
     if (isEdicao) {
-      api.get(`/ss/${id}`).then(res => {
+      api.get(`/ss/${id}`).then(async res => {
+        const ss = res.data;
+        let idSubestacao = ss.id_subestacao ?? null;
+
+        if (!idSubestacao && ss.id_ativo) {
+          const ativoRes = await api.get(`/ativo/${ss.id_ativo}`);
+          idSubestacao = ativoRes.data.id_subestacao ?? null;
+        }
+
         setForm({
-          ...res.data,
-          prioridade: normalizarPrioridadeSS(res.data.prioridade),
+          ...ss,
+          id_subestacao: idSubestacao,
+          prioridade: normalizarPrioridadeSS(ss.prioridade),
         });
       });
     }
@@ -206,9 +231,18 @@ function handleChange(
 
   const { name, value } = e.target;
 
+  if (name === "id_subestacao") {
+    setForm(prev => ({
+      ...prev,
+      id_subestacao: value === "" ? null : Number(value),
+      id_ativo: null,
+    }));
+    return;
+  }
+
   setForm(prev => ({
     ...prev,
-    [name]: name === "id_ativo" || name === "id_subestacao"
+    [name]: name === "id_ativo"
       ? value === "" ? null : Number(value)
       : value
   }));
@@ -394,11 +428,24 @@ async function salvarOuEditar() {
 
           <FormGroup>
             <label>Localização Física</label>
-            <input
+            <select
               name="localizacao"
-              value={form.localizacao}
+              value={form.localizacao ?? ""}
               onChange={handleChange}
-            />
+            >
+              <option value="">Selecione</option>
+
+              {form.localizacao &&
+                !LOCALIZACOES_FISICAS.some((local) => local.value === form.localizacao) && (
+                  <option value={form.localizacao}>{form.localizacao}</option>
+                )}
+
+              {LOCALIZACOES_FISICAS.map((local) => (
+                <option key={local.value} value={local.value}>
+                  {local.label}
+                </option>
+              ))}
+            </select>
           </FormGroup>
 
 
@@ -476,11 +523,15 @@ async function salvarOuEditar() {
 
             <select
               name="esquema_servico"
-              value={form.esquema_servico}
+              value={form.esquema_servico ?? ""}
               onChange={handleChange}
             >
 
               <option value="">Selecione</option>
+              {form.esquema_servico &&
+                !ESQUEMAS_SERVICO_SS.some((esquema) => esquema.value === form.esquema_servico) && (
+                  <option value={form.esquema_servico}>{form.esquema_servico}</option>
+                )}
               <option value="MANUTENÇÃO PREVENTIVA">Manutenção Preventiva</option>
               <option value="MANUTENÇÃO CORRETIVA">Manutenção Corretiva</option>
               <option value="Monitoramento">Monitoramento</option>
