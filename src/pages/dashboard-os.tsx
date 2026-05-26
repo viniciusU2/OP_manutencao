@@ -23,6 +23,14 @@ const HeaderActions = styled.div`
   display: flex;
   gap: 12px;
   flex-wrap: wrap; /* 🔥 evita quebrar layout com vários botões */
+
+  @media (max-width: 560px) {
+    width: 100%;
+
+    button {
+      flex: 1 1 150px;
+    }
+  }
 `;
 
 const TitleBlock = styled.div`
@@ -49,6 +57,10 @@ const Button = styled.button`
   &:hover {
     background: #1e40af;
   }
+
+  @media (max-width: 560px) {
+    width: 100%;
+  }
 `;
 
 /* FILTER CARD */
@@ -62,19 +74,36 @@ const FilterCard = styled.div`
 
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+  }
 `;
 
 const SearchInput = styled.input`
   flex: 1;
+  min-width: 220px;
   padding: 10px;
   border-radius: 6px;
   border: 1px solid #d1d5db;
+
+  @media (max-width: 720px) {
+    width: 100%;
+    min-width: 0;
+  }
 `;
 
 const Select = styled.select`
+  min-width: 180px;
   padding: 10px;
   border-radius: 6px;
   border: 1px solid #d1d5db;
+
+  @media (max-width: 720px) {
+    width: 100%;
+    min-width: 0;
+  }
 `;
 
 

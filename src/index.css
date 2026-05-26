@@ -127,10 +127,66 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    box-sizing: border-box;
+    scrollbar-color: #94a3b8 #e2e8f0;
+    scrollbar-width: thin;
   }
   body {
     @apply bg-background text-foreground;
+    min-width: 320px;
+    overflow-x: hidden;
   }
+
+  img,
+  svg,
+  canvas,
+  video {
+    max-width: 100%;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border: 2px solid #e2e8f0;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+[data-slot="table-container"]::-webkit-scrollbar {
+  height: 9px;
+}
+
+[data-slot="table-container"]::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+[data-slot="table-container"]::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-color: #f1f5f9;
 }
 
 @keyframes spin {
@@ -176,4 +232,22 @@
 /* Garante que o texto dos botões fique visível */
 .fc .fc-button .fc-button-text {
   color: hsl(var(--primary-foreground)) !important;
+}
+
+@media (max-width: 640px) {
+  .fc .fc-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .fc .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+  }
+
+  .fc .fc-button {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.78rem;
+  }
 }

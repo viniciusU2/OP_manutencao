@@ -12,11 +12,12 @@ import {
   Download,
   LogOut,
   Menu,
+  UserCog,
   Wrench
 } from "lucide-react"
 
 import { useAuth } from "../context/AuthContext"
-import { canManage } from "../lib/permissions"
+import { canDelete, canManage } from "../lib/permissions"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 
 /* ================= CONFIG ================= */
@@ -41,6 +42,8 @@ const Sidebar = styled.aside<{ $open: boolean; $collapsed: boolean }>`
   flex-direction: column;
   position: fixed;
   height: 100vh;
+  max-width: min(${SIDEBAR_EXPANDED}px, 86vw);
+  overflow: hidden;
   z-index: 50;
 
   transition: all 0.25s ease;
@@ -82,6 +85,28 @@ const Nav = styled.nav`
   flex-direction: column;
   gap: 6px;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-color: #475569 #0f172a;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #0f172a;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #475569;
+    border: 2px solid #0f172a;
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
 `
 
 const NavItem = styled(Link)<{ $active?: boolean; $collapsed?: boolean }>`
@@ -122,6 +147,7 @@ const NavItem = styled(Link)<{ $active?: boolean; $collapsed?: boolean }>`
 `
 
 const Footer = styled.div`
+  flex-shrink: 0;
   border-top: 1px solid #1e293b;
   padding: 16px;
 `
@@ -172,6 +198,7 @@ const LogoutButton = styled.button<{ $collapsed: boolean }>`
 
 const Content = styled.main<{ $collapsed: boolean }>`
   flex: 1;
+  min-width: 0;
   margin-left: ${({ $collapsed }) =>
     $collapsed ? `${SIDEBAR_COLLAPSED}px` : `${SIDEBAR_EXPANDED}px`};
 
@@ -181,7 +208,11 @@ const Content = styled.main<{ $collapsed: boolean }>`
 
   @media (max-width: 768px) {
     margin-left: 0;
-    padding: 20px;
+    padding: 74px 14px 20px;
+  }
+
+  @media (max-width: 480px) {
+    padding-inline: 10px;
   }
 `
 
@@ -191,10 +222,49 @@ const Topbar = styled.div`
   @media (max-width: 768px) {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 35;
     padding: 16px;
     background: white;
     border-bottom: 1px solid #e5e7eb;
   }
+`
+
+const TopbarTitle = styled.div`
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  color: #0f172a;
+
+  strong {
+    font-size: 14px;
+    line-height: 1.2;
+  }
+
+  span {
+    max-width: 190px;
+    overflow: hidden;
+    color: #64748b;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+`
+
+const MobileMenuButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
 `
 
 const CollapseButton = styled.div`
@@ -209,6 +279,10 @@ const CollapseButton = styled.div`
   align-items: center;
   justify-content: center;
   cursor: pointer;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `
 
 /* ================= MENU ================= */
@@ -222,6 +296,7 @@ const menu = [
   { name: "SI", path: "/si", icon: Calendar, restricted: true },
   { name: "Plano Manut.", path: "/planos-manutencao", icon: Wrench, restricted: true },
   { name: "Downloads", path: "/downloads", icon: Download, restricted: true },
+  { name: "Perfis", path: "/perfis", icon: UserCog, restricted: true, adminOnly: true },
 
 
 ]
@@ -234,7 +309,10 @@ export default function Layout() {
 
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
-  const visibleMenu = menu.filter((item) => !item.restricted || canManage(usuario?.role))
+  const visibleMenu = menu.filter((item) => {
+    if (item.adminOnly) return canDelete(usuario?.role)
+    return !item.restricted || canManage(usuario?.role)
+  })
 
   // Persistência
   useEffect(() => {
@@ -306,7 +384,13 @@ export default function Layout() {
 
       <Content $collapsed={collapsed}>
         <Topbar>
-          <Menu size={22} onClick={() => setOpen(true)} />
+          <MobileMenuButton type="button" onClick={() => setOpen(true)} aria-label="Abrir menu">
+            <Menu size={22} />
+          </MobileMenuButton>
+          <TopbarTitle>
+            <strong>O&amp;M</strong>
+            <span>{usuario?.nome || "Operacao manutencao"}</span>
+          </TopbarTitle>
         </Topbar>
 
         <Outlet />

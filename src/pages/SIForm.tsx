@@ -257,6 +257,11 @@ export default function SIForm() {
     }));
   }
 
+  function isAfter(start?: string | null, end?: string | null) {
+    if (!start || !end) return true;
+    return new Date(end).getTime() >= new Date(start).getTime();
+  }
+
   function validarFormulario() {
     if (!form.numero_os?.trim()) {
       toast.error("Informe o número da OS.");
@@ -265,6 +270,26 @@ export default function SIForm() {
 
     if (!form.id_subestacao) {
       toast.error("Selecione a subestação.");
+      return false;
+    }
+
+    if (!form.id_ativo) {
+      toast.error("Selecione o ativo.");
+      return false;
+    }
+
+    if (!form.tipo?.trim()) {
+      toast.error("Selecione o tipo da SI.");
+      return false;
+    }
+
+    if (!isAfter(form.data_inicio_preriodo_total, form.data_fim_preriodo_total)) {
+      toast.error("O fim do periodo total deve ser posterior ao inicio.");
+      return false;
+    }
+
+    if (!isAfter(form.data_inicio_preriodo_manutencao, form.data_fim_preriodo_manutencao)) {
+      toast.error("O fim da manutencao deve ser posterior ao inicio.");
       return false;
     }
 

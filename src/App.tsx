@@ -37,6 +37,7 @@ import { InspecaoDetalhe } from "./pages/InspecaoDetalhe";
 import PlanoManutencaoForm from "./pages/PlanoManutencaoForm";
 import PlanosManutencaoPage from "./pages/PlanosManutencaoPage";
 import DownloadsPage from "./pages/DownloadsPage";
+import PerfisPage from "./pages/PerfisPage";
 
 /* ================= STYLES ================= */
 
@@ -62,8 +63,9 @@ function ProtectedRoute({ children }: { children: JSX.Element }) {
 
 function RoleRoute({ allowedRoles }: { allowedRoles: string[] }) {
   const { usuario } = useAuth();
+  const normalizedRole = usuario?.role?.trim().toLowerCase();
 
-  if (!usuario || !allowedRoles.includes(usuario.role)) {
+  if (!usuario || !normalizedRole || !allowedRoles.includes(normalizedRole)) {
     return <Navigate to="/" replace />;
   }
 
@@ -137,6 +139,10 @@ function AppContent() {
           <Route path="/si/nova" element={<SIForm />} />
           <Route path="/si/:id" element={<SIForm />} />
           <Route path="/downloads" element={<DownloadsPage />} />
+        </Route>
+
+        <Route element={<RoleRoute allowedRoles={["admin"]} />}>
+          <Route path="/perfis" element={<PerfisPage />} />
         </Route>
       </Route>
 

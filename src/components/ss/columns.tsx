@@ -17,6 +17,33 @@ function getStatusVariant(status: string) {
   return "default";
 }
 
+function getStatusLabel(status: string) {
+  const s = status?.toUpperCase();
+
+  if (s === "ENCERRADA") return "Encerrada";
+  if (s === "EM_EXECUCAO") return "Em Execucao";
+  if (s === "PROGRAMADA") return "Programada";
+  if (s === "ABERTA") return "Aberta";
+
+  return status;
+}
+
+function getPrioridadeLabel(prioridade?: string) {
+  const p = prioridade?.toUpperCase();
+
+  if (p === "NIVEL_1") return "Nivel 1 - Emergencial";
+  if (p === "NIVEL_2") return "Nivel 2 - Urgente";
+  if (p === "NIVEL_3") return "Nivel 3 - Programado prioritario";
+  if (p === "NIVEL_4") return "Nivel 4 - Programado";
+  if (p === "NIVEL_5") return "Nivel 5 - Melhoria/Oportunidade";
+  if (p === "NIVEL_6") return "Nivel 6 - Monitoramento";
+  if (p === "ALTA") return "Nivel 1 - Emergencial";
+  if (p === "MEDIA") return "Nivel 3 - Programado prioritario";
+  if (p === "BAIXA") return "Nivel 5 - Melhoria/Oportunidade";
+
+  return prioridade || "-";
+}
+
 export const columns = (
   onDelete: (ss: SS) => void
 ): ColumnDef<SS>[] => [
@@ -37,13 +64,14 @@ export const columns = (
     header: "Status",
     cell: ({ row }) => (
       <Badge variant={getStatusVariant(row.original.status)}>
-        {row.original.status}
+        {getStatusLabel(row.original.status)}
       </Badge>
     ),
   },
   {
     accessorKey: "prioridade",
     header: "Prioridade",
+    cell: ({ row }) => getPrioridadeLabel(row.original.prioridade),
   },
   {
     accessorKey: "esquema_servico",

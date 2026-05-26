@@ -24,6 +24,14 @@ const PageTitle = styled.div`
     color: #6b7280;
     font-size: 14px;
   }
+
+  @media (max-width: 560px) {
+    margin-bottom: 16px;
+
+    h2 {
+      font-size: 22px;
+    }
+  }
 `;
 
 const Card = styled.div`
@@ -31,11 +39,15 @@ const Card = styled.div`
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+
+  @media (max-width: 560px) {
+    padding: 16px;
+  }
 `;
 
 const FormGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 18px;
 `;
 
@@ -78,6 +90,12 @@ const Actions = styled.div`
   margin-top: 24px;
   display: flex;
   justify-content: flex-end;
+
+  @media (max-width: 560px) {
+    button {
+      width: 100%;
+    }
+  }
 `;
 
 const Button = styled.button`
@@ -108,11 +126,25 @@ const FilterCard = styled.div`
   flex-wrap: wrap;
   gap: 12px;
 
+  select {
+    min-width: 180px;
+  }
+
   input,
   select {
     padding: 10px;
     border-radius: 6px;
     border: 1px solid #d1d5db;
+  }
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+
+    input,
+    select {
+      width: 100%;
+      min-width: 0;
+    }
   }
 `;
 

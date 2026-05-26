@@ -3,11 +3,28 @@ import styled from "styled-components";
 import api from "../api/api";
 import Container from "../components/Container";
 import { useParams, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 import type { SolicitacaoServico } from "../types/solicitacaoServico";
 import type { Ativo } from "../types/Ativo";
 import type { Subestacao } from "../types/Subestacao";
 
+const PRIORIDADES_SS = [
+  { value: "NIVEL_1", label: "Nivel 1 - Emergencial: 0 a 24h" },
+  { value: "NIVEL_2", label: "Nivel 2 - Urgente: ate 3 dias" },
+  { value: "NIVEL_3", label: "Nivel 3 - Programado prioritario: ate 15 dias" },
+  { value: "NIVEL_4", label: "Nivel 4 - Programado: ate 60 dias" },
+  { value: "NIVEL_5", label: "Nivel 5 - Melhoria/Oportunidade: ate 180 dias" },
+  { value: "NIVEL_6", label: "Nivel 6 - Monitoramento: conforme planejamento da O&M" },
+];
+
+function normalizarPrioridadeSS(prioridade?: string | null) {
+  if (prioridade === "ALTA") return "NIVEL_1";
+  if (prioridade === "MEDIA") return "NIVEL_3";
+  if (prioridade === "BAIXA") return "NIVEL_5";
+
+  return prioridade || "NIVEL_3";
+}
 
 /* ================= STYLES ================= */
 
@@ -127,7 +144,7 @@ export function SSForm() {
 
     descricao_problema: "",
 
-    prioridade: "MEDIA",
+    prioridade: "NIVEL_3",
     esquema_servico: "",
     centro_custo: "",
 
@@ -169,7 +186,10 @@ export function SSForm() {
   useEffect(() => {
     if (isEdicao) {
       api.get(`/ss/${id}`).then(res => {
-        setForm(res.data);
+        setForm({
+          ...res.data,
+          prioridade: normalizarPrioridadeSS(res.data.prioridade),
+        });
       });
     }
   }, [id, isEdicao]);
@@ -178,7 +198,7 @@ export function SSForm() {
   /* ===============================
      HANDLE CHANGE
   =============================== */
-  function handleChange(
+function handleChange(
   e: React.ChangeEvent<
     HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
   >
@@ -195,6 +215,45 @@ export function SSForm() {
 
 }
 
+function isAfter(start?: string | null, end?: string | null) {
+  if (!start || !end) return true;
+  return new Date(end).getTime() >= new Date(start).getTime();
+}
+
+function validarFormulario() {
+  if (!form.id_subestacao) {
+    toast.error("Selecione a subestacao.");
+    return false;
+  }
+
+  if (!form.id_ativo) {
+    toast.error("Selecione o ativo.");
+    return false;
+  }
+
+  if (!form.solicitante?.trim()) {
+    toast.error("Informe o solicitante.");
+    return false;
+  }
+
+  if (!form.esquema_servico?.trim()) {
+    toast.error("Selecione o esquema de servico.");
+    return false;
+  }
+
+  if (!form.descricao_problema?.trim()) {
+    toast.error("Descreva o problema.");
+    return false;
+  }
+
+  if (!isAfter(form.data_hora_solicitacao, form.data_hora_limite)) {
+    toast.error("A data limite deve ser posterior a data de solicitacao.");
+    return false;
+  }
+
+  return true;
+}
+
 
   /* ===============================
      SALVAR SS
@@ -202,6 +261,8 @@ export function SSForm() {
 async function salvarOuEditar() {
 
   try {
+
+    if (!validarFormulario()) return;
 
     const { numero_ss: _numeroSs, ...dadosEnvio } = form;
     void _numeroSs;
@@ -213,15 +274,17 @@ async function salvarOuEditar() {
 
     if (isEdicao) {
       await api.put(`/ss/${id}`, payload);
+      toast.success("SS atualizada com sucesso!");
     } else {
       await api.post("/ss", payload);
+      toast.success("SS cadastrada com sucesso!");
     }
 
-    alert("SS cadastrada com sucesso!");
     navigate("/ss");
 
   } catch (err) {
     console.error(err);
+    toast.error("Erro ao salvar SS.");
   }
 
 }
@@ -374,6 +437,22 @@ async function salvarOuEditar() {
         <FormGrid>
 
           <FormGroup>
+            <label>Status</label>
+
+            <select
+              name="status"
+              value={form.status}
+              onChange={handleChange}
+            >
+              <option value="ABERTA">Aberta</option>
+              <option value="PROGRAMADA">Programada</option>
+              <option value="EM_EXECUCAO">Em Execucao</option>
+              <option value="ENCERRADA">Encerrada</option>
+            </select>
+
+          </FormGroup>
+
+          <FormGroup>
             <label>Prioridade</label>
 
             <select
@@ -381,10 +460,11 @@ async function salvarOuEditar() {
               value={form.prioridade}
               onChange={handleChange}
             >
-
-              <option value="BAIXA">Baixa</option>
-              <option value="MEDIA">Média</option>
-              <option value="ALTA">Alta</option>
+              {PRIORIDADES_SS.map((prioridade) => (
+                <option key={prioridade.value} value={prioridade.value}>
+                  {prioridade.label}
+                </option>
+              ))}
 
             </select>
 

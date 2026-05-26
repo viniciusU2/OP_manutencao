@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../api/api";
 import { DataTable } from "../components/ui/data-table";
 import { columns } from "../components/ss/columns";
 import { toast } from "sonner";
 import type { SS } from "../types/SS";
+import type { Ativo } from "../types/Ativo";
 
 interface Props {
   search: string;
@@ -12,8 +13,8 @@ interface Props {
 }
 
 export function SSPage1({ search, status, subestacao }: Props) {
-  void subestacao;
   const [data, setData] = useState<SS[]>([]);
+  const [ativos, setAtivos] = useState<Ativo[]>([]);
 
   async function deletarSS(ss: SS) {
     if (!confirm(`Deseja excluir a SS ${ss.numero_ss}?`)) return;
@@ -40,6 +41,23 @@ export function SSPage1({ search, status, subestacao }: Props) {
     fetch();
   }, []);
 
+  useEffect(() => {
+    api
+      .get("/ativo")
+      .then((res) => setAtivos(res.data))
+      .catch(() => toast.error("Erro ao carregar ativos para filtro de subestacao"));
+  }, []);
+
+  const subestacaoPorAtivo = useMemo(() => {
+    return ativos.reduce<Record<number, number>>((acc, ativo) => {
+      if (ativo.id_ativo) {
+        acc[ativo.id_ativo] = ativo.id_subestacao;
+      }
+
+      return acc;
+    }, {});
+  }, [ativos]);
+
 
     
   /*==============FILTROS================= */
@@ -48,17 +66,19 @@ export function SSPage1({ search, status, subestacao }: Props) {
 
     const matchSearch =
       !search ||
-      ss.numero_ss.toLowerCase().includes(search.toLowerCase()) ||
+      (ss.numero_ss ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (ss.descricao_problema ?? "")
         .toLowerCase()
         .includes(search.toLowerCase());
 
     const matchStatus =
       status === "all" || ss.status === status;
-    
-    
 
-    return matchSearch && matchStatus
+    const matchSubestacao =
+      subestacao === "all" ||
+      (ss.id_ativo != null && subestacaoPorAtivo[ss.id_ativo] === Number(subestacao));
+
+    return matchSearch && matchStatus && matchSubestacao;
   });
 
   return (

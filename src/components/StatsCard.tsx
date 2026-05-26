@@ -57,30 +57,30 @@ export function StatsCard({
   return (
     <div
       className={`
-        flex items-center justify-between p-6 
-        bg-card border border-border rounded-2xl 
+        flex min-w-0 items-center justify-between gap-4 p-4 sm:p-6
+        bg-card border border-border rounded-lg
         hover:shadow-md transition-all duration-200
         border-l-4 ${selected.border}
       `}
     >
-      <div className="flex flex-col gap-1">
+      <div className="flex min-w-0 flex-col gap-1">
         <span className="text-sm text-muted-foreground font-medium">
           {title}
         </span>
 
-        <span className="text-3xl font-semibold tracking-tight text-foreground">
+        <span className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
           {safeValue}
         </span>
 
         {subtitle && (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground break-words">
             {subtitle}
           </span>
         )}
       </div>
 
-      <div className={`p-3.5 rounded-2xl ${selected.bg}`}>
-        <Icon size={32} className={selected.text} strokeWidth={2.2} />
+      <div className={`shrink-0 p-3 rounded-lg sm:p-3.5 ${selected.bg}`}>
+        <Icon size={28} className={selected.text} strokeWidth={2.2} />
       </div>
     </div>
   );

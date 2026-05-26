@@ -21,19 +21,36 @@ const FilterCard = styled.div`
 
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+  }
 `;
 
 const SearchInput = styled.input`
   flex: 1;
+  min-width: 220px;
   padding: 10px;
   border-radius: 6px;
   border: 1px solid #d1d5db;
+
+  @media (max-width: 720px) {
+    width: 100%;
+    min-width: 0;
+  }
 `;
 
 const Select = styled.select`
+  min-width: 180px;
   padding: 10px;
   border-radius: 6px;
   border: 1px solid #d1d5db;
+
+  @media (max-width: 720px) {
+    width: 100%;
+    min-width: 0;
+  }
 `;
 
 
@@ -41,7 +58,7 @@ export function SSPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [subestacao, setSubestacao] = useState<Subestacao[]>([]);
-  const [subestacaoSelecionada, setSubestacaoSelecionada] = useState("");
+  const [subestacaoSelecionada, setSubestacaoSelecionada] = useState("all");
   const [status, setStatus] = useState("all");
 
 
@@ -57,21 +74,14 @@ export function SSPage() {
         );
     }, []);
   
-    useEffect(() => {
-    if (subestacao.length > 0) {
-      setSubestacaoSelecionada(String(subestacao[0]?.id_subestacao ?? "all"));
-    }
-  }, [subestacao]);
-  
-
   return (
     <Container>
-      <div className="flex justify-between mb-4">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2>Solicitação de Intervenção</h2>
 
         <button
           onClick={() => navigate("/ss/nova")}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          className="w-full rounded bg-blue-600 px-4 py-2 text-white sm:w-auto"
         >
           + Nova SS
         </button>

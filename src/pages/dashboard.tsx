@@ -99,6 +99,10 @@ const Header = styled.header`
 
   @media (max-width: 720px) {
     flex-direction: column;
+
+    h1 {
+      font-size: 24px;
+    }
   }
 `;
 
@@ -106,6 +110,14 @@ const HeaderActions = styled.div`
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+
+  @media (max-width: 560px) {
+    width: 100%;
+
+    button {
+      flex: 1 1 140px;
+    }
+  }
 `;
 
 const ActionButton = styled.button`
@@ -169,6 +181,11 @@ const Select = styled.select`
   background: #ffffff;
   color: #334155;
   padding: 0 10px;
+
+  @media (max-width: 640px) {
+    width: 100%;
+    min-width: 0;
+  }
 `;
 
 const StatsGrid = styled.div`
@@ -223,6 +240,11 @@ const PanelHeader = styled.div`
   span {
     color: #64748b;
     font-size: 12px;
+  }
+
+  @media (max-width: 560px) {
+    align-items: flex-start;
+    flex-direction: column;
   }
 `;
 
@@ -335,6 +357,10 @@ const Fill = styled.div<{ $width: number }>`
 
 const CalendarWrap = styled.div`
   padding: 12px;
+
+  @media (max-width: 640px) {
+    padding: 8px;
+  }
 `;
 
 const Empty = styled.div`
@@ -388,6 +414,11 @@ function statusCounts(items: Array<{ status?: string }>) {
 
 function priorityScore(priority?: string) {
   const value = normalizedStatus(priority);
+  if (["NIVEL_1"].includes(value)) return 6;
+  if (["NIVEL_2"].includes(value)) return 5;
+  if (["NIVEL_3"].includes(value)) return 4;
+  if (["NIVEL_4"].includes(value)) return 3;
+  if (["NIVEL_5"].includes(value)) return 2;
   if (["ALTA", "URGENTE"].includes(value)) return 3;
   if (["MEDIA", "MEDIO"].includes(value)) return 2;
   return 1;
