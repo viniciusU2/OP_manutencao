@@ -502,8 +502,7 @@ export default function SIForm() {
               <option value="">Selecione</option>
               {ativos.map((a) => (
                 <option key={a.id_ativo} value={a.id_ativo}>
-                  {a.codigo_ativo} – {a.fase}
-                  {a.vao ? `-${a.vao}` : ""}
+                  {a.codigo_ativo} – {[a.fase, a.vao].filter(Boolean).join("-")}
                 </option>
               ))}
             </select>

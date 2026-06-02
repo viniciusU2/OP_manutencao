@@ -296,12 +296,13 @@ export  function OrdemServicoPage() {
 
   function validateForm() {
     const nextErrors: FieldErrors = {};
+    const temInstalacao = !!form.id_subestacao || !!form.instalacao?.trim();
 
-    if (!form.id_subestacao) {
+    if (!temInstalacao) {
       nextErrors.id_subestacao = "Selecione a instalacao.";
     }
 
-    if (!form.id_ativo) {
+    if (!form.id_ativo && !isEdicao) {
       nextErrors.id_ativo = "Selecione o ativo.";
     }
 
@@ -390,8 +391,21 @@ export  function OrdemServicoPage() {
 
 
 
-      const { numero_os: _numeroOs, ...formSemNumeroOs } = form;
+      const {
+        numero_os: _numeroOs,
+        id_tipo_ativo: _idTipoAtivo,
+        tipo_ativo: _tipoAtivo,
+        codigo_ativo: _codigoAtivo,
+        fase: _fase,
+        ativo: _ativo,
+        ...formSemNumeroOs
+      } = form;
       void _numeroOs;
+      void _idTipoAtivo;
+      void _tipoAtivo;
+      void _codigoAtivo;
+      void _fase;
+      void _ativo;
 
       const payload = {
         ...formSemNumeroOs,
