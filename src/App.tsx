@@ -38,6 +38,7 @@ import PlanoManutencaoForm from "./pages/PlanoManutencaoForm";
 import PlanosManutencaoPage from "./pages/PlanosManutencaoPage";
 import DownloadsPage from "./pages/DownloadsPage";
 import PerfisPage from "./pages/PerfisPage";
+import { useGerarOsPlanosManutencao } from "./hooks/useGerarOsPlanosManutencao";
 
 /* ================= STYLES ================= */
 
@@ -85,7 +86,9 @@ export default function App() {
 /* ================= APP CONTENT ================= */
 
 function AppContent() {
-  const { isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  useGerarOsPlanosManutencao(isAuthenticated);
 
   if (isLoading) {
     return <div style={{ textAlign: "center", padding: "100px" }}>Carregando...</div>;

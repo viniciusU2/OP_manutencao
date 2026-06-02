@@ -5,11 +5,18 @@ export interface OrdemServico {
   // 🔹 RELACIONAMENTOS
   id_subestacao?: number | null;
   id_ativo?: number | null;
+  id_tipo_ativo?: number | null;
   id_os?: number;
-  tipo_ativo?: string;   
+  tipo_ativo?: string | { nome?: string | null } | null;
+  ativo?: {
+    fase?: string | null;
+    id_tipo_ativo?: number | null;
+    tipo_ativo?: string | { nome?: string | null } | null;
+  } | null;
 
   especie?: string;
   codigo_ativo?: string;
+  fase?: string | null;
   numero_apr?: string;
 
   instalacao?: string;

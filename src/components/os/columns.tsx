@@ -5,6 +5,20 @@ import { StatusBadge } from "../../components/statusBadge";
 import { Trash2, Download } from "lucide-react";
 import { OnlyAdmin } from "../onlyAdmin";
 
+function getTipoEquipamento(os: OrdemServico) {
+  const tipo = os.tipo_ativo ?? os.ativo?.tipo_ativo;
+
+  if (typeof tipo === "string") {
+    return tipo || "-";
+  }
+
+  return tipo?.nome || os.ativo?.id_tipo_ativo || os.id_tipo_ativo || "-";
+}
+
+function getFaseEquipamento(os: OrdemServico) {
+  return os.fase || os.ativo?.fase || "-";
+}
+
 export const columns = (
   onDelete: (id: number) => void,
   onDownload: ( os: OrdemServico) => void
@@ -28,6 +42,16 @@ export const columns = (
   {
     accessorKey: "instalacao",
     header: " Instalacao",
+  },
+  {
+    id: "tipo_equipamento",
+    header: "Tipo Equip.",
+    cell: ({ row }) => getTipoEquipamento(row.original),
+  },
+  {
+    id: "fase_equipamento",
+    header: "Fase",
+    cell: ({ row }) => getFaseEquipamento(row.original),
   },
   {
     accessorKey: "especie",
