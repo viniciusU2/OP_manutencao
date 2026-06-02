@@ -8,6 +8,7 @@ import type { SI } from "../types/SI";
 import type { Subestacao } from "../types/Subestacao";
 import type { Ativo } from "../types/Ativo";
 import { useAuth } from "../context/AuthContext";
+import UsuarioSelect from "../components/UsuarioSelect";
 
 /* ================= STYLES ================= */
 
@@ -694,64 +695,20 @@ export default function SIForm() {
         <FormGrid>
           <FormGroup>
             <label>Responsável</label>
-            <select
+            <UsuarioSelect
               name="responsavel"
               onChange={handleChange}
               value={form.responsavel ?? ""}
-            >
-              <option value="">Selecione</option>
-              <option value="ALDENIR">
-                ALDENIR PEREIRA DE LIMA
-              </option>
-              <option value="ALESSANDRO PEREIRA">
-                ALESSANDRO PEREIRA
-              </option>
-              <option value="EDINEI ROCHA">EDINEI ROCHA</option>
-              <option value="EVALDO MENDONÇA DE SOUZA">
-                EVALDO MENDONÇA DE SOUZA
-              </option>
-              <option value="RANGEL ROGER VASCONCELOS">
-                RANGEL ROGER VASCONCELOS
-              </option>
-              <option value="MARCIO DA SILVA OLIVEIRA">
-                MARCIO DA SILVA OLIVEIRA
-              </option>
-              <option value="VINICIUS GAMA">VINICIUS GAMA</option>
-              <option value="WILSON MOREIRA JUNIOR">
-                WILSON MOREIRA JUNIOR
-              </option>
-            </select>
+            />
           </FormGroup>
 
           <FormGroup>
             <label>Substituto</label>
-            <select
+            <UsuarioSelect
               name="substituto"
               onChange={handleChange}
               value={form.substituto ?? ""}
-            >
-              <option value="">Selecione</option>
-              <option value="ALDENIR">
-                ALDENIR PEREIRA DE LIMA
-              </option>
-              <option value="ALESSANDRO PEREIRA">
-                ALESSANDRO PEREIRA
-              </option>
-              <option value="EDINEI ROCHA">EDINEI ROCHA</option>
-              <option value="EVALDO MENDONÇA DE SOUZA">
-                EVALDO MENDONÇA DE SOUZA
-              </option>
-              <option value="RANGEL ROGER VASCONCELOS">
-                RANGEL ROGER VASCONCELOS
-              </option>
-              <option value="MARCIO DA SILVA OLIVEIRA">
-                MARCIO DA SILVA OLIVEIRA
-              </option>
-              <option value="VINICIUS GAMA">VINICIUS GAMA</option>
-              <option value="WILSON MOREIRA JUNIOR">
-                WILSON MOREIRA JUNIOR
-              </option>
-            </select>
+            />
           </FormGroup>
         </FormGrid>
 

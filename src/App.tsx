@@ -36,6 +36,7 @@ import InspecaoForm from "./pages/InspecaoForm";
 import { InspecaoDetalhe } from "./pages/InspecaoDetalhe";
 import PlanoManutencaoForm from "./pages/PlanoManutencaoForm";
 import PlanosManutencaoPage from "./pages/PlanosManutencaoPage";
+import PlanoExecucoesPage from "./pages/PlanoExecucoesPage";
 import DownloadsPage from "./pages/DownloadsPage";
 import PerfisPage from "./pages/PerfisPage";
 import { useGerarOsPlanosManutencao } from "./hooks/useGerarOsPlanosManutencao";
@@ -134,6 +135,7 @@ function AppContent() {
           <Route path="/importar-ativos" element={<ImportarAtivos />} />
           <Route path="/item-template" element={<ItemTemplateForm />} />
           <Route path="/planos-manutencao" element={<PlanosManutencaoPage />} />
+          <Route path="/planos-manutencao/execucoes" element={<PlanoExecucoesPage />} />
           <Route path="/planos-manutencao/novo" element={<PlanoManutencaoForm />} />
           <Route path="/inspecao" element={<InspecaoForm />} />
           <Route path="/ss/nova" element={<SSForm />} />

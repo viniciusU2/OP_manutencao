@@ -8,6 +8,7 @@ import type {Ativo} from "../types/Ativo"
 import type {Subestacao} from "../types/Subestacao"
 import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
+import UsuarioSelect from "../components/UsuarioSelect";
 
 
 
@@ -635,20 +636,7 @@ export  function OrdemServicoPage() {
 
           <FormGroup $invalid={!!errors.responsavel}>
             <label>Responsável</label>
-  <select name="responsavel" onChange={handleChange} value={form.responsavel}>
-              <option value="">Selecione</option>
-              <option value="ALDENIR">ALDENIR PEREIRA DE LIMA</option>
-              <option value="ALESSANDRO PEREREIA">ALESSANDRO PEREIRA</option>
-              <option value="EDINEI ROCHA">EDINEI ROCHA</option>
-              <option value="EVALDO MENDONÇA DE SOUZA">EVALDO MENDONÇA DE SOUZA</option>
-              <option value="RANGEL ROGER VASCONCELOS">RANGEL ROGER VASCONCELOS</option>
-              <option value="MARCIO DA SILVA OLIVEIRA">MARCIO DA SILVA OLIVEIRA</option>
-              <option value="VINICIUS GAMA">VINICIUS GAMA</option>
-              <option value="WILSON MOREIRA JUNIOR">WILSON MOREIRA</option>
-
-
-
-            </select>
+            <UsuarioSelect name="responsavel" onChange={handleChange} value={form.responsavel} />
             {errors.responsavel && <ErrorText>{errors.responsavel}</ErrorText>}
           </FormGroup>
 
@@ -656,20 +644,7 @@ export  function OrdemServicoPage() {
             <label>Substituto</label>
          
 
-              <select name="substituto" onChange={handleChange} value={form.substituto}>
-              <option value="">Selecione</option>
-              <option value="ALDENIR">ALDENIR PEREIRA DE LIMA</option>
-              <option value="ALESSANDRO PEREREIA">ALESSANDRO PEREIRA</option>
-              <option value="EDINEI ROCHA">EDINEI ROCHA</option>
-              <option value="EVALDO MENDONÇA DE SOUZA">EVALDO MENDONÇA DE SOUZA</option>
-              <option value="RANGEL ROGER VASCONCELOS">RANGEL ROGER VASCONCELOS</option>
-              <option value="MARCIO DA SILVA OLIVEIRA">MARCIO DA SILVA OLIVEIRA</option>
-              <option value="VINICIUS GAMA">VINICIUS GAMA</option>
-              <option value="WILSON MOREIRA JUNIOR">WILSON MOREIRA</option>
-
-
-
-            </select>
+            <UsuarioSelect name="substituto" onChange={handleChange} value={form.substituto} />
           </FormGroup>
 
           <FormGroup>
@@ -708,18 +683,7 @@ export  function OrdemServicoPage() {
              <FormGroup $invalid={!!errors.responsavel_manutencao}>
             <label>Responsável Manutenção</label>
         
-              <select name="responsavel_manutencao" onChange={handleChange} value={form.responsavel_manutencao}>
-              <option value="">Selecione</option>
-              <option value="ALDENIR">ALDENIR PEREIRA DE LIMA</option>
-              <option value="ALESSANDRO PEREREIA">ALESSANDRO PEREIRA</option>
-              <option value="EDINEI ROCHA">EDINEI ROCHA</option>
-              <option value="EVALDO MENDONÇA DE SOUZA">EVALDO MENDONÇA DE SOUZA</option>
-              <option value="RANGEL ROGER VASCONCELOS">RANGEL ROGER VASCONCELOS</option>
-              <option value="MARCIO DA SILVA OLIVEIRA">MARCIO DA SILVA OLIVEIRA</option>
-              <option value="VINICIUS GAMA">VINICIUS GAMA</option>
-              <option value="WILSON MOREIRA JUNIOR">WILSON MOREIRA</option>
-
-            </select>
+            <UsuarioSelect name="responsavel_manutencao" onChange={handleChange} value={form.responsavel_manutencao} />
             {errors.responsavel_manutencao && <ErrorText>{errors.responsavel_manutencao}</ErrorText>}
           </FormGroup>
 
@@ -745,18 +709,7 @@ export  function OrdemServicoPage() {
              <FormGroup $invalid={!!errors.responsavel_operacao}>
             <label>Responsável Liberação</label>
         
-              <select name="responsavel_operacao" onChange={handleChange} value={form.responsavel_operacao}>
-              <option value="">Selecione</option>
-              <option value="ALDENIR">ALDENIR PEREIRA DE LIMA</option>
-              <option value="ALESSANDRO PEREREIA">ALESSANDRO PEREIRA</option>
-              <option value="EDINEI ROCHA">EDINEI ROCHA</option>
-              <option value="EVALDO MENDONÇA DE SOUZA">EVALDO MENDONÇA DE SOUZA</option>
-              <option value="RANGEL ROGER VASCONCELOS">RANGEL ROGER VASCONCELOS</option>
-              <option value="MARCIO DA SILVA OLIVEIRA">MARCIO DA SILVA OLIVEIRA</option>
-              <option value="VINICIUS GAMA">VINICIUS GAMA</option>
-              <option value="WILSON MOREIRA JUNIOR">WILSON MOREIRA</option>
-
-            </select>
+            <UsuarioSelect name="responsavel_operacao" onChange={handleChange} value={form.responsavel_operacao} />
             {errors.responsavel_operacao && <ErrorText>{errors.responsavel_operacao}</ErrorText>}
           </FormGroup>
 

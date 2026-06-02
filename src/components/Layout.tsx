@@ -13,7 +13,8 @@ import {
   LogOut,
   Menu,
   UserCog,
-  Wrench
+  Wrench,
+  ListChecks
 } from "lucide-react"
 
 import { useAuth } from "../context/AuthContext"
@@ -295,6 +296,7 @@ const menu = [
   { name: "SS", path: "/ss", icon: FileText, restricted: true },
   { name: "SI", path: "/si", icon: Calendar, restricted: true },
   { name: "Plano Manut.", path: "/planos-manutencao", icon: Wrench, restricted: true },
+  { name: "Exec. Planos", path: "/planos-manutencao/execucoes", icon: ListChecks, restricted: true },
   { name: "Downloads", path: "/downloads", icon: Download, restricted: true },
   { name: "Perfis", path: "/perfis", icon: UserCog, restricted: true, adminOnly: true },
 

@@ -16,7 +16,7 @@ function getTipoEquipamento(os: OrdemServico) {
 }
 
 function getFaseEquipamento(os: OrdemServico) {
-  return os.fase || os.ativo?.fase || "-";
+  return os.fase || os.ativo?.fase || os.complemento || "-";
 }
 
 export const columns = (
