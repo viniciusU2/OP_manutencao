@@ -45,6 +45,19 @@ async function baixarSI(si: SI) {
   }
 }
 
+  async function deletarSI(si: SI) {
+    if (!confirm(`Deseja excluir a SI ${si.numero_si}?`)) return;
+
+    try {
+      await api.delete(`/si/${si.id_si}`);
+      setData((prev) => prev.filter((item) => item.id_si !== si.id_si));
+      toast.success("SI excluida com sucesso");
+    } catch (error) {
+      console.error("Erro ao excluir SI:", error);
+      toast.error("Erro ao excluir SI");
+    }
+  }
+
   async function fetch() {
     try {
       const res = await api.get("/si");
@@ -82,7 +95,7 @@ async function baixarSI(si: SI) {
 
   return (
     <div className="container mx-auto py-6">
-      <DataTable columns={columns(baixarSI)} data={filteredData} />
+      <DataTable columns={columns(baixarSI, deletarSI)} data={filteredData} />
     </div>
   );
 }

@@ -114,9 +114,36 @@ const ESPECIES_SI = [
 ];
 
 const TIPOS_SI = [
-  { value: "PROGRAMADA", label: "Programada" },
-  { value: "URGÊNCIA", label: "Urgencia" },
-  { value: "EMERGÊNCIA", label: "Emergencia" },
+  { value: "TIPO 01", label: "TIPO 01" },
+  { value: "TIPO 02", label: "TIPO 02" },
+  { value: "TIPO 03", label: "TIPO 03" },
+  { value: "TIPO 04", label: "TIPO 04" },
+  {
+    value: "TIPO 05 - OUTROS AGENTES/SERVIÇOS INTERNOS",
+    label: "TIPO 05 - OUTROS AGENTES/SERVIÇOS INTERNOS",
+  },
+];
+
+const NATUREZAS_SI = [
+  "Manutenções corretivas",
+  "Manutenções preventivas",
+  "Testes em equipamentos da rede de operação",
+  "Teste ou energização de novos equipamentos",
+  "Intervenção p/ implantação Ampliação, Reforço e Melhorias",
+  "Desligamento por motivo de segurança Terc/serv. util. públ.",
+  "Restrição oper. temp.,função restr. equip. integram FT/usina",
+  "Restrição oper. temp.,função restr./indisp. equip./instal.",
+  "Indisp. FT vinc.Pesq/Desenv ANEEL,termos Art.23 Res.270-2007",
+  "Deslig. em função interv. equip. não integra rede operação",
+  "Indisp. equip. reserva para subst.equip. de Função Transm.",
+  "Desligamento de uma FT para atender solicitação do ONS",
+  "Demais nat: interv/restr oper atend solic. ñ enquad item ant",
+];
+
+const CARACTERISTICAS_INTERVENCAO_SI = [
+  "COM DESLIGAMENTO",
+  "INTERVENÇÃO PARA REALIZAÇÃO DE TESTES",
+  "SEM DESLIGAMENTO",
 ];
 
 /* ================= COMPONENT ================= */
@@ -140,6 +167,8 @@ export default function SIForm() {
 
     especie: "",
     numero_apr: "",
+    natureza: "",
+    caracteristica_intervencao: "",
     tipo: "",
 
     id_subestacao: null,
@@ -231,6 +260,8 @@ export default function SIForm() {
 
             especie: si.especie ?? "",
             numero_apr: si.numero_apr ?? "",
+            natureza: si.natureza ?? "",
+            caracteristica_intervencao: si.caracteristica_intervencao ?? "",
             tipo: si.tipo ?? "",
 
             status_manutencao:
@@ -462,9 +493,53 @@ export default function SIForm() {
                 !TIPOS_SI.some((tipo) => tipo.value === form.tipo) && (
                   <option value={form.tipo}>{form.tipo}</option>
                 )}
-              <option value="PROGRAMADA">Programada</option>
-              <option value="URGÊNCIA">Urgência</option>
-              <option value="EMERGÊNCIA">Emergência</option>
+              {TIPOS_SI.map((tipo) => (
+                <option key={tipo.value} value={tipo.value}>
+                  {tipo.label}
+                </option>
+              ))}
+            </select>
+          </FormGroup>
+
+          <FormGroup>
+            <label>Natureza</label>
+            <select
+              name="natureza"
+              onChange={handleChange}
+              value={form.natureza ?? ""}
+            >
+              <option value="">Selecione</option>
+              {form.natureza &&
+                !NATUREZAS_SI.includes(form.natureza) && (
+                  <option value={form.natureza}>{form.natureza}</option>
+                )}
+              {NATUREZAS_SI.map((natureza) => (
+                <option key={natureza} value={natureza}>
+                  {natureza}
+                </option>
+              ))}
+            </select>
+          </FormGroup>
+
+          <FormGroup>
+            <label>Caracterização da Intervenção</label>
+            <select
+              name="caracteristica_intervencao"
+              onChange={handleChange}
+              value={form.caracteristica_intervencao ?? ""}
+            >
+              <option value="">Selecione</option>
+              {form.caracteristica_intervencao &&
+                !CARACTERISTICAS_INTERVENCAO_SI.includes(form.caracteristica_intervencao) && (
+                  <option value={form.caracteristica_intervencao}>
+                    {form.caracteristica_intervencao}
+                  </option>
+                )}
+              {CARACTERISTICAS_INTERVENCAO_SI.map((caracteristica) => (
+                <option key={caracteristica} value={caracteristica}>
+                  {caracteristica}
+                </option>
+              ))}
             </select>
           </FormGroup>
         </FormGrid>

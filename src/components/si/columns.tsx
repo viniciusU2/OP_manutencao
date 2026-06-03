@@ -2,9 +2,14 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type { SI } from "../../types/SI";
 import { StatusBadge } from "../../components/statusBadge";
 import { Link } from "react-router-dom";
-import { Download } from "lucide-react";
+import { Download, Trash2 } from "lucide-react";
+import { Button } from "../../components/ui/button";
+import { OnlyAdmin } from "../onlyAdmin";
 
-export const columns = (onDownload: ( si: SI) => void): ColumnDef<SI>[] => [
+export const columns = (
+  onDownload: (si: SI) => void,
+  onDelete: (si: SI) => void
+): ColumnDef<SI>[] => [
   {
     accessorKey: "numero_si",
     header: "SI",
@@ -40,20 +45,28 @@ export const columns = (onDownload: ( si: SI) => void): ColumnDef<SI>[] => [
     id: "acoes",
     header: "",
     cell: ({ row }) => {
-      const os = row.original;
+      const si = row.original;
 
       return (
         <div className="flex gap-2">
-          {/* DOWNLOAD */}
           <button
-            onClick={() => onDownload(os)}
+            onClick={() => onDownload(si)}
             className="text-blue-500 hover:text-blue-700 transition"
             title="Baixar SI"
           >
             <Download size={18} />
           </button>
 
-    
+          <OnlyAdmin>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => onDelete(si)}
+              title="Excluir SI"
+            >
+              <Trash2 size={16} />
+            </Button>
+          </OnlyAdmin>
         </div>
       );
     },
