@@ -34,6 +34,7 @@ import { ImportarAtivos } from "./pages/Upload_ativos"
 import ItemTemplateForm from "./pages/ItemTemplateForm";
 import InspecaoForm from "./pages/InspecaoForm";
 import { InspecaoDetalhe } from "./pages/InspecaoDetalhe";
+import InspecoesPage from "./pages/InspecoesPage";
 import PlanoManutencaoForm from "./pages/PlanoManutencaoForm";
 import PlanosManutencaoPage from "./pages/PlanosManutencaoPage";
 import PlanoExecucoesPage from "./pages/PlanoExecucoesPage";
@@ -138,8 +139,11 @@ function AppContent() {
           <Route path="/planos-manutencao/execucoes" element={<PlanoExecucoesPage />} />
           <Route path="/planos-manutencao/novo" element={<PlanoManutencaoForm />} />
           <Route path="/inspecao" element={<InspecaoForm />} />
+          <Route path="/inspecoes" element={<InspecoesPage />} />
+          <Route path="/inspecoes/nova" element={<InspecaoForm />} />
           <Route path="/ss/nova" element={<SSForm />} />
           <Route path="/inspecoes/:id" element={<InspecaoDetalhe />} />
+          <Route path="/inspecoes/:id/editar" element={<InspecaoForm />} />
           <Route path="/ss/:id" element={<SSForm />} />
           <Route path="/si/nova" element={<SIForm />} />
           <Route path="/si/:id" element={<SIForm />} />

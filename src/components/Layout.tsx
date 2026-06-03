@@ -297,6 +297,7 @@ const menu = [
   { name: "SI", path: "/si", icon: Calendar, restricted: true },
   { name: "Plano Manut.", path: "/planos-manutencao", icon: Wrench, restricted: true },
   { name: "Exec. Planos", path: "/planos-manutencao/execucoes", icon: ListChecks, restricted: true },
+  { name: "Inspeções", path: "/inspecoes", icon: ListChecks, restricted: true },
   { name: "Downloads", path: "/downloads", icon: Download, restricted: true },
   { name: "Perfis", path: "/perfis", icon: UserCog, restricted: true, adminOnly: true },
 

@@ -72,7 +72,7 @@ export function AtivoDetalhe() {
           Ativo não encontrado
         </p>
         <Button asChild className="mt-4">
-          <Link to="/ativos">Voltar</Link>
+          <Link to="/ativo">Voltar</Link>
         </Button>
       </div>
     );
@@ -209,7 +209,7 @@ export function AtivoDetalhe() {
         </Button>
 
         <Button asChild>
-          <Link to={`/ativos/${ativo.id_ativo}/editar`}>
+          <Link to={`/ativo/${ativo.id_ativo}`}>
             Editar
           </Link>
         </Button>

@@ -1,72 +1,108 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Separator } from "../components/ui/separator";
-import { Button } from "../components/ui/button";
-import { ArrowLeft, Edit, Trash2, Calendar, User } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Calendar, Edit, Trash2, User } from "lucide-react";
+import { toast } from "sonner";
 
 import api from "../api/api";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Separator } from "../components/ui/separator";
 import { OnlyAdmin, OnlyMaintainerOrAdmin } from "../components/onlyAdmin";
 
-interface ItemInspecao {
-  item: string;
-  status: "OK" | "NOK";
-  observacao?: string;
+interface Resultado {
+  id_resultado: number;
+  id_plano_item: number;
+  nome_item?: string;
+  valor_referencia?: string | number | null;
+  tolerancia?: string | number | null;
+  valor_medido?: string | number | null;
+  unidade?: string;
+  status_item: "OK" | "NOK" | "NA";
+  observacao_item?: string;
 }
 
-interface InspecaoDetalhe {
+interface InspecaoDetalheData {
   id_inspecao: number;
   id_ativo: number;
+  id_os?: number | null;
+  numero_os?: string | null;
+  numero_apr?: string | null;
   data_inspecao: string;
   periodicidade: string;
-  status_geral: "OK" | "NOK";
-  tecnico_responsavel?: string;
-  observacoes?: string;
+  responsavel?: string;
+  observacao_geral?: string;
+  status_geral: "OK" | "NOK" | "NA";
   codigo_ativo?: string;
   fabricante?: string;
   modelo?: string;
   fase?: string;
-  itens_inspecionados?: ItemInspecao[];
+  vao?: string;
+  instalacao?: string;
+  tipo_ativo?: string;
+  resultados?: Resultado[];
+}
+
+function statusClass(status: string) {
+  if (status === "OK") return "bg-green-100 text-green-700";
+  if (status === "NOK") return "bg-red-100 text-red-700";
+  return "bg-slate-100 text-slate-700";
+}
+
+function formatarData(data?: string) {
+  if (!data) return "-";
+  return new Date(data).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export function InspecaoDetalhe() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-
-  const [inspecao, setInspecao] = useState<InspecaoDetalhe | null>(null);
+  const [inspecao, setInspecao] = useState<InspecaoDetalheData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get(`/inspecoes/${id}`)
-      .then(res => {
-        setInspecao(res.data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+    api
+      .get(`/inspecoes/${id}`)
+      .then((res) => setInspecao(res.data))
+      .catch(() => toast.error("Erro ao carregar inspeção"))
+      .finally(() => setLoading(false));
   }, [id]);
 
+  async function excluir() {
+    if (!id || !confirm(`Deseja excluir a inspeção #${id}?`)) return;
+
+    try {
+      await api.delete(`/inspecoes/${id}`);
+      toast.success("Inspeção excluída");
+      navigate("/inspecoes");
+    } catch {
+      toast.error("Erro ao excluir inspeção");
+    }
+  }
+
   if (loading) return <div className="p-8 text-center">Carregando inspeção...</div>;
-  if (!inspecao) return <div className="p-8 text-center text-red-600">Inspeção não encontrada</div>;
+  if (!inspecao) {
+    return <div className="p-8 text-center text-red-600">Inspeção não encontrada</div>;
+  }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Cabeçalho */}
-      <div className="flex justify-between items-start">
+    <div className="mx-auto max-w-5xl space-y-6 p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="outline" size="icon" onClick={() => navigate("/inspecoes")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
             <h1 className="text-3xl font-bold">Inspeção #{inspecao.id_inspecao}</h1>
             <p className="text-muted-foreground flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              {new Date(inspecao.data_inspecao).toLocaleDateString('pt-BR', {
-                day: '2-digit', month: 'long', year: 'numeric'
-              })}
+              {formatarData(inspecao.data_inspecao)}
             </p>
           </div>
         </div>
@@ -80,7 +116,7 @@ export function InspecaoDetalhe() {
             </Button>
           </OnlyMaintainerOrAdmin>
           <OnlyAdmin>
-            <Button variant="destructive">
+            <Button variant="destructive" onClick={excluir}>
               <Trash2 className="mr-2 h-4 w-4" /> Excluir
             </Button>
           </OnlyAdmin>
@@ -89,103 +125,124 @@ export function InspecaoDetalhe() {
 
       <Separator />
 
-      {/* Status Principal */}
       <div className="flex items-center gap-4">
-        <span className="text-lg font-medium">Status Geral da Inspeção:</span>
-        {inspecao.status_geral === "OK" ? (
-          <Badge className="bg-green-600 text-white text-xl px-6 py-1.5">✅ OK</Badge>
-        ) : (
-          <Badge className="bg-red-600 text-white text-xl px-6 py-1.5">❌ NOK</Badge>
-        )}
+        <span className="text-lg font-medium">Status Geral:</span>
+        <Badge className={`${statusClass(inspecao.status_geral)} text-lg px-5 py-1`}>
+          {inspecao.status_geral}
+        </Badge>
       </div>
 
-      {/* Ativo */}
       <Card>
         <CardHeader>
           <CardTitle>Ativo Inspecionado</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <div>
               <p className="text-sm text-muted-foreground">Código</p>
-              <p className="font-semibold">{inspecao.codigo_ativo}</p>
+              <p className="font-semibold">{inspecao.codigo_ativo || "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Equipamento</p>
-              <p className="font-medium">{inspecao.fabricante} {inspecao.modelo}</p>
+              <p className="text-sm text-muted-foreground">Tipo</p>
+              <p className="font-medium">{inspecao.tipo_ativo || "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Fase</p>
-              <p className="font-medium">{inspecao.fase || "-"}</p>
+              <p className="text-sm text-muted-foreground">Instalação</p>
+              <p className="font-medium">{inspecao.instalacao || "-"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Fase / Vão</p>
+              <p className="font-medium">
+                {[inspecao.fase, inspecao.vao].filter(Boolean).join(" - ") || "-"}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">OS relacionada</p>
+              {inspecao.id_os && inspecao.numero_os ? (
+                <Link className="font-medium text-blue-700 underline" to={`/os/${inspecao.id_os}`}>
+                  {inspecao.numero_os}
+                </Link>
+              ) : (
+                <p className="font-medium">-</p>
+              )}
+              {inspecao.numero_apr && (
+                <p className="text-sm text-muted-foreground">{inspecao.numero_apr}</p>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Informações da Inspeção */}
       <Card>
         <CardHeader>
           <CardTitle>Informações da Inspeção</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <div>
               <p className="text-sm text-muted-foreground">Periodicidade</p>
               <p className="font-medium text-lg">{inspecao.periodicidade}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground flex items-center gap-2">
-                <User className="h-4 w-4" /> Técnico Responsável
+                <User className="h-4 w-4" /> Responsável
               </p>
-              <p className="font-medium">{inspecao.tecnico_responsavel || "Não informado"}</p>
+              <p className="font-medium">{inspecao.responsavel || "Não informado"}</p>
             </div>
           </div>
 
-          {inspecao.observacoes && (
+          {inspecao.observacao_geral && (
             <div>
-              <p className="text-sm text-muted-foreground mb-2">Observações Gerais</p>
-              <div className="bg-muted/60 p-5 rounded-xl text-[15px] leading-relaxed">
-                {inspecao.observacoes}
+              <p className="text-sm text-muted-foreground mb-2">Observação Geral</p>
+              <div className="bg-muted/60 rounded-lg p-5 text-[15px] leading-relaxed">
+                {inspecao.observacao_geral}
               </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Itens Inspecionados (se existir) */}
-      {inspecao.itens_inspecionados && inspecao.itens_inspecionados.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Itens Inspecionados</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {inspecao.itens_inspecionados.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center border p-4 rounded-lg">
+      <Card>
+        <CardHeader>
+          <CardTitle>Itens Inspecionados</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {(inspecao.resultados ?? []).length === 0 ? (
+              <p className="text-muted-foreground">Nenhum item registrado.</p>
+            ) : (
+              (inspecao.resultados ?? []).map((resultado) => (
+                <div
+                  key={resultado.id_resultado}
+                  className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
                   <div>
-                    <p className="font-medium">{item.item}</p>
-                    {item.observacao && (
-                      <p className="text-sm text-muted-foreground mt-1">{item.observacao}</p>
+                    <p className="font-medium">{resultado.nome_item || "-"}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Medido: {resultado.valor_medido ?? "-"} {resultado.unidade || ""} | Ref:{" "}
+                      {resultado.valor_referencia ?? "-"} | Tol: {resultado.tolerancia ?? "-"}
+                    </p>
+                    {resultado.observacao_item && (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {resultado.observacao_item}
+                      </p>
                     )}
                   </div>
-                  {item.status === "OK" ? (
-                    <Badge className="bg-green-100 text-green-700">OK</Badge>
-                  ) : (
-                    <Badge className="bg-red-100 text-red-700">NOK</Badge>
-                  )}
+                  <Badge className={statusClass(resultado.status_item)}>
+                    {resultado.status_item}
+                  </Badge>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Ações finais */}
       <div className="flex gap-3 pt-4">
         <Button variant="outline" asChild>
-          <Link to={`/ativos/${inspecao.id_ativo}`}>Ver Ativo Completo</Link>
+          <Link to={`/ativo/${inspecao.id_ativo}`}>Ver Ativo</Link>
         </Button>
-        <Button variant="outline" onClick={() => navigate(-1)}>
+        <Button variant="outline" onClick={() => navigate("/inspecoes")}>
           Voltar
         </Button>
       </div>

@@ -1,28 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import { toast } from "sonner";
 
 import api from "../api/api";
-
-import { Input } from "../components/ui/input";
+import UsuarioSelect from "../components/UsuarioSelect";
 import { Button } from "../components/ui/button";
+import { Card } from "../components/ui/card";
+import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "../components/ui/select";
-import { Card } from "../components/ui/card";
-
-// ================= TYPES =================
 type Status = "OK" | "NOK" | "NA";
 
 interface ResultadoItem {
-  id_item_template: number;
-  valor_medido?: number;
+  id_plano_item: number;
+  valor_medido?: number | "";
   status_item: Status;
   observacao_item?: string;
 }
@@ -31,332 +23,476 @@ interface Ativo {
   id_ativo: number;
   codigo_ativo: string;
   id_tipo_ativo: number;
+  fase?: string;
+  vao?: string;
+  tipo_ativo?: string;
 }
 
-// ================= STYLES =================
+interface PlanoItem {
+  id_plano_item: number;
+  nome_item: string;
+  descricao?: string;
+  periodicidade: string;
+  unidade?: string;
+  valor_referencia?: number | string | null;
+  tolerancia?: number | string | null;
+  ordem?: number;
+}
+
+interface OrdemServicoOption {
+  id_os: number;
+  numero_os: string;
+  numero_apr?: string;
+  status?: string;
+  data_inicio_programado?: string | null;
+}
+
+const periodicidades = [
+  "SEMANAL",
+  "MENSAL",
+  "BIMESTRAL",
+  "TRIMESTRAL",
+  "SEMESTRAL",
+  "3_ANOS",
+  "5_ANOS",
+  "6_ANOS",
+];
+
 const Container = styled.div`
   padding: 24px;
 `;
 
-const Title = styled.h1`
-  font-size: 22px;
-  font-weight: bold;
-  margin-bottom: 20px;
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 18px;
+
+  @media (max-width: 700px) {
+    align-items: stretch;
+    flex-direction: column;
+  }
 `;
 
-const Form = styled.form`
+const Title = styled.h1`
+  font-size: 22px;
+  font-weight: 700;
+`;
+
+const FormGrid = styled.form`
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+
+  @media (max-width: 760px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const Field = styled.label`
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+`;
+
+const Select = styled.select`
+  width: 100%;
+  height: 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  padding: 0 10px;
 `;
 
 const FullWidth = styled.div`
-  grid-column: span 2;
+  grid-column: 1 / -1;
 `;
 
-const Section = styled.div`
-  grid-column: span 2;
-  margin-top: 20px;
+const Checklist = styled.div`
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 12px;
 `;
 
-const CardItem = styled.div<{ status: Status }>`
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 12px;
-  border: 1px solid #e5e7eb;
-
-  background-color: ${({ status }) =>
-    status === "OK"
-      ? "#f0fdf4"
-      : status === "NOK"
-      ? "#fef2f2"
-      : "#ffffff"};
+const CardItem = styled.div<{ $status: Status }>`
+  border: 1px solid
+    ${({ $status }) =>
+      $status === "NOK" ? "#fecaca" : $status === "OK" ? "#bbf7d0" : "#e5e7eb"};
+  border-radius: 8px;
+  padding: 14px;
+  background:
+    ${({ $status }) =>
+      $status === "NOK" ? "#fef2f2" : $status === "OK" ? "#f0fdf4" : "#ffffff"};
 `;
 
-const HeaderItem = styled.div`
+const ItemHeader = styled.div`
   display: flex;
   justify-content: space-between;
+  gap: 10px;
   margin-bottom: 10px;
 `;
 
-const StatusBadge = styled.span<{ status: Status }>`
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: bold;
-
-  background-color: ${({ status }) =>
-    status === "OK"
-      ? "#dcfce7"
-      : status === "NOK"
-      ? "#fee2e2"
-      : "#e5e7eb"};
-`;
-
-const GridItem = styled.div`
+const ItemGrid = styled.div`
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr 2fr;
+  grid-template-columns: minmax(120px, 1fr) 120px minmax(160px, 2fr);
   gap: 10px;
-  align-items: center;
+
+  @media (max-width: 760px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
-const Info = styled.div`
+const Meta = styled.div`
+  color: #64748b;
   font-size: 12px;
-  opacity: 0.7;
+  margin-bottom: 10px;
+`;
+
+const EmptyState = styled.div`
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  color: #64748b;
+  padding: 18px;
+  text-align: center;
 `;
 
 const Actions = styled.div`
-  grid-column: span 2;
+  grid-column: 1 / -1;
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
 `;
 
-// ================= COMPONENT =================
-export default function InspecaoForm() {
-  const [ativos, setAtivos] = useState<Ativo[]>([]);
-  const [templates, setTemplates] = useState<any[]>([]);
+function numero(valor: unknown) {
+  if (valor === null || valor === undefined || valor === "") return undefined;
+  const n = Number(valor);
+  return Number.isFinite(n) ? n : undefined;
+}
 
+export default function InspecaoForm() {
+  const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const isEditing = Boolean(id);
+
+  const [ativos, setAtivos] = useState<Ativo[]>([]);
+  const [itens, setItens] = useState<PlanoItem[]>([]);
+  const [ordensServico, setOrdensServico] = useState<OrdemServicoOption[]>([]);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     id_ativo: 0,
+    id_os: 0,
     periodicidade: "MENSAL",
     responsavel: "",
     observacao_geral: "",
     resultados: [] as ResultadoItem[],
   });
 
-  // ================= LOAD DADOS =================
   useEffect(() => {
-    const loadInitial = async () => {
-      try {
-        const [ativosRes] = await Promise.all([api.get("/ativo")]);
-
-        setAtivos(ativosRes.data);
-      } catch {
-        toast.error("Erro ao carregar dados");
-      }
-    };
-
-    loadInitial();
+    api
+      .get("/ativo")
+      .then((res) => setAtivos(res.data))
+      .catch(() => toast.error("Erro ao carregar ativos"));
   }, []);
 
-  // ================= PEGAR TIPO DO ATIVO =================
-  const tipoAtivoId = ativos.find(
-    (a) => a.id_ativo === form.id_ativo
-  )?.id_tipo_ativo;
-
-  // ================= LOAD TEMPLATE =================
   useEffect(() => {
-    const loadTemplates = async () => {
-      if (!tipoAtivoId) return;
+    if (isEditing) return;
+    const ativoParam = Number(searchParams.get("id_ativo"));
+    const osParam = Number(searchParams.get("id_os"));
+    if (Number.isFinite(ativoParam) && ativoParam > 0) {
+      setForm((prev) => ({
+        ...prev,
+        id_ativo: ativoParam,
+        id_os: Number.isFinite(osParam) && osParam > 0 ? osParam : prev.id_os,
+      }));
+    }
+  }, [isEditing, searchParams]);
 
-      try {
-        const { data } = await api.get(
-          `/inspecoes/item-templates/tipo/${tipoAtivoId}`
-        );
+  useEffect(() => {
+    if (!isEditing) return;
 
-        const filtrados = data.filter(
-          (i: any) => i.periodicidade === form.periodicidade
-        );
+    setLoading(true);
+    api
+      .get(`/inspecoes/${id}`)
+      .then((res) => {
+        const inspecao = res.data;
+        setForm({
+          id_ativo: inspecaoNumero(inspecao.id_ativo),
+          id_os: inspecaoNumero(inspecao.id_os),
+          periodicidade: inspecaoTexto(inspecao.periodicidade, "MENSAL"),
+          responsavel: inspecaoTexto(inspecao.responsavel),
+          observacao_geral: inspecaoTexto(inspecao.observacao_geral),
+          resultados: (inspecao.resultados ?? []).map((resultado: any) => ({
+            id_plano_item: resultado.id_plano_item,
+            valor_medido: resultado.valor_medido ?? "",
+            status_item: resultado.status_item ?? "NA",
+            observacao_item: resultado.observacao_item ?? "",
+          })),
+        });
+      })
+      .catch(() => toast.error("Erro ao carregar inspeção"))
+      .finally(() => setLoading(false));
+  }, [id, isEditing]);
 
-        setTemplates(filtrados);
+  useEffect(() => {
+    if (!form.id_ativo) {
+      setItens([]);
+      setOrdensServico([]);
+      return;
+    }
 
-        const resultados = filtrados.map((item: any) => ({
-          id_item_template: item.id_item_template,
-          status_item: "NA" as Status,
-          valor_medido: undefined,
-          observacao_item: "",
-        }));
+    api
+      .get("/os", { params: { id_ativo: form.id_ativo } })
+      .then((res) => setOrdensServico(res.data))
+      .catch(() => toast.error("Erro ao carregar OS do ativo"));
 
-        setForm((prev) => ({ ...prev, resultados }));
-      } catch {
-        toast.error("Erro ao carregar templates");
-      }
-    };
+    api
+      .get(`/inspecoes/pendentes/${form.id_ativo}`, {
+        params: { periodicidade: form.periodicidade },
+      })
+      .then((res) => {
+        const novosItens: PlanoItem[] = res.data;
+        setItens(novosItens);
+        setForm((prev) => {
+          const existentes = new Map(
+            prev.resultados.map((resultado) => [resultado.id_plano_item, resultado])
+          );
+          return {
+            ...prev,
+            resultados: novosItens.map((item) => ({
+              id_plano_item: item.id_plano_item,
+              status_item: existentes.get(item.id_plano_item)?.status_item ?? "NA",
+              valor_medido: existentes.get(item.id_plano_item)?.valor_medido ?? "",
+              observacao_item: existentes.get(item.id_plano_item)?.observacao_item ?? "",
+            })),
+          };
+        });
+      })
+      .catch(() => toast.error("Erro ao carregar itens de inspeção"));
+  }, [form.id_ativo, form.periodicidade]);
 
-    loadTemplates();
-  }, [tipoAtivoId, form.periodicidade]);
+  const ativoSelecionado = useMemo(
+    () => ativos.find((ativo) => ativo.id_ativo === form.id_ativo),
+    [ativos, form.id_ativo]
+  );
 
-  // ================= LÓGICA =================
-  const calcularStatus = (valor: number, item: any): Status => {
-    if (!item.valor_referencia || !item.tolerancia) return "OK";
+  function updateResultado(index: number, field: keyof ResultadoItem, value: any) {
+    setForm((prev) => {
+      const resultados = [...prev.resultados];
+      resultados[index] = { ...resultados[index], [field]: value };
+      return { ...prev, resultados };
+    });
+  }
 
-    const min = item.valor_referencia - item.tolerancia;
-    const max = item.valor_referencia + item.tolerancia;
+  function calcularStatus(valor: number | undefined, item: PlanoItem): Status {
+    const referencia = numero(item.valor_referencia);
+    const tolerancia = numero(item.tolerancia);
+    if (valor === undefined || referencia === undefined || tolerancia === undefined) {
+      return valor === undefined ? "NA" : "OK";
+    }
+    return valor < referencia - tolerancia || valor > referencia + tolerancia ? "NOK" : "OK";
+  }
 
-    return valor < min || valor > max ? "NOK" : "OK";
-  };
-
-  const updateResultado = (
-    index: number,
-    field: keyof ResultadoItem,
-    value: any
-  ) => {
-    const novos = [...form.resultados];
-    const atual = novos[index];
-    if (!atual) return;
-
-    novos[index] = { ...atual, [field]: value };
-
-    setForm((prev) => ({ ...prev, resultados: novos }));
-  };
-
-  // ================= SUBMIT =================
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    try {
-      await api.post("/inspecoes", form);
-      toast.success("Inspeção salva!");
-    } catch {
-      toast.error("Erro ao salvar");
+    if (!form.id_ativo) {
+      toast.error("Selecione um ativo");
+      return;
     }
-  };
 
-  // ================= RENDER =================
+    const payload = {
+      ...form,
+      id_os: form.id_os || null,
+      resultados: form.resultados.map((resultado) => ({
+        ...resultado,
+        valor_medido: resultado.valor_medido === "" ? null : resultado.valor_medido,
+      })),
+    };
+
+    try {
+      const res = isEditing
+        ? await api.put(`/inspecoes/${id}`, payload)
+        : await api.post("/inspecoes", payload);
+      toast.success(isEditing ? "Inspeção atualizada" : "Inspeção salva");
+      navigate(`/inspecoes/${res.data.id_inspecao}`);
+    } catch {
+      toast.error("Erro ao salvar inspeção");
+    }
+  }
+
   return (
     <Container>
-      <Card className="p-8">
-        <Title>Nova Inspeção</Title>
+      <Header>
+        <Title>{isEditing ? "Editar Inspeção" : "Nova Inspeção"}</Title>
+        <Button variant="outline" type="button" onClick={() => navigate("/inspecoes")}>
+          Voltar
+        </Button>
+      </Header>
 
-        <Form onSubmit={handleSubmit}>
-          {/* ATIVO SELECT */}
-          <Select
-            value={form.id_ativo ? String(form.id_ativo) : ""}
-            onValueChange={(v) =>
-              setForm({ ...form, id_ativo: Number(v) })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o ativo" />
-            </SelectTrigger>
-            <SelectContent>
-              {ativos.map((a) => (
-                <SelectItem
-                  key={a.id_ativo}
-                  value={String(a.id_ativo)}
-                >
-                  {a.id_ativo} - {a.codigo_ativo}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* PERIODICIDADE */}
-          <Select
-            value={form.periodicidade}
-            onValueChange={(v) =>
-              setForm({ ...form, periodicidade: v })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="SEMANAL">Semanal</SelectItem>
-              <SelectItem value="MENSAL">Mensal</SelectItem>
-              <SelectItem value="BIMESTRAL">Bimestral</SelectItem>
-              <SelectItem value="TRIMESTRAL">Trimestral</SelectItem>
-              <SelectItem value="SEMESTRAL">Semestral</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* RESPONSAVEL */}
-          <Input
-            placeholder="Responsável"
-            onChange={(e) =>
-              setForm({ ...form, responsavel: e.target.value })
-            }
-          />
-
-          <FullWidth>
-            <Textarea
-              placeholder="Observação geral"
+      <Card className="p-6">
+        <FormGrid onSubmit={handleSubmit}>
+          <Field>
+            Ativo
+            <Select
+              value={form.id_ativo ? String(form.id_ativo) : ""}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  observacao_geral: e.target.value,
-                })
+                setForm({ ...form, id_ativo: Number(e.target.value), id_os: 0 })
+              }
+              disabled={loading || isEditing}
+            >
+              <option value="">Selecione o ativo</option>
+              {ativos.map((ativo) => (
+                <option key={ativo.id_ativo} value={ativo.id_ativo}>
+                  {ativo.codigo_ativo} - {[ativo.fase, ativo.vao].filter(Boolean).join(" - ")}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field>
+            Periodicidade
+            <Select
+              value={form.periodicidade}
+              onChange={(e) => setForm({ ...form, periodicidade: e.target.value })}
+              disabled={loading}
+            >
+              {periodicidades.map((periodicidade) => (
+                <option key={periodicidade} value={periodicidade}>
+                  {periodicidade}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field>
+            Responsável
+            <UsuarioSelect
+              value={form.responsavel}
+              onChange={(e) => setForm({ ...form, responsavel: e.target.value })}
+            />
+          </Field>
+
+          <Field>
+            OS relacionada
+            <Select
+              value={form.id_os ? String(form.id_os) : ""}
+              onChange={(e) => setForm({ ...form, id_os: Number(e.target.value) })}
+              disabled={!form.id_ativo || ordensServico.length === 0}
+            >
+              <option value="">
+                {form.id_ativo ? "Sem OS vinculada" : "Selecione primeiro o ativo"}
+              </option>
+              {ordensServico.map((os) => (
+                <option key={os.id_os} value={os.id_os}>
+                  {os.numero_os} {os.numero_apr ? `| ${os.numero_apr}` : ""}{" "}
+                  {os.status ? `| ${os.status}` : ""}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field>
+            Ativo selecionado
+            <Input
+              disabled
+              value={
+                ativoSelecionado
+                  ? `${ativoSelecionado.codigo_ativo} ${ativoSelecionado.fase ?? ""}`
+                  : ""
               }
             />
+          </Field>
+
+          <FullWidth>
+            <Field>
+              Observação geral
+              <Textarea
+                value={form.observacao_geral}
+                onChange={(e) => setForm({ ...form, observacao_geral: e.target.value })}
+              />
+            </Field>
           </FullWidth>
 
-          {/* CHECKLIST */}
-          <Section>
-            <h2>Checklist</h2>
-
-            {templates.map((item, index) => {
-              const status = form.resultados[index]?.status_item ?? "NA";
-
-              return (
-                <CardItem key={item.id_item_template} status={status}>
-                  <HeaderItem>
-                    <strong>{item.nome_item}</strong>
-                    <StatusBadge status={status}>
-                      {status}
-                    </StatusBadge>
-                  </HeaderItem>
-
-                  <Info>
-                    Ref: {item.valor_referencia ?? "-"} ±{" "}
-                    {item.tolerancia ?? "-"} | {item.unidade || "-"}
-                  </Info>
-
-                  <GridItem>
-                    <Input
-                      type="number"
-                      placeholder="Valor"
-                      disabled={status === "NA"}
-                      onChange={(e) => {
-                        const valor = Number(e.target.value);
-
-                        updateResultado(index, "valor_medido", valor);
-                        updateResultado(
-                          index,
-                          "status_item",
-                          calcularStatus(valor, item)
-                        );
-                      }}
-                    />
-
-                    <Select
-                      value={status}
-                      onValueChange={(v: Status) =>
-                        updateResultado(index, "status_item", v)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="OK">OK</SelectItem>
-                        <SelectItem value="NOK">NOK</SelectItem>
-                        <SelectItem value="NA">N/A</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <span>{item.unidade || "-"}</span>
-
-                    <Input
-                      placeholder="Observação"
-                      onChange={(e) =>
-                        updateResultado(
-                          index,
-                          "observacao_item",
-                          e.target.value
-                        )
-                      }
-                    />
-                  </GridItem>
-                </CardItem>
-              );
-            })}
-          </Section>
+          <Checklist>
+            <h2 className="text-lg font-semibold">Checklist</h2>
+            {itens.length === 0 ? (
+              <EmptyState>
+                Selecione um ativo com itens de plano para essa periodicidade.
+              </EmptyState>
+            ) : (
+              itens.map((item, index) => {
+                const resultado = form.resultados[index];
+                const status = resultado?.status_item ?? "NA";
+                return (
+                  <CardItem key={item.id_plano_item} $status={status}>
+                    <ItemHeader>
+                      <strong>{item.nome_item}</strong>
+                      <span>{status}</span>
+                    </ItemHeader>
+                    <Meta>
+                      Ref: {item.valor_referencia ?? "-"} | Tol: {item.tolerancia ?? "-"} |{" "}
+                      {item.unidade || "-"}
+                    </Meta>
+                    <ItemGrid>
+                      <Input
+                        type="number"
+                        placeholder="Valor medido"
+                        value={resultado?.valor_medido ?? ""}
+                        onChange={(e) => {
+                          const valor = e.target.value === "" ? "" : Number(e.target.value);
+                          updateResultado(index, "valor_medido", valor);
+                          updateResultado(
+                            index,
+                            "status_item",
+                            calcularStatus(valor === "" ? undefined : valor, item)
+                          );
+                        }}
+                      />
+                      <Select
+                        value={status}
+                        onChange={(e) => updateResultado(index, "status_item", e.target.value)}
+                      >
+                        <option value="OK">OK</option>
+                        <option value="NOK">NOK</option>
+                        <option value="NA">N/A</option>
+                      </Select>
+                      <Input
+                        placeholder="Observação do item"
+                        value={resultado?.observacao_item ?? ""}
+                        onChange={(e) =>
+                          updateResultado(index, "observacao_item", e.target.value)
+                        }
+                      />
+                    </ItemGrid>
+                  </CardItem>
+                );
+              })
+            )}
+          </Checklist>
 
           <Actions>
-            <Button type="submit">Salvar Inspeção</Button>
+            <Button variant="outline" type="button" onClick={() => navigate("/inspecoes")}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {isEditing ? "Salvar Alterações" : "Salvar Inspeção"}
+            </Button>
           </Actions>
-        </Form>
+        </FormGrid>
       </Card>
     </Container>
   );
+}
+
+function inspecaoTexto(valor: unknown, fallback = "") {
+  return typeof valor === "string" ? valor : fallback;
+}
+
+function inspecaoNumero(valor: unknown) {
+  const n = Number(valor);
+  return Number.isFinite(n) ? n : 0;
 }
