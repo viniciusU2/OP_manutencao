@@ -364,11 +364,19 @@ export default function SIForm() {
     try {
       if (!validarFormulario()) return;
 
-      const { numero_si: _numeroSi, ...formSemNumeroSi } = form;
+      const {
+        id_si: _idSi,
+        criado_em: _criadoEm,
+        numero_si: _numeroSi,
+        ...formBase
+      } = form;
+      void _idSi;
+      void _criadoEm;
       void _numeroSi;
 
       const payload = {
-        ...formSemNumeroSi,
+        ...formBase,
+        ...(isEdit ? { numero_si: form.numero_si?.trim() || null } : {}),
 
         data_inicio_preriodo_total:
           form.data_inicio_preriodo_total?.trim() || null,
@@ -434,9 +442,18 @@ export default function SIForm() {
 
           <FormGroup>
             <label>Nº SI</label>
-            <ReadOnlyValue>
-              {form.numero_si || "Gerado automaticamente ao salvar"}
-            </ReadOnlyValue>
+            {isEdit ? (
+              <input
+                name="numero_si"
+                onChange={handleChange}
+                value={form.numero_si ?? ""}
+                placeholder="Informe o número da SI"
+              />
+            ) : (
+              <ReadOnlyValue>
+                {form.numero_si || "Gerado automaticamente ao salvar"}
+              </ReadOnlyValue>
+            )}
           </FormGroup>
 
           <FormGroup>

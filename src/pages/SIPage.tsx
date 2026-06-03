@@ -58,7 +58,7 @@ export function SIPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [subestacao, setSubestacao] = useState<Subestacao[]>([]);
-  const [subestacaoSelecionada, setSubestacaoSelecionada] = useState("");
+  const [subestacaoSelecionada, setSubestacaoSelecionada] = useState("all");
   const [status, setStatus] = useState("all");
 
 
@@ -67,20 +67,13 @@ export function SIPage() {
     =============================== */
     useEffect(() => {
       api
-        .get("/subestacao/ativas")
+        .get("/subestacao")
         .then((res) => setSubestacao(res.data))
         .catch((err) =>
           console.error("Erro ao carregar subestações:", err)
         );
     }, []);
   
-    useEffect(() => {
-    if (subestacao.length > 0) {
-      setSubestacaoSelecionada(String(subestacao[0]?.id_subestacao ?? "all"));
-    }
-  }, [subestacao]);
-  
-
   return (
     <Container>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
