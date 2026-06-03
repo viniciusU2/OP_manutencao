@@ -427,7 +427,7 @@ export  function OrdemServicoPage() {
         await api.post("/os",  payload);
         toast.success("OS cadastrada com sucesso!");
       }
-      navigate("/os");
+      navigate("/controle");
     } catch (err) {
       console.error("Erro ao salvar OS:", err);
       toast.error("Erro ao salvar OS.");
