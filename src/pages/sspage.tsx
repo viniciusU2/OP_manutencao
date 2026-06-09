@@ -5,6 +5,8 @@ import styled from "styled-components";
 import type { Subestacao } from "../types/Subestacao";
 import { useEffect, useState } from "react";
 import api from "../api/api";
+import { useAuth } from "../context/AuthContext";
+import { filtroInicialInstalacao } from "../lib/instalacaoPreferida";
 
 
 
@@ -56,6 +58,7 @@ const Select = styled.select`
 
 export function SSPage() {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
   const [search, setSearch] = useState("");
   const [subestacao, setSubestacao] = useState<Subestacao[]>([]);
   const [subestacaoSelecionada, setSubestacaoSelecionada] = useState("all");
@@ -73,6 +76,10 @@ export function SSPage() {
           console.error("Erro ao carregar subestações:", err)
         );
     }, []);
+
+    useEffect(() => {
+      setSubestacaoSelecionada(filtroInicialInstalacao(usuario, subestacao));
+    }, [subestacao, usuario]);
   
   return (
     <Container>

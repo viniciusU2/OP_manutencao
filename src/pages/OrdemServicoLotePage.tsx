@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import styled from "styled-components";
 import api from "../api/api";
 import Container from "../components/Container";
 import { useNavigate } from "react-router-dom";
 import type { Subestacao } from "../types/Subestacao";
 import { useAuth } from "../context/AuthContext";
+import { PRIORIDADES_OPERACAO } from "../lib/documentosOperacao";
 
 /* ================= TYPES ================= */
 
@@ -102,6 +103,8 @@ export function OrdemServicoLotePage() {
 
     id_subestacao: null,
     id_tipo_ativo: null,
+    codigo_ativo: "",
+    incluir_reserva: false,
 
     especie: "",
     numero_apr: "",
@@ -117,7 +120,7 @@ export function OrdemServicoLotePage() {
     causa_primaria: "",
     causa_secundaria: "",
 
-    prioridade: "MEDIA",
+    prioridade: "NIVEL_3",
     responsavel: "",
     responsavel_manutencao: "",
     responsavel_operacao: "",
@@ -149,11 +152,12 @@ export function OrdemServicoLotePage() {
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    const checked = type === "checkbox" ? (e.target as HTMLInputElement).checked : false;
 
     setForm((prev: any) => ({
       ...prev,
-      [name]: value === "" ? null : value,
+      [name]: type === "checkbox" ? checked : value === "" ? null : value,
     }));
   }
 
@@ -166,6 +170,9 @@ export function OrdemServicoLotePage() {
 
       const payload = {
         ...formSemNumeroOs,
+        id_tipo_ativo: form.id_tipo_ativo ? Number(form.id_tipo_ativo) : null,
+        codigo_ativo: form.codigo_ativo?.trim() || null,
+        incluir_reserva: Boolean(form.incluir_reserva),
         emissor: usuario?.nome,
 
         data_abertura_ss: form.data_abertura_ss || null,
@@ -207,12 +214,7 @@ export function OrdemServicoLotePage() {
 
           <FormGroup>
             <label>Espécie</label>
-            <select name="especie" onChange={handleChange} value={form.especie}>
-              <option value="EAT">EAT</option>
-              <option value="SPCS">SPCS</option>
-              <option value="TELECON">TELECON</option>
-              <option value="SERVIÇO AUXÍLIAR">SERVIÇO AUXÍLIAR</option>
-            </select>
+            <input value="Gerado automaticamente por ativo" readOnly />
           </FormGroup>
 
     
@@ -243,6 +245,30 @@ export function OrdemServicoLotePage() {
                 </option>
               ))}
             </select>
+          </FormGroup>
+
+          <FormGroup>
+            <label>Código do Ativo</label>
+            <input
+              name="codigo_ativo"
+              value={form.codigo_ativo ?? ""}
+              onChange={handleChange}
+              placeholder="Ex: 15D9"
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <label>Fase reserva</label>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 500 }}>
+              <input
+                type="checkbox"
+                name="incluir_reserva"
+                checked={Boolean(form.incluir_reserva)}
+                onChange={handleChange}
+                style={{ width: 16, height: 16 }}
+              />
+              Incluir RES
+            </label>
           </FormGroup>
 
           <FormGroup>
@@ -278,7 +304,18 @@ export function OrdemServicoLotePage() {
             <label>Esquema de Serviços</label>
             <select name="esquema_servicos" value={form.esquema_servicos ?? ""} onChange={handleChange}>
               <option value="MANUTENÇÃO PREVENTIVA">Manutenção Preventiva</option>
+              <option value="PREVENTIVA SEMANAL">Preventiva Semanal</option>
+              <option value="PREVENTIVA MENSAL">Preventiva Mensal</option>
+              <option value="PREVENTIVA BIMESTRAL">Preventiva Bimestral</option>
+              <option value="PREVENTIVA TRIMESTRAL">Preventiva Trimestral</option>
+              <option value="PREVENTIVA SEMESTRAL">Preventiva Semestral</option>
+              <option value="PREVENTIVA ANUAL">Preventiva Anual</option>
+              <option value="PREVENTIVA BIANUAL">Preventiva Bianual</option>
+              <option value="PREVENTIVA TRIANUAL">Preventiva Trianual</option>
+              <option value="PREVENTIVA A 5 ANOS">Preventiva a 5 anos</option>
+              <option value="PREVENTIVA A 6 ANOS">Preventiva a 6 anos</option>
               <option value="MANUTENÇÃO CORRETIVA">Manutenção Corretiva</option>
+              <option value="MANUTENÇÃO PREDITIVA">Manutenção Preditiva</option>
               <option value="Monitoramento">Monitoramento</option>
               <option value="Atendimento Recomendação">Atendimento Recomendação</option>
             </select>
@@ -324,9 +361,11 @@ export function OrdemServicoLotePage() {
           <FormGroup>
             <label>Prioridade</label>
             <select name="prioridade" value={form.prioridade} onChange={handleChange}>
-              <option value="BAIXA">Baixa</option>
-              <option value="MEDIA">Média</option>
-              <option value="ALTA">Alta</option>
+              {PRIORIDADES_OPERACAO.map((prioridade) => (
+                <option key={prioridade.value} value={prioridade.value}>
+                  {prioridade.label}
+                </option>
+              ))}
             </select>
           </FormGroup>
 

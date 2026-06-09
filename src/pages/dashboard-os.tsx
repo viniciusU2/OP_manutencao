@@ -5,6 +5,8 @@ import { OsPage1 } from "./Os_table";
 import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 import type { Subestacao } from "../types/Subestacao";
+import { useAuth } from "../context/AuthContext";
+import { filtroInicialInstalacao } from "../lib/instalacaoPreferida";
 
 
 
@@ -109,10 +111,11 @@ const Select = styled.select`
 
 export default function ControleOrdemServicoPage() {
 
+  const { usuario } = useAuth();
   const [search, setSearch] = useState("");
   const [esquema_servicos, setEsquema_servicos] = useState("");
   const [subestacao, setSubestacao] = useState<Subestacao[]>([]);
-  const [subestacaoSelecionada, setSubestacaoSelecionada] = useState("");
+  const [subestacaoSelecionada, setSubestacaoSelecionada] = useState("all");
   const [status, setStatus] = useState("all");
   const navigate = useNavigate();
 
@@ -130,10 +133,8 @@ export default function ControleOrdemServicoPage() {
   }, []);
 
   useEffect(() => {
-  if (subestacao.length > 0) {
-    setSubestacaoSelecionada(String(subestacao[0]?.id_subestacao ?? "all"));
-  }
-}, [subestacao]);
+    setSubestacaoSelecionada(filtroInicialInstalacao(usuario, subestacao));
+  }, [subestacao, usuario]);
 
 
 
@@ -185,7 +186,18 @@ export default function ControleOrdemServicoPage() {
         >
           <option value="all">Todos esquema de serviço</option>
               <option value="MANUTENÇÃO PREVENTIVA">Manutenção Preventiva</option>
+              <option value="PREVENTIVA SEMANAL">Preventiva Semanal</option>
+              <option value="PREVENTIVA MENSAL">Preventiva Mensal</option>
+              <option value="PREVENTIVA BIMESTRAL">Preventiva Bimestral</option>
+              <option value="PREVENTIVA TRIMESTRAL">Preventiva Trimestral</option>
+              <option value="PREVENTIVA SEMESTRAL">Preventiva Semestral</option>
+              <option value="PREVENTIVA ANUAL">Preventiva Anual</option>
+              <option value="PREVENTIVA BIANUAL">Preventiva Bianual</option>
+              <option value="PREVENTIVA TRIANUAL">Preventiva Trianual</option>
+              <option value="PREVENTIVA A 5 ANOS">Preventiva a 5 anos</option>
+              <option value="PREVENTIVA A 6 ANOS">Preventiva a 6 anos</option>
               <option value="MANUTENÇÃO CORRETIVA">Manutenção Corretiva</option>
+              <option value="MANUTENÇÃO PREDITIVA">Manutenção Preditiva</option>
               <option value="Monitoramento">Monitoramento</option>
               <option value="Atendimento Recomendação">Atendimento Recomendação</option>
         </Select>

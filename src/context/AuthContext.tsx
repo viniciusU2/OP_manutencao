@@ -6,7 +6,8 @@ interface Usuario {
   nome: string;
   email: string;
   role: UserRole;
-  foto?: string;
+  foto?: string | null;
+  id_subestacao_padrao?: number | null;
 }
 
 interface AuthContextType {

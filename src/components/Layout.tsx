@@ -366,7 +366,7 @@ export default function Layout() {
           {usuario && (
             <UserBox $collapsed={collapsed}>
               <Avatar>
-                <AvatarImage src={usuario.foto} />
+                <AvatarImage src={usuario.foto ?? undefined} />
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>
               <UserInfo $collapsed={collapsed}>

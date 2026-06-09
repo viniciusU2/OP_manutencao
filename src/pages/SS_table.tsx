@@ -28,6 +28,28 @@ export function SSPage1({ search, status, subestacao }: Props) {
     }
   }
 
+  async function atenderSS(ss: SS) {
+    if (!confirm(`Deseja atender a SS ${ss.numero_ss} e criar uma OS?`)) return;
+
+    try {
+      const { data: resposta } = await api.post(`/ss/${ss.id_ss}/atender`);
+      setData((prev) =>
+        prev.map((item) =>
+          item.id_ss === ss.id_ss
+            ? {
+                ...item,
+                status: resposta.ss?.status ?? "PROGRAMADA",
+                numero_os: resposta.ss?.numero_os ?? resposta.os?.numero_os ?? item.numero_os,
+              }
+            : item
+        )
+      );
+      toast.success(`OS ${resposta.os?.numero_os ?? ""} criada para a SS`);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.detail ?? "Erro ao atender SS");
+    }
+  }
+
   async function fetch() {
     try {
       const res = await api.get("/ss");
@@ -83,7 +105,7 @@ export function SSPage1({ search, status, subestacao }: Props) {
 
   return (
     <div className="container mx-auto py-6">
-      <DataTable columns={columns(deletarSS)} data={filteredData} />
+      <DataTable columns={columns(deletarSS, atenderSS)} data={filteredData} />
     </div>
   );
 }

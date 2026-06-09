@@ -9,6 +9,8 @@ import type { Subestacao } from "../types/Subestacao";
 import type { TipoAtivo } from "../types/TipoAtivo";
 import Container from "../components/Container";
 import { AtivoPage1 } from "./Ativos-table";
+import { useAuth } from "../context/AuthContext";
+import { filtroInicialInstalacao } from "../lib/instalacaoPreferida";
 
 const PageTitle = styled.div`
   margin-bottom: 24px;
@@ -173,6 +175,7 @@ const initialForm: Ativo = {
 export default function AtivoPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { usuario } = useAuth();
   const isEdit = Boolean(id);
 
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
@@ -191,6 +194,10 @@ export default function AtivoPage() {
       .then((res) => setSubestacoes(res.data))
       .catch(() => toast.error("Erro ao carregar subestacoes"));
   }, []);
+
+  useEffect(() => {
+    setSubestacaoFiltro(filtroInicialInstalacao(usuario, subestacoes));
+  }, [subestacoes, usuario]);
 
   useEffect(() => {
     api
@@ -451,6 +458,8 @@ export default function AtivoPage() {
               <option value="AZ">AZ</option>
               <option value="BR">BR</option>
               <option value="VM">VM</option>
+              <option value="RES">RES</option>
+              <option value="N">N</option>
               <option value="TRIFASICO">TRIFASICO</option>
               <option value="NA">N/A</option>
             </select>

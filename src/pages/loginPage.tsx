@@ -243,7 +243,19 @@ export function LoginPage() {
 
       login(usuario, access_token);
       navigate("/", { replace: true });
-    } catch {
+    } catch (error: any) {
+      const detalhe = error?.response?.data?.detail;
+
+      if (detalhe) {
+        setErro(detalhe);
+        return;
+      }
+
+      if (!error?.response) {
+        setErro("Nao foi possivel conectar ao backend. Verifique a API e o CORS.");
+        return;
+      }
+
       setErro("Email ou senha invalidos");
     }
   }

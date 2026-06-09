@@ -10,6 +10,7 @@ export interface SI {
 
   especie?: string;
   numero_apr?: string;
+  prioridade?: string;
   tipo?: string;
   documentos_referencia?: string;
 

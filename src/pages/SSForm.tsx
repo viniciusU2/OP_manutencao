@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import styled from "styled-components";
 import api from "../api/api";
 import Container from "../components/Container";
@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import type { SolicitacaoServico } from "../types/solicitacaoServico";
 import type { Ativo } from "../types/Ativo";
 import type { Subestacao } from "../types/Subestacao";
+import type { TipoAtivo } from "../types/TipoAtivo";
+import { especiePorAtivo } from "../lib/documentosOperacao";
 
 const PRIORIDADES_SS = [
   { value: "NIVEL_1", label: "Nivel 1 - Emergencial: 0 a 24h" },
@@ -27,7 +29,18 @@ const LOCALIZACOES_FISICAS = [
 
 const ESQUEMAS_SERVICO_SS = [
   { value: "MANUTENÇÃO PREVENTIVA", label: "Manutencao Preventiva" },
+  { value: "PREVENTIVA SEMANAL", label: "Preventiva Semanal" },
+  { value: "PREVENTIVA MENSAL", label: "Preventiva Mensal" },
+  { value: "PREVENTIVA BIMESTRAL", label: "Preventiva Bimestral" },
+  { value: "PREVENTIVA TRIMESTRAL", label: "Preventiva Trimestral" },
+  { value: "PREVENTIVA SEMESTRAL", label: "Preventiva Semestral" },
+  { value: "PREVENTIVA ANUAL", label: "Preventiva Anual" },
+  { value: "PREVENTIVA BIANUAL", label: "Preventiva Bianual" },
+  { value: "PREVENTIVA TRIANUAL", label: "Preventiva Trianual" },
+  { value: "PREVENTIVA A 5 ANOS", label: "Preventiva a 5 anos" },
+  { value: "PREVENTIVA A 6 ANOS", label: "Preventiva a 6 anos" },
   { value: "MANUTENÇÃO CORRETIVA", label: "Manutencao Corretiva" },
+  { value: "MANUTENÇÃO PREDITIVA", label: "Manutencao Preditiva" },
   { value: "Monitoramento", label: "Monitoramento" },
   { value: "Atendimento Recomendação", label: "Atendimento Recomendacao" },
 ];
@@ -137,9 +150,12 @@ export function SSForm() {
 
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
   const [ativos, setAtivos] = useState<Ativo[]>([]);
+  const [ativoSelecionadoDetalhes, setAtivoSelecionadoDetalhes] = useState<Ativo | null>(null);
+  const [tiposAtivo, setTiposAtivo] = useState<TipoAtivo[]>([]);
 
   const [form, setForm] = useState<SolicitacaoServico>({
     numero_ss: "",
+    numero_os: null,
 
     id_subestacao: null,
     id_ativo: null,
@@ -173,6 +189,11 @@ export function SSForm() {
     status: "ABERTA"
   });
 
+  const ativoSelecionadoLista = ativos.find(
+    (ativo) => Number(ativo.id_ativo) === Number(form.id_ativo)
+  );
+  const ativoSelecionado = ativoSelecionadoDetalhes ?? ativoSelecionadoLista;
+
 
   /* ===============================
      CARREGAR SUBESTAÇÕES
@@ -182,10 +203,29 @@ export function SSForm() {
       .then(res => setSubestacoes(res.data));
   }, []);
 
+  useEffect(() => {
+    api
+      .get("/tipo-ativo")
+      .then((res) => setTiposAtivo(res.data))
+      .catch((err) => console.error("Erro ao carregar tipos de ativo:", err));
+  }, []);
+
 
   /* ===============================
      CARREGAR ATIVOS
   =============================== */
+  useEffect(() => {
+    if (!form.id_ativo) {
+      setAtivoSelecionadoDetalhes(null);
+      return;
+    }
+
+    api
+      .get(`/ativo/${form.id_ativo}`)
+      .then((res) => setAtivoSelecionadoDetalhes(res.data))
+      .catch(() => setAtivoSelecionadoDetalhes(null));
+  }, [form.id_ativo]);
+
   useEffect(() => {
     if (form.id_subestacao) {
       api.get(`/ativos/${form.id_subestacao}`)
@@ -347,6 +387,13 @@ async function salvarOuEditar() {
           </FormGroup>
 
           <FormGroup>
+            <label>Nº OS vinculada</label>
+            <ReadOnlyValue>
+              {form.numero_os || "Ainda não atendida"}
+            </ReadOnlyValue>
+          </FormGroup>
+
+          <FormGroup>
             <label>Solicitante</label>
             <input
               name="solicitante"
@@ -417,12 +464,19 @@ async function salvarOuEditar() {
 
               {ativos.map(a => (
                 <option key={a.id_ativo} value={String(a.id_ativo ?? "")}>
-                  {a.codigo_ativo} – {[a.fase, a.vao].filter(Boolean).join("-")}
+                  {a.codigo_ativo} - {[a.fase, a.vao].filter(Boolean).join("-")}
                 </option>
               ))}
 
             </select>
 
+          </FormGroup>
+
+          <FormGroup>
+            <label>Espécie</label>
+            <ReadOnlyValue>
+              {especiePorAtivo(ativoSelecionado, tiposAtivo) || "Informe tensão nominal e fabricante no cadastro do ativo"}
+            </ReadOnlyValue>
           </FormGroup>
 
 
@@ -533,7 +587,18 @@ async function salvarOuEditar() {
                   <option value={form.esquema_servico}>{form.esquema_servico}</option>
                 )}
               <option value="MANUTENÇÃO PREVENTIVA">Manutenção Preventiva</option>
+              <option value="PREVENTIVA SEMANAL">Preventiva Semanal</option>
+              <option value="PREVENTIVA MENSAL">Preventiva Mensal</option>
+              <option value="PREVENTIVA BIMESTRAL">Preventiva Bimestral</option>
+              <option value="PREVENTIVA TRIMESTRAL">Preventiva Trimestral</option>
+              <option value="PREVENTIVA SEMESTRAL">Preventiva Semestral</option>
+              <option value="PREVENTIVA ANUAL">Preventiva Anual</option>
+              <option value="PREVENTIVA BIANUAL">Preventiva Bianual</option>
+              <option value="PREVENTIVA TRIANUAL">Preventiva Trianual</option>
+              <option value="PREVENTIVA A 5 ANOS">Preventiva a 5 anos</option>
+              <option value="PREVENTIVA A 6 ANOS">Preventiva a 6 anos</option>
               <option value="MANUTENÇÃO CORRETIVA">Manutenção Corretiva</option>
+              <option value="MANUTENÇÃO PREDITIVA">Manutenção Preditiva</option>
               <option value="Monitoramento">Monitoramento</option>
               <option value="Atendimento Recomendação">Atendimento Recomendação</option>
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import styled from "styled-components";
 import api from "../api/api";
 import Container from "../components/Container";
@@ -6,9 +6,15 @@ import type { OrdemServico } from "../types/OrdemServico";
 import { useParams, useNavigate } from "react-router-dom";
 import type {Ativo} from "../types/Ativo"
 import type {Subestacao} from "../types/Subestacao"
+import type { TipoAtivo } from "../types/TipoAtivo";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
 import UsuarioSelect from "../components/UsuarioSelect";
+import {
+  PRIORIDADES_OPERACAO,
+  especiePorAtivo,
+  normalizarPrioridadeOperacao,
+} from "../lib/documentosOperacao";
 
 
 
@@ -120,7 +126,18 @@ const LOCALIZACOES_FISICAS = [
 
 const ESQUEMAS_SERVICO = [
   { value: "MANUTENÇÃO PREVENTIVA", label: "Manutencao Preventiva" },
+  { value: "PREVENTIVA SEMANAL", label: "Preventiva Semanal" },
+  { value: "PREVENTIVA MENSAL", label: "Preventiva Mensal" },
+  { value: "PREVENTIVA BIMESTRAL", label: "Preventiva Bimestral" },
+  { value: "PREVENTIVA TRIMESTRAL", label: "Preventiva Trimestral" },
+  { value: "PREVENTIVA SEMESTRAL", label: "Preventiva Semestral" },
+  { value: "PREVENTIVA ANUAL", label: "Preventiva Anual" },
+  { value: "PREVENTIVA BIANUAL", label: "Preventiva Bianual" },
+  { value: "PREVENTIVA TRIANUAL", label: "Preventiva Trianual" },
+  { value: "PREVENTIVA A 5 ANOS", label: "Preventiva a 5 anos" },
+  { value: "PREVENTIVA A 6 ANOS", label: "Preventiva a 6 anos" },
   { value: "MANUTENÇÃO CORRETIVA", label: "Manutencao Corretiva" },
+  { value: "MANUTENÇÃO PREDITIVA", label: "Manutencao Preditiva" },
   { value: "Monitoramento", label: "Monitoramento" },
   { value: "Atendimento Recomendação", label: "Atendimento Recomendacao" },
 ];
@@ -137,6 +154,8 @@ export  function OrdemServicoPage() {
 
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
   const [ativos, setAtivos] = useState<Ativo[]>([]);
+  const [ativoSelecionadoDetalhes, setAtivoSelecionadoDetalhes] = useState<Ativo | null>(null);
+  const [tiposAtivo, setTiposAtivo] = useState<TipoAtivo[]>([]);
   const { usuario } = useAuth();
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
@@ -163,7 +182,7 @@ export  function OrdemServicoPage() {
     causa_primaria: "",
     causa_secundaria: "",
 
-    prioridade: "MEDIA",
+    prioridade: "NIVEL_3",
     responsavel: "",
     responsavel_manutencao: "",
     responsavel_operacao: "",
@@ -205,6 +224,13 @@ export  function OrdemServicoPage() {
       );
   }, []);
 
+  useEffect(() => {
+    api
+      .get("/tipo-ativo")
+      .then((res) => setTiposAtivo(res.data))
+      .catch((err) => console.error("Erro ao carregar tipos de ativo:", err));
+  }, []);
+
  
 
   /* ===============================
@@ -239,7 +265,7 @@ export  function OrdemServicoPage() {
         ...os,
         id_subestacao: idSubestacao,
         status: os.status || "ABERTA",
-        prioridade: os.prioridade || "MEDIA",
+        prioridade: normalizarPrioridadeOperacao(os.prioridade),
         especie: os.especie,
         localizacao: os.localizacao,
         esquema_servicos: os.esquema_servicos ?? os.esquema_servico ?? "",
@@ -249,6 +275,31 @@ export  function OrdemServicoPage() {
       });
     }
   }, [id, isEdicao]);
+
+  useEffect(() => {
+    if (!form.id_ativo) {
+      setAtivoSelecionadoDetalhes(null);
+      return;
+    }
+
+    api
+      .get(`/ativo/${form.id_ativo}`)
+      .then((res) => setAtivoSelecionadoDetalhes(res.data))
+      .catch(() => setAtivoSelecionadoDetalhes(null));
+  }, [form.id_ativo]);
+
+  useEffect(() => {
+    const ativoSelecionado = ativos.find(
+      (ativo) => Number(ativo.id_ativo) === Number(form.id_ativo)
+    );
+    const ativoCompleto = ativoSelecionadoDetalhes ?? ativoSelecionado;
+    const especie = especiePorAtivo(ativoCompleto, tiposAtivo);
+
+    if (especie !== form.especie) {
+      setForm((prev) => ({ ...prev, especie }));
+    }
+  }, [ativos, ativoSelecionadoDetalhes, form.id_ativo, form.especie, tiposAtivo]);
+
   /* ===============================
      HANDLE CHANGE GENÉRICO
   =============================== */
@@ -407,8 +458,14 @@ export  function OrdemServicoPage() {
       void _fase;
       void _ativo;
 
+      const ativoSelecionado = ativos.find(
+        (ativo) => Number(ativo.id_ativo) === Number(form.id_ativo)
+      );
+      const ativoCompleto = ativoSelecionadoDetalhes ?? ativoSelecionado;
+
       const payload = {
         ...formSemNumeroOs,
+        especie: especiePorAtivo(ativoCompleto, tiposAtivo) || form.especie,
         // Garante que campos vazios virem null (ou omita o campo se o backend preferir)
         data_abertura_ss: form.data_abertura_ss?.trim() || null,
         data_inicio_programado: form.data_inicio_programado?.trim() || null,
@@ -464,17 +521,11 @@ export  function OrdemServicoPage() {
 
           <FormGroup $invalid={!!errors.especie}>
             <label>Espécie</label>
-    
-
-            <select name="especie" onChange={handleChange} value={form.especie}>
-              <option value="">Selecione</option>
-              <option value="EAT">EAT</option>
-              <option value="SPCS">SPCS</option>
-              <option value="TELECON">TELECON</option>
-              <option value="SERVIÇO AUXÍLIAR">SERVIÇO AUXÍLIAR</option>
-              <option value="GERAL">GERAL</option>
-
-            </select>
+            <ReadOnlyValue>
+              {especiePorAtivo(ativoSelecionadoDetalhes ?? ativos.find(
+                (ativo) => Number(ativo.id_ativo) === Number(form.id_ativo)
+              ), tiposAtivo) || "Informe tensão nominal e fabricante no cadastro do ativo"}
+            </ReadOnlyValue>
             {errors.especie && <ErrorText>{errors.especie}</ErrorText>}
           </FormGroup>
 
@@ -519,7 +570,7 @@ export  function OrdemServicoPage() {
               <option value="">Selecione</option>
               {ativos.map((a) => (
                 <option key={a.id_ativo} value={String(a.id_ativo ?? "")}>
-                  {a.codigo_ativo} – {a.fase}-{a.vao}
+                  {a.codigo_ativo} - {[a.fase, a.vao].filter(Boolean).join("-")}
                 </option>
               ))}
             </select>
@@ -573,7 +624,18 @@ export  function OrdemServicoPage() {
                   <option value={form.esquema_servicos}>{form.esquema_servicos}</option>
                 )}
               <option value="MANUTENÇÃO PREVENTIVA">Manutenção Preventiva</option>
+              <option value="PREVENTIVA SEMANAL">Preventiva Semanal</option>
+              <option value="PREVENTIVA MENSAL">Preventiva Mensal</option>
+              <option value="PREVENTIVA BIMESTRAL">Preventiva Bimestral</option>
+              <option value="PREVENTIVA TRIMESTRAL">Preventiva Trimestral</option>
+              <option value="PREVENTIVA SEMESTRAL">Preventiva Semestral</option>
+              <option value="PREVENTIVA ANUAL">Preventiva Anual</option>
+              <option value="PREVENTIVA BIANUAL">Preventiva Bianual</option>
+              <option value="PREVENTIVA TRIANUAL">Preventiva Trianual</option>
+              <option value="PREVENTIVA A 5 ANOS">Preventiva a 5 anos</option>
+              <option value="PREVENTIVA A 6 ANOS">Preventiva a 6 anos</option>
               <option value="MANUTENÇÃO CORRETIVA">Manutenção Corretiva</option>
+              <option value="MANUTENÇÃO PREDITIVA">Manutenção Preditiva</option>
               <option value="Monitoramento">Monitoramento</option>
               <option value="Atendimento Recomendação">Atendimento Recomendação</option>
             </select>
@@ -641,9 +703,11 @@ export  function OrdemServicoPage() {
           <FormGroup $invalid={!!errors.prioridade}>
             <label>Prioridade</label>
             <select name="prioridade" onChange={handleChange} value={form.prioridade}>
-              <option value="BAIXA">Baixa</option>
-              <option value="MEDIA">Média</option>
-              <option value="ALTA">Alta</option>
+              {PRIORIDADES_OPERACAO.map((prioridade) => (
+                <option key={prioridade.value} value={prioridade.value}>
+                  {prioridade.label}
+                </option>
+              ))}
             </select>
             {errors.prioridade && <ErrorText>{errors.prioridade}</ErrorText>}
           </FormGroup>
@@ -705,7 +769,7 @@ export  function OrdemServicoPage() {
 
         </FormGrid>
 
-        {/* ===== LIBERAÇÃO PARA MANUTENÇÃO  ===== */}
+        {/* ===== LIBERAÇÃO PARA OPERAÇÃO  ===== */}
         <SectionTitle>Liberação para operação</SectionTitle>
         <FormGrid>
           <FormGroup $invalid={!!errors.data_fim_execucao || !!errors.periodo_execucao}>

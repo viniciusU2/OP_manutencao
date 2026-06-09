@@ -16,6 +16,8 @@ import {
 import api from "../api/api";
 import { StatsCard } from "../components/StatsCard";
 import { CalendarioOSSI } from "../components/calendar";
+import { useAuth } from "../context/AuthContext";
+import { filtroInicialInstalacao } from "../lib/instalacaoPreferida";
 
 interface Ativo {
   id_ativo: number;
@@ -439,6 +441,7 @@ function asArray<T>(value: unknown): T[] {
 
 export function Dashboard() {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
 
   const [ativos, setAtivos] = useState<Ativo[]>([]);
   const [os, setOS] = useState<OS[]>([]);
@@ -477,6 +480,11 @@ export function Dashboard() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const filtroInicial = filtroInicialInstalacao(usuario, subestacoes);
+    setFiltroSubestacao(filtroInicial === "all" ? "" : filtroInicial);
+  }, [subestacoes, usuario]);
 
   const subestacaoById = useMemo(() => {
     return subestacoes.reduce<Record<number, Subestacao>>((acc, sub) => {

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
+import type { Subestacao } from "../types/Subestacao";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import {
@@ -40,6 +41,7 @@ type UsuarioPerfil = {
   ativo: boolean;
   criado_em: string;
   role: PerfilRole | string;
+  id_subestacao_padrao?: number | null;
 };
 
 type ApiError = {
@@ -89,9 +91,10 @@ function extrairErro(error: unknown) {
 }
 
 export default function PerfisPage() {
-  const { usuario } = useAuth();
+  const { usuario, login } = useAuth();
   const [usuarios, setUsuarios] = useState<UsuarioPerfil[]>([]);
   const [loading, setLoading] = useState(true);
+  const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [atualizando, setAtualizando] = useState<Set<number>>(new Set());
 
@@ -121,12 +124,26 @@ export default function PerfisPage() {
     carregarUsuarios();
   }, [carregarUsuarios]);
 
-  async function atualizarUsuario(id: number, payload: Partial<Pick<UsuarioPerfil, "role" | "ativo">>) {
+  useEffect(() => {
+    api
+      .get<Subestacao[]>("/subestacao")
+      .then(({ data }) => setSubestacoes(Array.isArray(data) ? data : []))
+      .catch(() => toast.error("Erro ao carregar instalacoes"));
+  }, []);
+
+  async function atualizarUsuario(
+    id: number,
+    payload: Partial<Pick<UsuarioPerfil, "role" | "ativo" | "id_subestacao_padrao">>
+  ) {
     setAtualizando((prev) => new Set(prev).add(id));
 
     try {
       const { data } = await api.put<UsuarioPerfil>(`/usuarios/${id}`, payload);
       setUsuarios((prev) => prev.map((item) => (item.id === id ? data : item)));
+      if (data.id === usuario?.id) {
+        const token = localStorage.getItem("token");
+        if (token) login(data, token);
+      }
       toast.success("Perfil atualizado");
     } catch (error) {
       toast.error(extrairErro(error));
@@ -198,6 +215,7 @@ export default function PerfisPage() {
                 <TableHead>Usuario</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Perfil</TableHead>
+                <TableHead>Instalacao inicial</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Criado em</TableHead>
                 <TableHead className="text-right">Acoes</TableHead>
@@ -206,7 +224,7 @@ export default function PerfisPage() {
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-10 text-center text-slate-500">
+                  <TableCell colSpan={7} className="py-10 text-center text-slate-500">
                     Carregando usuarios...
                   </TableCell>
                 </TableRow>
@@ -256,6 +274,32 @@ export default function PerfisPage() {
                         </Select>
                       </TableCell>
                       <TableCell>
+                        <Select
+                          value={item.id_subestacao_padrao ? String(item.id_subestacao_padrao) : "all"}
+                          disabled={isUpdating}
+                          onValueChange={(value) =>
+                            atualizarUsuario(item.id, {
+                              id_subestacao_padrao: value === "all" ? null : Number(value),
+                            })
+                          }
+                        >
+                          <SelectTrigger className="w-[170px] sm:w-[200px]">
+                            <SelectValue placeholder="Todas" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todas</SelectItem>
+                            {subestacoes.map((subestacao) => (
+                              <SelectItem
+                                key={subestacao.id_subestacao}
+                                value={String(subestacao.id_subestacao ?? "")}
+                              >
+                                {subestacao.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
                         <Badge
                           className={
                             item.ativo
@@ -286,7 +330,7 @@ export default function PerfisPage() {
 
               {!loading && usuarios.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-10 text-center text-slate-500">
+                  <TableCell colSpan={7} className="py-10 text-center text-slate-500">
                     Nenhum usuario cadastrado.
                   </TableCell>
                 </TableRow>

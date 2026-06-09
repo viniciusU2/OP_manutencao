@@ -1,6 +1,7 @@
 export interface SolicitacaoServico {
 
 numero_ss: string
+numero_os?: string | null
 
 id_subestacao: number | null
 id_ativo: number | null

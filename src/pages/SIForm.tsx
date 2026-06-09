@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import styled from "styled-components";
 import api from "../api/api";
 import Container from "../components/Container";
@@ -7,8 +7,14 @@ import { toast } from "sonner";
 import type { SI } from "../types/SI";
 import type { Subestacao } from "../types/Subestacao";
 import type { Ativo } from "../types/Ativo";
+import type { TipoAtivo } from "../types/TipoAtivo";
 import { useAuth } from "../context/AuthContext";
 import UsuarioSelect from "../components/UsuarioSelect";
+import {
+  PRIORIDADES_OPERACAO,
+  especiePorAtivo,
+  normalizarPrioridadeOperacao,
+} from "../lib/documentosOperacao";
 
 /* ================= STYLES ================= */
 
@@ -105,14 +111,6 @@ const Button = styled.button`
   }
 `;
 
-const ESPECIES_SI = [
-  { value: "EAT", label: "EAT" },
-  { value: "SPCS", label: "SPCS" },
-  { value: "TELECON", label: "TELECON" },
-  { value: "SERVIÇO AUXÍLIAR", label: "SERVICO AUXILIAR" },
-  { value: "GERAL", label: "GERAL" },
-];
-
 const TIPOS_SI = [
   { value: "TIPO 01", label: "TIPO 01" },
   { value: "TIPO 02", label: "TIPO 02" },
@@ -127,6 +125,7 @@ const TIPOS_SI = [
 const NATUREZAS_SI = [
   "Manutenções corretivas",
   "Manutenções preventivas",
+  "Manutenções preditivas",
   "Testes em equipamentos da rede de operação",
   "Teste ou energização de novos equipamentos",
   "Intervenção p/ implantação Ampliação, Reforço e Melhorias",
@@ -146,6 +145,11 @@ const CARACTERISTICAS_INTERVENCAO_SI = [
   "SEM DESLIGAMENTO",
 ];
 
+const TIPOS_PROGRAMACAO_SI = [
+  { value: "DIARIA", label: "Diária" },
+  { value: "CONTINUA", label: "Contínua" },
+];
+
 /* ================= COMPONENT ================= */
 
 export default function SIForm() {
@@ -157,6 +161,8 @@ export default function SIForm() {
 
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
   const [ativos, setAtivos] = useState<Ativo[]>([]);
+  const [ativoSelecionadoDetalhes, setAtivoSelecionadoDetalhes] = useState<Ativo | null>(null);
+  const [tiposAtivo, setTiposAtivo] = useState<TipoAtivo[]>([]);
 
   const [form, setForm] = useState<SI>({
     id_si: 0,
@@ -167,6 +173,7 @@ export default function SIForm() {
 
     especie: "",
     numero_apr: "",
+    prioridade: "NIVEL_3",
     natureza: "",
     caracteristica_intervencao: "",
     tipo: "",
@@ -174,7 +181,7 @@ export default function SIForm() {
     id_subestacao: null,
     id_ativo: null,
 
-    status_manutencao: "ABERTA",
+    status_manutencao: "PROGRAMADA",
 
     data_inicio_preriodo_total: null,
     data_fim_preriodo_total: null,
@@ -225,6 +232,13 @@ export default function SIForm() {
   }, []);
 
   useEffect(() => {
+    api
+      .get("/tipo-ativo")
+      .then((res) => setTiposAtivo(res.data))
+      .catch((err) => console.error("Erro ao carregar tipos de ativo:", err));
+  }, []);
+
+  useEffect(() => {
     if (form.id_subestacao) {
       api
         .get(`/ativos/${form.id_subestacao}`)
@@ -260,12 +274,13 @@ export default function SIForm() {
 
             especie: si.especie ?? "",
             numero_apr: si.numero_apr ?? "",
+            prioridade: normalizarPrioridadeOperacao(si.prioridade),
             natureza: si.natureza ?? "",
             caracteristica_intervencao: si.caracteristica_intervencao ?? "",
             tipo: si.tipo ?? "",
 
             status_manutencao:
-              si.status_manutencao ?? "ABERTA",
+              si.status_manutencao ?? "PROGRAMADA",
 
             descricao_servicos:
               si.descricao_servicos ?? "",
@@ -293,6 +308,30 @@ export default function SIForm() {
         });
     }
   }, [id, isEdit]);
+
+  useEffect(() => {
+    if (!form.id_ativo) {
+      setAtivoSelecionadoDetalhes(null);
+      return;
+    }
+
+    api
+      .get(`/ativo/${form.id_ativo}`)
+      .then((res) => setAtivoSelecionadoDetalhes(res.data))
+      .catch(() => setAtivoSelecionadoDetalhes(null));
+  }, [form.id_ativo]);
+
+  useEffect(() => {
+    const ativoSelecionado = ativos.find(
+      (ativo) => Number(ativo.id_ativo) === Number(form.id_ativo)
+    );
+    const ativoCompleto = ativoSelecionadoDetalhes ?? ativoSelecionado;
+    const especie = especiePorAtivo(ativoCompleto, tiposAtivo);
+
+    if (especie !== form.especie) {
+      setForm((prev) => ({ ...prev, especie }));
+    }
+  }, [ativos, ativoSelecionadoDetalhes, form.id_ativo, form.especie, tiposAtivo]);
 
   function handleChange(
     e: React.ChangeEvent<
@@ -374,9 +413,15 @@ export default function SIForm() {
       void _criadoEm;
       void _numeroSi;
 
+      const ativoSelecionado = ativos.find(
+        (ativo) => Number(ativo.id_ativo) === Number(form.id_ativo)
+      );
+      const ativoCompleto = ativoSelecionadoDetalhes ?? ativoSelecionado;
+
       const payload = {
         ...formBase,
         ...(isEdit ? { numero_si: form.numero_si?.trim() || null } : {}),
+        especie: especiePorAtivo(ativoCompleto, tiposAtivo) || form.especie,
 
         data_inicio_preriodo_total:
           form.data_inicio_preriodo_total?.trim() || null,
@@ -468,24 +513,11 @@ export default function SIForm() {
 
           <FormGroup>
             <label>Espécie</label>
-            <select
-              name="especie"
-              onChange={handleChange}
-              value={form.especie ?? ""}
-            >
-              <option value="">Selecione</option>
-              {form.especie &&
-                !ESPECIES_SI.some((especie) => especie.value === form.especie) && (
-                  <option value={form.especie}>{form.especie}</option>
-                )}
-              <option value="EAT">EAT</option>
-              <option value="SPCS">SPCS</option>
-              <option value="TELECON">TELECON</option>
-              <option value="SERVIÇO AUXÍLIAR">
-                SERVIÇO AUXÍLIAR
-              </option>
-              <option value="GERAL">GERAL</option>
-            </select>
+            <ReadOnlyValue>
+              {especiePorAtivo(ativoSelecionadoDetalhes ?? ativos.find(
+                (ativo) => Number(ativo.id_ativo) === Number(form.id_ativo)
+              ), tiposAtivo) || "Informe tensão nominal e fabricante no cadastro do ativo"}
+            </ReadOnlyValue>
           </FormGroup>
 
           <FormGroup>
@@ -496,6 +528,17 @@ export default function SIForm() {
               value={form.numero_apr ?? ""}
               placeholder="Informe o número da APR"
             />
+          </FormGroup>
+
+          <FormGroup>
+            <label>Prioridade</label>
+            <select name="prioridade" value={form.prioridade ?? "NIVEL_3"} onChange={handleChange}>
+              {PRIORIDADES_OPERACAO.map((prioridade) => (
+                <option key={prioridade.value} value={prioridade.value}>
+                  {prioridade.label}
+                </option>
+              ))}
+            </select>
           </FormGroup>
 
           <FormGroup>
@@ -594,7 +637,7 @@ export default function SIForm() {
               <option value="">Selecione</option>
               {ativos.map((a) => (
                 <option key={a.id_ativo} value={a.id_ativo}>
-                  {a.codigo_ativo} – {[a.fase, a.vao].filter(Boolean).join("-")}
+                  {a.codigo_ativo} - {[a.fase, a.vao].filter(Boolean).join("-")}
                 </option>
               ))}
             </select>
@@ -605,12 +648,14 @@ export default function SIForm() {
             <select
               name="status_manutencao"
               onChange={handleChange}
-              value={form.status_manutencao ?? "ABERTA"}
+              value={form.status_manutencao ?? "PROGRAMADA"}
             >
-              <option value="ABERTA">Aberta</option>
+              {form.status_manutencao === "ABERTA" && (
+                <option value="ABERTA">Aberta</option>
+              )}
               <option value="PROGRAMADA">Programada</option>
               <option value="EM_EXECUCAO">Em Execução</option>
-              <option value="ENCERRADA">Encerrada</option>
+              <option value="CONCLUIDA">Concluída</option>
             </select>
           </FormGroup>
         </FormGrid>
@@ -653,7 +698,7 @@ export default function SIForm() {
             >
               <option value="">Selecione</option>
               <option value="ONS">ONS</option>
-              <option value="COT">COT</option>
+              <option value="COS">COS</option>
               <option value="SE">SE</option>
             </select>
           </FormGroup>
@@ -666,10 +711,19 @@ export default function SIForm() {
               value={form.tipo_programacao ?? ""}
             >
               <option value="">Selecione</option>
-              <option value="DIARIA">Diária</option>
-              <option value="SEMANAL">Semanal</option>
-              <option value="MENSAL">Mensal</option>
-              <option value="EVENTUAL">Eventual</option>
+              {form.tipo_programacao &&
+                !TIPOS_PROGRAMACAO_SI.some(
+                  (tipo) => tipo.value === form.tipo_programacao
+                ) && (
+                  <option value={form.tipo_programacao}>
+                    {form.tipo_programacao}
+                  </option>
+                )}
+              {TIPOS_PROGRAMACAO_SI.map((tipo) => (
+                <option key={tipo.value} value={tipo.value}>
+                  {tipo.label}
+                </option>
+              ))}
             </select>
           </FormGroup>
 
@@ -864,7 +918,7 @@ export default function SIForm() {
           </FormGroup>
 
           <FormGroup>
-            <label>Responsável COT</label>
+            <label>Responsável COS</label>
             <input
               name="responsavel_cot_manutencao"
               onChange={handleChange}
@@ -873,7 +927,7 @@ export default function SIForm() {
           </FormGroup>
 
           <FormGroup>
-            <label>Data/hora COT</label>
+            <label>Data/hora COS</label>
             <input
               type="datetime-local"
               name="responsavel_data_cot_manutencao"
@@ -925,7 +979,7 @@ export default function SIForm() {
           </FormGroup>
 
           <FormGroup>
-            <label>Responsável COT</label>
+            <label>Responsável COS</label>
             <input
               name="responsavel_cot_operacao"
               onChange={handleChange}
@@ -934,7 +988,7 @@ export default function SIForm() {
           </FormGroup>
 
           <FormGroup>
-            <label>Data/hora COT</label>
+            <label>Data/hora COS</label>
             <input
               type="datetime-local"
               name="responsavel_data_cot_operacao"

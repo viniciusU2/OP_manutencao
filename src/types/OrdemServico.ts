@@ -72,7 +72,7 @@ export interface OrdemServicoCreateLote {
   causa_primaria?: string;
   causa_secundaria?: string;
 
-  prioridade: "BAIXA" | "MEDIA" | "ALTA";
+  prioridade: string;
   responsavel?: string;
   responsavel_manutencao?: string;
   responsavel_operacao?: string;

@@ -1,6 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
-import { Trash2 } from "lucide-react";
+import { ClipboardCheck, Trash2 } from "lucide-react";
 
 import type { SS } from "../../types/SS";
 import { Badge } from "../../components/ui/badge";
@@ -45,7 +45,8 @@ function getPrioridadeLabel(prioridade?: string) {
 }
 
 export const columns = (
-  onDelete: (ss: SS) => void
+  onDelete: (ss: SS) => void,
+  onAtender: (ss: SS) => void
 ): ColumnDef<SS>[] => [
   {
     accessorKey: "numero_ss",
@@ -67,6 +68,11 @@ export const columns = (
         {getStatusLabel(row.original.status)}
       </Badge>
     ),
+  },
+  {
+    accessorKey: "numero_os",
+    header: "OS",
+    cell: ({ row }) => row.original.numero_os || "-",
   },
   {
     accessorKey: "prioridade",
@@ -108,6 +114,16 @@ export const columns = (
 
       return (
         <div className="flex gap-2">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => onAtender(ss)}
+            title="Atender SS"
+            disabled={ss.status === "ENCERRADA"}
+          >
+            <ClipboardCheck size={16} />
+          </Button>
+
           <OnlyAdmin>
             <Button
               size="icon"

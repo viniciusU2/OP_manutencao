@@ -2,6 +2,7 @@ export interface SS {
   id?: number;
   id_ss: number;
   numero_ss: string;
+  numero_os?: string | null;
   data_hora_solicitacao?: string | null;
   data_hora_abertura?: string | null;
   data_hora_limite?: string | null;
