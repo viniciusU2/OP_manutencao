@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +12,7 @@ import type {
   PeriodicidadePlano,
   PlanoItemCreate,
   PlanoManutencaoCreate,
+  PlanoManutencaoReadFull,
 } from "../types/planoManutencao";
 
 const periodicidades: Array<{ label: string; value: PeriodicidadePlano }> = [
@@ -36,6 +38,47 @@ const emptyItem = (ordem: number): PlanoItemCreate => ({
   antecedencia: 0,
   ordem,
 });
+
+const emptyForm = (idTipoAtivo = 0): PlanoManutencaoCreate => ({
+  id_tipo_ativo: idTipoAtivo,
+  descricao_geral: "",
+  materiais_previstos: "",
+  procedimentos_instrucoes: "",
+  requisitos_de_seguranca: "",
+  observacao_geral: "",
+  itens: [emptyItem(1)],
+});
+
+function toDateInput(value?: string | null) {
+  if (!value) return "";
+  return value.slice(0, 10);
+}
+
+function planoToForm(plano: PlanoManutencaoReadFull): PlanoManutencaoCreate {
+  return {
+    id_tipo_ativo: plano.id_tipo_ativo,
+    descricao_geral: plano.descricao_geral ?? "",
+    materiais_previstos: plano.materiais_previstos ?? "",
+    procedimentos_instrucoes: plano.procedimentos_instrucoes ?? "",
+    requisitos_de_seguranca: plano.requisitos_de_seguranca ?? "",
+    observacao_geral: plano.observacao_geral ?? "",
+    itens: ((plano.itens ?? []).length ? plano.itens : [emptyItem(1)])
+      .slice()
+      .sort((a, b) => a.ordem - b.ordem)
+      .map((item, index) => ({
+        nome_item: item.nome_item ?? "",
+        descricao: item.descricao ?? "",
+        periodicidade: item.periodicidade,
+        unidade: item.unidade ?? "",
+        valor_referencia: item.valor_referencia ?? undefined,
+        tolerancia: item.tolerancia ?? undefined,
+        data_inicio: toDateInput(item.data_inicio),
+        intervalo: item.intervalo || 1,
+        antecedencia: item.antecedencia || 0,
+        ordem: item.ordem || index + 1,
+      })),
+  };
+}
 
 const PageTitle = styled.div`
   margin-bottom: 24px;
@@ -208,18 +251,14 @@ const ActionButton = styled.button<{ $variant?: "primary" | "danger" | "ghost" }
 `;
 
 export default function PlanoManutencaoForm() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const isEdit = Boolean(id);
   const [tiposAtivo, setTiposAtivo] = useState<TipoAtivo[]>([]);
   const [loadingTipos, setLoadingTipos] = useState(false);
+  const [loadingPlano, setLoadingPlano] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<PlanoManutencaoCreate>({
-    id_tipo_ativo: 0,
-    descricao_geral: "",
-    materiais_previstos: "",
-    procedimentos_instrucoes: "",
-    requisitos_de_seguranca: "",
-    observacao_geral: "",
-    itens: [emptyItem(1)],
-  });
+  const [form, setForm] = useState<PlanoManutencaoCreate>(emptyForm());
 
   const canRemoveItem = useMemo(() => form.itens.length > 1, [form.itens.length]);
 
@@ -232,7 +271,7 @@ export default function PlanoManutencaoForm() {
         setTiposAtivo(data);
 
         const firstId = data.find((tipo) => tipo.id_tipo_ativo)?.id_tipo_ativo;
-        if (firstId) {
+        if (firstId && !isEdit) {
           setForm((prev) => ({ ...prev, id_tipo_ativo: firstId }));
         }
       } catch {
@@ -243,7 +282,29 @@ export default function PlanoManutencaoForm() {
     }
 
     carregarTipos();
-  }, []);
+  }, [isEdit]);
+
+  useEffect(() => {
+    async function carregarPlano() {
+      if (!id) return;
+
+      setLoadingPlano(true);
+
+      try {
+        const { data } = await api.get<PlanoManutencaoReadFull>(
+          `/planos-manutencao/${id}`
+        );
+        setForm(planoToForm(data));
+      } catch {
+        toast.error("Erro ao carregar plano de manutencao");
+        navigate("/planos-manutencao");
+      } finally {
+        setLoadingPlano(false);
+      }
+    }
+
+    carregarPlano();
+  }, [id, navigate]);
 
   function handlePlanoChange(
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -340,20 +401,23 @@ export default function PlanoManutencaoForm() {
     setSaving(true);
 
     try {
+      if (isEdit) {
+        await api.put(`/planos-manutencao/${id}`, buildPayload());
+        toast.success("Plano de manutencao editado com sucesso");
+        navigate("/planos-manutencao");
+        return;
+      }
+
       await api.post("/planos-manutencao/", buildPayload());
       toast.success("Plano de manutencao criado com sucesso");
 
-      setForm({
-        id_tipo_ativo: tiposAtivo[0]?.id_tipo_ativo ?? 0,
-        descricao_geral: "",
-        materiais_previstos: "",
-        procedimentos_instrucoes: "",
-        requisitos_de_seguranca: "",
-        observacao_geral: "",
-        itens: [emptyItem(1)],
-      });
+      setForm(emptyForm(tiposAtivo[0]?.id_tipo_ativo ?? 0));
     } catch {
-      toast.error("Erro ao criar plano de manutencao");
+      toast.error(
+        isEdit
+          ? "Erro ao editar plano de manutencao"
+          : "Erro ao criar plano de manutencao"
+      );
     } finally {
       setSaving(false);
     }
@@ -362,9 +426,19 @@ export default function PlanoManutencaoForm() {
   return (
     <Container>
       <PageTitle>
-        <h2>Novo Plano de Manutencao</h2>
-        <p>Cadastre o plano preventivo e seus itens de execucao.</p>
+        <h2>{isEdit ? "Editar Plano de Manutencao" : "Novo Plano de Manutencao"}</h2>
+        <p>
+          {isEdit
+            ? "Atualize o plano preventivo e seus itens de execucao."
+            : "Cadastre o plano preventivo e seus itens de execucao."}
+        </p>
       </PageTitle>
+
+      {loadingPlano ? (
+        <div className="rounded-md border bg-white p-6 text-sm text-slate-500">
+          Carregando plano...
+        </div>
+      ) : (
 
       <Card onSubmit={handleSubmit}>
         <Section>
@@ -586,10 +660,11 @@ export default function PlanoManutencaoForm() {
         <Actions>
           <ActionButton type="submit" disabled={saving}>
             <Save size={16} />
-            {saving ? "Salvando..." : "Salvar plano"}
+            {saving ? "Salvando..." : isEdit ? "Salvar alteracoes" : "Salvar plano"}
           </ActionButton>
         </Actions>
       </Card>
+      )}
     </Container>
   );
 }

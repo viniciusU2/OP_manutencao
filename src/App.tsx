@@ -151,6 +151,7 @@ function AppContent() {
           <Route path="/planos-manutencao" element={<PlanosManutencaoPage />} />
           <Route path="/planos-manutencao/execucoes" element={<PlanoExecucoesPage />} />
           <Route path="/planos-manutencao/novo" element={<PlanoManutencaoForm />} />
+          <Route path="/planos-manutencao/:id/editar" element={<PlanoManutencaoForm />} />
           <Route path="/perfis" element={<PerfisPage />} />
         </Route>
       </Route>

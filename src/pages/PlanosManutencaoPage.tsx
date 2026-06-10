@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
-import { Eye, Plus } from "lucide-react";
+import { Edit, Eye, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import api from "../api/api";
@@ -129,15 +129,25 @@ export default function PlanosManutencaoPage() {
         id: "acoes",
         header: "",
         cell: ({ row }) => (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setSelectedPlano(row.original)}
-          >
-            <Eye size={16} />
-            Ver itens
-          </Button>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedPlano(row.original)}
+            >
+              <Eye size={16} />
+              Ver itens
+            </Button>
+            <Button asChild type="button" variant="outline" size="sm">
+              <Link
+                to={`/planos-manutencao/${row.original.id_plano_manutencao}/editar`}
+              >
+                <Edit size={16} />
+                Editar
+              </Link>
+            </Button>
+          </div>
         ),
       },
     ],
