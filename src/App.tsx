@@ -121,8 +121,6 @@ function AppContent() {
         >
           <Route path="/subestacao" element={<Subestacao />} />
           <Route path="/subestacaoPage" element={<SubestacoesPage />} />
-          <Route path="/ativo" element={<Ativo />} />
-          <Route path="/ativo/:id" element={<AtivoDetalhe />} />
           <Route path="/os" element={<OrdemServicoPage />} />
           <Route path="/os/lote" element={<OrdemServicoLotePage />} />
           <Route path="/controle" element={<ControleOrdemServico />} />
@@ -133,11 +131,7 @@ function AppContent() {
           <Route path="/si" element={<SIPage />} />
           <Route path="/ss" element={<SSPage />} />
           <Route path="/lr" element={<LivroRegistro />} />
-          <Route path="/importar-ativos" element={<ImportarAtivos />} />
           <Route path="/item-template" element={<ItemTemplateForm />} />
-          <Route path="/planos-manutencao" element={<PlanosManutencaoPage />} />
-          <Route path="/planos-manutencao/execucoes" element={<PlanoExecucoesPage />} />
-          <Route path="/planos-manutencao/novo" element={<PlanoManutencaoForm />} />
           <Route path="/inspecao" element={<InspecaoForm />} />
           <Route path="/inspecoes" element={<InspecoesPage />} />
           <Route path="/inspecoes/nova" element={<InspecaoForm />} />
@@ -151,6 +145,12 @@ function AppContent() {
         </Route>
 
         <Route element={<RoleRoute allowedRoles={["admin"]} />}>
+          <Route path="/ativo" element={<Ativo />} />
+          <Route path="/ativo/:id" element={<AtivoDetalhe />} />
+          <Route path="/importar-ativos" element={<ImportarAtivos />} />
+          <Route path="/planos-manutencao" element={<PlanosManutencaoPage />} />
+          <Route path="/planos-manutencao/execucoes" element={<PlanoExecucoesPage />} />
+          <Route path="/planos-manutencao/novo" element={<PlanoManutencaoForm />} />
           <Route path="/perfis" element={<PerfisPage />} />
         </Route>
       </Route>
