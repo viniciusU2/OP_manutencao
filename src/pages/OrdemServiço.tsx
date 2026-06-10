@@ -357,10 +357,6 @@ export  function OrdemServicoPage() {
       nextErrors.id_ativo = "Selecione o ativo.";
     }
 
-    if (!form.especie?.trim()) {
-      nextErrors.especie = "Selecione a especie.";
-    }
-
     if (!form.esquema_servicos?.trim()) {
       nextErrors.esquema_servicos = "Selecione o esquema de servicos.";
     }
@@ -519,14 +515,13 @@ export  function OrdemServicoPage() {
             <input name="numero_si" onChange={handleChange} value={form.numero_si}/>
           </FormGroup>
 
-          <FormGroup $invalid={!!errors.especie}>
+          <FormGroup>
             <label>Espécie</label>
             <ReadOnlyValue>
               {especiePorAtivo(ativoSelecionadoDetalhes ?? ativos.find(
                 (ativo) => Number(ativo.id_ativo) === Number(form.id_ativo)
               ), tiposAtivo) || "Informe tensão nominal e fabricante no cadastro do ativo"}
             </ReadOnlyValue>
-            {errors.especie && <ErrorText>{errors.especie}</ErrorText>}
           </FormGroup>
 
           <FormGroup>
