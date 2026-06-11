@@ -51,7 +51,7 @@ export default function PlanosManutencaoPage() {
   const [planos, setPlanos] = useState<PlanoManutencaoReadFull[]>([]);
   const [loading, setLoading] = useState(true);
   const [dataSimulacao, setDataSimulacao] = useState("");
-  const [simulando, setSimulando] = useState(false);
+  const [gerandoOs, setGerandoOs] = useState(false);
   const [selectedPlano, setSelectedPlano] =
     useState<PlanoManutencaoReadFull | null>(null);
 
@@ -156,30 +156,30 @@ export default function PlanosManutencaoPage() {
     []
   );
 
-  async function simularGeracaoOs() {
+  async function gerarOsPorData() {
     if (!dataSimulacao) {
-      toast.error("Informe uma data para simular");
+      toast.error("Informe uma data para gerar as OS");
       return;
     }
 
-    setSimulando(true);
+    setGerandoOs(true);
 
     try {
       const { data } = await api.post("/os/gerar-os-planos", {
         data_simulacao: `${dataSimulacao}T23:59:59`,
-        simular: true,
+        simular: false,
       });
 
       const total = data.total_os ?? data.os_criadas?.length ?? 0;
       toast.success(
         total === 1
-          ? "Simulacao concluida: 1 OS seria gerada."
-          : `Simulacao concluida: ${total} OS seriam geradas.`
+          ? "Geracao concluida: 1 OS foi criada."
+          : `Geracao concluida: ${total} OS foram criadas.`
       );
     } catch {
-      toast.error("Erro ao simular geracao de OS");
+      toast.error("Erro ao gerar OS pela data informada");
     } finally {
-      setSimulando(false);
+      setGerandoOs(false);
     }
   }
 
@@ -199,7 +199,7 @@ export default function PlanosManutencaoPage() {
 
         <div className="flex flex-wrap items-end gap-2">
           <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-            Simular dia
+            Gerar para o dia
             <input
               type="date"
               value={dataSimulacao}
@@ -211,10 +211,10 @@ export default function PlanosManutencaoPage() {
           <Button
             type="button"
             variant="outline"
-            onClick={simularGeracaoOs}
-            disabled={simulando}
+            onClick={gerarOsPorData}
+            disabled={gerandoOs}
           >
-            {simulando ? "Simulando..." : "Simular OS"}
+            {gerandoOs ? "Gerando..." : "Gerar OS"}
           </Button>
 
           <Button asChild>
