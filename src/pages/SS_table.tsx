@@ -12,6 +12,16 @@ interface Props {
   subestacao: string;
 }
 
+function extrairSequenciaSS(numero?: string | null) {
+  const match = (numero ?? "").match(/SS-[^-]+-(\d+)-\d{4}/i);
+  return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+}
+
+function extrairAnoSS(numero?: string | null) {
+  const match = (numero ?? "").match(/SS-[^-]+-\d+-(\d{4})/i);
+  return match ? Number(match[1]) : 0;
+}
+
 export function SSPage1({ search, status, subestacao }: Props) {
   const [data, setData] = useState<SS[]>([]);
   const [ativos, setAtivos] = useState<Ativo[]>([]);
@@ -101,6 +111,18 @@ export function SSPage1({ search, status, subestacao }: Props) {
       (ss.id_ativo != null && subestacaoPorAtivo[ss.id_ativo] === Number(subestacao));
 
     return matchSearch && matchStatus && matchSubestacao;
+  }).sort((a, b) => {
+    const anoA = extrairAnoSS(a.numero_ss);
+    const anoB = extrairAnoSS(b.numero_ss);
+
+    if (anoA !== anoB) {
+      return anoB - anoA;
+    }
+
+    const sequenciaA = extrairSequenciaSS(a.numero_ss);
+    const sequenciaB = extrairSequenciaSS(b.numero_ss);
+
+    return sequenciaB - sequenciaA;
   });
 
   return (

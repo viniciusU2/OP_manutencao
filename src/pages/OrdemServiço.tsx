@@ -3,7 +3,7 @@ import styled from "styled-components";
 import api from "../api/api";
 import Container from "../components/Container";
 import type { OrdemServico } from "../types/OrdemServico";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import type {Ativo} from "../types/Ativo"
 import type {Subestacao} from "../types/Subestacao"
 import type { TipoAtivo } from "../types/TipoAtivo";
@@ -147,7 +147,6 @@ const ESQUEMAS_SERVICO = [
 export  function OrdemServicoPage() {
 
   const { id} = useParams();
-  const navigate = useNavigate();
 
   const isEdicao = Boolean(id);
 
@@ -480,7 +479,6 @@ export  function OrdemServicoPage() {
         await api.post("/os",  payload);
         toast.success("OS cadastrada com sucesso!");
       }
-      navigate("/controle");
     } catch (err) {
       console.error("Erro ao salvar OS:", err);
       toast.error("Erro ao salvar OS.");
@@ -814,7 +812,7 @@ export  function OrdemServicoPage() {
 
         <Actions>
          <Button onClick={salvarOuEditar} disabled={saving}>
-  {saving ? "Salvando..." : isEdicao ? "Editar Ordem de Serviço" : "Salvar Ordem de Serviço"}
+  {saving ? "Salvando..." : isEdicao ? "Editar Ordem de Serviço" : "Criar OS"}
 </Button>
 
         </Actions>

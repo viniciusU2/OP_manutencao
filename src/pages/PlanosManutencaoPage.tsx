@@ -50,6 +50,8 @@ function periodicidadeLabel(value: string) {
 export default function PlanosManutencaoPage() {
   const [planos, setPlanos] = useState<PlanoManutencaoReadFull[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataSimulacao, setDataSimulacao] = useState("");
+  const [simulando, setSimulando] = useState(false);
   const [selectedPlano, setSelectedPlano] =
     useState<PlanoManutencaoReadFull | null>(null);
 
@@ -154,6 +156,33 @@ export default function PlanosManutencaoPage() {
     []
   );
 
+  async function simularGeracaoOs() {
+    if (!dataSimulacao) {
+      toast.error("Informe uma data para simular");
+      return;
+    }
+
+    setSimulando(true);
+
+    try {
+      const { data } = await api.post("/os/gerar-os-planos", {
+        data_simulacao: `${dataSimulacao}T23:59:59`,
+        simular: true,
+      });
+
+      const total = data.total_os ?? data.os_criadas?.length ?? 0;
+      toast.success(
+        total === 1
+          ? "Simulacao concluida: 1 OS seria gerada."
+          : `Simulacao concluida: ${total} OS seriam geradas.`
+      );
+    } catch {
+      toast.error("Erro ao simular geracao de OS");
+    } finally {
+      setSimulando(false);
+    }
+  }
+
   return (
     <Container>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -168,12 +197,33 @@ export default function PlanosManutencaoPage() {
           </p>
         </div>
 
-        <Button asChild>
-          <Link to="/planos-manutencao/novo">
-            <Plus size={16} />
-            Novo plano
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+            Simular dia
+            <input
+              type="date"
+              value={dataSimulacao}
+              onChange={(event) => setDataSimulacao(event.target.value)}
+              className="h-9 rounded-md border border-slate-300 px-3 text-sm"
+            />
+          </label>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={simularGeracaoOs}
+            disabled={simulando}
+          >
+            {simulando ? "Simulando..." : "Simular OS"}
+          </Button>
+
+          <Button asChild>
+            <Link to="/planos-manutencao/novo">
+              <Plus size={16} />
+              Novo plano
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <Card className="rounded-lg">

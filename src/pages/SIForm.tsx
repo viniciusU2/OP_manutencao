@@ -2,7 +2,7 @@
 import styled from "styled-components";
 import api from "../api/api";
 import Container from "../components/Container";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import type { SI } from "../types/SI";
 import type { Subestacao } from "../types/Subestacao";
@@ -154,7 +154,6 @@ const TIPOS_PROGRAMACAO_SI = [
 
 export default function SIForm() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { usuario } = useAuth();
 
   const isEdit = Boolean(id);
@@ -457,7 +456,6 @@ export default function SIForm() {
         toast.success("SI cadastrada com sucesso!");
       }
 
-      navigate("/si");
     } catch (error) {
       console.error("Erro ao salvar SI:", error);
       toast.error("Erro ao salvar SI");
@@ -1019,7 +1017,7 @@ export default function SIForm() {
 
         <Actions>
           <Button onClick={salvar}>
-            {isEdit ? "Atualizar SI" : "Salvar SI"}
+            {isEdit ? "Atualizar SI" : "Criar SI"}
           </Button>
         </Actions>
       </Card>

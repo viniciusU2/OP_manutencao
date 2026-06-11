@@ -2,7 +2,7 @@
 import styled from "styled-components";
 import api from "../api/api";
 import Container from "../components/Container";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import type { SolicitacaoServico } from "../types/solicitacaoServico";
@@ -145,7 +145,6 @@ const Button = styled.button`
 export function SSForm() {
 
   const { id } = useParams();
-  const navigate = useNavigate();
   const isEdicao = Boolean(id);
 
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
@@ -353,8 +352,6 @@ async function salvarOuEditar() {
       await api.post("/ss", payload);
       toast.success("SS cadastrada com sucesso!");
     }
-
-    navigate("/ss");
 
   } catch (err) {
     console.error(err);
@@ -665,7 +662,7 @@ async function salvarOuEditar() {
        
           <Button type="button" onClick={salvarOuEditar}>
 
-            {isEdicao ? "Editar SS" : "Salvar SS"}
+            {isEdicao ? "Editar SS" : "Criar SS"}
           </Button>
 
         </Actions>

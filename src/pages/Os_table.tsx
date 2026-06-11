@@ -16,6 +16,7 @@ export function OsPage1({ search, status, subestacao,esquema_servicos }: Props) 
 
   const [data, setData] = useState<OrdemServico[]>([]);
   const [loading, setLoading] = useState(true);
+  const [erroCarregamento, setErroCarregamento] = useState("");
 
   const [openDelete, setOpenDelete] = useState(false);
   const [osSelecionada, setOsSelecionada] = useState<number | null>(null);
@@ -111,11 +112,17 @@ function nomeSeguro(texto: string) {
 
       const res = await api.get("/os");
 
-      setData(res.data);
+      setData(Array.isArray(res.data) ? res.data : []);
+      setErroCarregamento("");
 
-    } catch (error) {
+    } catch (error: any) {
 
       console.error("Erro ao buscar OS:", error);
+      setErroCarregamento(
+        error?.response?.data?.detail ||
+          error?.message ||
+          "Erro ao carregar ordens de servico."
+      );
 
     } finally {
 
@@ -157,6 +164,8 @@ function nomeSeguro(texto: string) {
     return matchSearch && matchStatus && matchSubestacao && matchEsquema;
   });
 
+  const semResultadoPorFiltro = data.length > 0 && filteredData.length === 0;
+
   /* ===============================
      LOADING
   =============================== */
@@ -178,6 +187,17 @@ function nomeSeguro(texto: string) {
   return (
 
     <div className="container mx-auto py-6">
+      {erroCarregamento && (
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          Erro ao carregar OS: {erroCarregamento}
+        </div>
+      )}
+
+      {semResultadoPorFiltro && (
+        <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          Existem {data.length} OS carregadas, mas os filtros atuais nao retornaram registros.
+        </div>
+      )}
 
       <DataTable
         columns={columns(abrirModalDelete,baixarOS)}
