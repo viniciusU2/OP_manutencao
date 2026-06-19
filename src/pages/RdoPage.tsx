@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 import api from "../api/api";
 import Container from "../components/Container";
+import { OnlyAdmin } from "../components/onlyAdmin";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import {
@@ -79,12 +80,18 @@ const periodosConfiguracao = [
 const equipamentosConfiguracao = [
   { label: "LT 500kV 05C2", equipamento: "LT 500kV 05C2", subestacao: "", ordem: 1 },
   { label: "LT 500kV 05C4", equipamento: "LT 500kV 05C4", subestacao: "", ordem: 2 },
-  { label: "SE GOR: Reator 05E7", equipamento: "SE GOR: Reator 05E7", subestacao: "GOR", ordem: 3 },
-  { label: "SE GOR: Reator 05E9", equipamento: "SE GOR: Reator 05E9", subestacao: "GOR", ordem: 4 },
-  { label: "SE BJD: Reator 05E11", equipamento: "SE BJD: Reator 05E11", subestacao: "BJD", ordem: 5 },
-  { label: "SE BJD: Reator 05E9", equipamento: "SE BJD: Reator 05E9", subestacao: "BJD", ordem: 6 },
-  { label: "SE JAB: Reator 5REDZ", equipamento: "SE JAB: Reator 5REDZ", subestacao: "JAB", ordem: 7 },
-  { label: "SE JAB: Reator 5REEZ", equipamento: "SE JAB: Reator 5REEZ", subestacao: "JAB", ordem: 8 },
+  { label: "SE GOR: Reator 05E6", equipamento: "SE GOR: Reator 05E6", subestacao: "GOR", ordem: 3 },
+  { label: "SE GOR: Reator 05E7", equipamento: "SE GOR: Reator 05E7", subestacao: "GOR", ordem: 4 },
+  { label: "SE GOR: Reator 05E8", equipamento: "SE GOR: Reator 05E8", subestacao: "GOR", ordem: 5 },
+  { label: "SE GOR: Reator 05E9", equipamento: "SE GOR: Reator 05E9", subestacao: "GOR", ordem: 6 },
+  { label: "SE BJD: Reator 05E8", equipamento: "SE BJD: Reator 05E8", subestacao: "BJD", ordem: 7 },
+  { label: "SE BJD: Reator 05E9", equipamento: "SE BJD: Reator 05E9", subestacao: "BJD", ordem: 8 },
+  { label: "SE BJD: Reator 05E10", equipamento: "SE BJD: Reator 05E10", subestacao: "BJD", ordem: 9 },
+  { label: "SE BJD: Reator 05E11", equipamento: "SE BJD: Reator 05E11", subestacao: "BJD", ordem: 10 },
+  { label: "SE BJD: Reator 05E12", equipamento: "SE BJD: Reator 05E12", subestacao: "BJD", ordem: 11 },
+  { label: "SE BJD: Reator 05E13", equipamento: "SE BJD: Reator 05E13", subestacao: "BJD", ordem: 12 },
+  { label: "SE JAB: Reator 5REDZ", equipamento: "SE JAB: Reator 5REDZ", subestacao: "JAB", ordem: 13 },
+  { label: "SE JAB: Reator 5REEZ", equipamento: "SE JAB: Reator 5REEZ", subestacao: "JAB", ordem: 14 },
 ];
 
 const estadosConfiguracao = ["Ligada", "Ligado", "Desligada", "Desligado"];
@@ -300,6 +307,29 @@ export default function RdoPage() {
     }
   }
 
+  async function excluirRdo() {
+    if (!selecionado) return;
+
+    const confirmar = window.confirm(
+      `Deseja apagar o RDO #${selecionado.id_rdo}? Esta ação não pode ser desfeita.`
+    );
+    if (!confirmar) return;
+
+    try {
+      await api.delete(`/rdo/${selecionado.id_rdo}`);
+      toast.success("RDO apagado");
+      setSelecionado(null);
+      setHistorico([]);
+      setForm(rdoInicial);
+      setConfigForm(configuracaoInicial);
+      setEventoForm(eventoInicial);
+      setTelaAtiva("consulta");
+      await carregarRdos();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail ?? "Erro ao apagar RDO");
+    }
+  }
+
   async function adicionarConfiguracao() {
     if (!selecionado || !configForm.equipamento.trim() || !configForm.estado.trim()) {
       toast.error("Selecione equipamento e estado");
@@ -401,6 +431,12 @@ export default function RdoPage() {
                 <Download size={16} />
                 Exportar PDF
               </Button>
+              <OnlyAdmin>
+                <Button type="button" variant="destructive" onClick={excluirRdo}>
+                  <Trash2 size={16} />
+                  Apagar
+                </Button>
+              </OnlyAdmin>
               <Button type="button" variant="outline" onClick={validarRdo} disabled={form.status === "VALIDADO"}>
                 <CheckCircle2 size={16} />
                 Validar
@@ -498,7 +534,7 @@ export default function RdoPage() {
                     className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
                   >
                     <option value="all">Todos</option>
-                    <option value="RASCUNHO">Rascunho</option>
+                    <option value="RASCUNHO">Em elaboração</option>
                     <option value="IMPORTADO">Importado</option>
                     <option value="VALIDADO">Validado</option>
                     <option value="CANCELADO">Cancelado</option>
@@ -636,7 +672,7 @@ export default function RdoPage() {
                     onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value }))}
                     className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
                   >
-                    <option value="RASCUNHO">Rascunho</option>
+                    <option value="RASCUNHO">Em elaboração</option>
                     <option value="IMPORTADO">Importado</option>
                     <option value="VALIDADO">Validado</option>
                     <option value="CANCELADO">Cancelado</option>

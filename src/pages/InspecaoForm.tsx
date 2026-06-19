@@ -196,6 +196,7 @@ export default function InspecaoForm() {
     id_os: 0,
     periodicidade: "MENSAL",
     responsavel: "",
+    ficha_inspecao_url: "",
     observacao_geral: "",
     resultados: [] as ResultadoItem[],
   });
@@ -204,7 +205,7 @@ export default function InspecaoForm() {
     api
       .get("/subestacao/ativas")
       .then((res) => setSubestacoes(res.data))
-      .catch(() => toast.error("Erro ao carregar subestaÃ§Ãµes"));
+      .catch(() => toast.error("Erro ao carregar subestações"));
   }, []);
 
   useEffect(() => {
@@ -216,7 +217,7 @@ export default function InspecaoForm() {
     api
       .get(`/ativos/${form.id_subestacao}`)
       .then((res) => setAtivos(res.data))
-      .catch(() => toast.error("Erro ao carregar ativos da subestaÃ§Ã£o"));
+      .catch(() => toast.error("Erro ao carregar ativos da subestação"));
   }, [form.id_subestacao]);
 
   useEffect(() => {
@@ -258,6 +259,7 @@ export default function InspecaoForm() {
           id_os: inspecaoNumero(inspecao.id_os),
           periodicidade: inspecaoTexto(inspecao.periodicidade, "MENSAL"),
           responsavel: inspecaoTexto(inspecao.responsavel),
+          ficha_inspecao_url: inspecaoTexto(inspecao.ficha_inspecao_url),
           observacao_geral: inspecaoTexto(inspecao.observacao_geral),
           resultados: (inspecao.resultados ?? []).map((resultado: any) => ({
             id_plano_item: resultado.id_plano_item,
@@ -280,7 +282,7 @@ export default function InspecaoForm() {
             .catch(() => undefined);
         }
       })
-      .catch(() => toast.error("Erro ao carregar inspeÃ§Ã£o"))
+      .catch(() => toast.error("Erro ao carregar inspeção"))
       .finally(() => setLoading(false));
   }, [id, isEditing]);
 
@@ -319,7 +321,7 @@ export default function InspecaoForm() {
           };
         });
       })
-      .catch(() => toast.error("Erro ao carregar itens de inspeÃ§Ã£o"));
+      .catch(() => toast.error("Erro ao carregar itens de inspeção"));
   }, [form.id_ativo, form.periodicidade]);
 
   const ativoSelecionado = useMemo(
@@ -348,7 +350,7 @@ export default function InspecaoForm() {
     e.preventDefault();
 
     if (!form.id_subestacao) {
-      toast.error("Selecione a subestaÃ§Ã£o");
+      toast.error("Selecione a subestação");
       return;
     }
 
@@ -363,6 +365,7 @@ export default function InspecaoForm() {
     const payload = {
       ...dadosInspecao,
       id_os: form.id_os || null,
+      ficha_inspecao_url: form.ficha_inspecao_url.trim() || null,
       resultados: form.resultados.map((resultado) => ({
         ...resultado,
         valor_medido: resultado.valor_medido === "" ? null : resultado.valor_medido,
@@ -374,17 +377,17 @@ export default function InspecaoForm() {
       const res = isEditing
         ? await api.put(`/inspecoes/${id}`, payload)
         : await api.post("/inspecoes", payload);
-      toast.success(isEditing ? "InspeÃ§Ã£o atualizada" : "InspeÃ§Ã£o salva");
+      toast.success(isEditing ? "Inspeção atualizada" : "Inspeção salva");
       navigate(`/inspecoes/${res.data.id_inspecao}`);
     } catch {
-      toast.error("Erro ao salvar inspeÃ§Ã£o");
+      toast.error("Erro ao salvar inspeção");
     }
   }
 
   return (
     <Container>
       <Header>
-        <Title>{isEditing ? "Editar InspeÃ§Ã£o" : "Nova InspeÃ§Ã£o"}</Title>
+        <Title>{isEditing ? "Editar Inspeção" : "Nova Inspeção"}</Title>
         <Button variant="outline" type="button" onClick={() => navigate("/inspecoes")}>
           Voltar
         </Button>
@@ -393,7 +396,7 @@ export default function InspecaoForm() {
       <Card className="p-6">
         <FormGrid onSubmit={handleSubmit}>
           <Field>
-            SubestaÃ§Ã£o
+            Subestação
             <Select
               value={form.id_subestacao ? String(form.id_subestacao) : ""}
               onChange={(e) =>
@@ -407,7 +410,7 @@ export default function InspecaoForm() {
               }
               disabled={loading || isEditing}
             >
-              <option value="">Selecione a subestaÃ§Ã£o</option>
+              <option value="">Selecione a subestação</option>
               {subestacoes.map((subestacao) => (
                 <option key={subestacao.id_subestacao} value={subestacao.id_subestacao}>
                   {subestacao.nome}
@@ -426,7 +429,7 @@ export default function InspecaoForm() {
               disabled={loading || isEditing || !form.id_subestacao}
             >
               <option value="">
-                {form.id_subestacao ? "Selecione o ativo" : "Selecione primeiro a subestaÃ§Ã£o"}
+                {form.id_subestacao ? "Selecione o ativo" : "Selecione primeiro a subestação"}
               </option>
               {ativos.map((ativo) => (
                 <option key={ativo.id_ativo} value={ativo.id_ativo}>
@@ -452,7 +455,7 @@ export default function InspecaoForm() {
           </Field>
 
           <Field>
-            ResponsÃ¡vel
+            Responsável
             <UsuarioSelect
               value={form.responsavel}
               onChange={(e) => setForm({ ...form, responsavel: e.target.value })}
@@ -492,7 +495,18 @@ export default function InspecaoForm() {
 
           <FullWidth>
             <Field>
-              ObservaÃ§Ã£o geral
+              URL da ficha de inspeção física
+              <Input
+                value={form.ficha_inspecao_url}
+                onChange={(e) => setForm({ ...form, ficha_inspecao_url: e.target.value })}
+                placeholder="https://... ou caminho do arquivo"
+              />
+            </Field>
+          </FullWidth>
+
+          <FullWidth>
+            <Field>
+              Observação geral
               <Textarea
                 value={form.observacao_geral}
                 onChange={(e) => setForm({ ...form, observacao_geral: e.target.value })}
@@ -567,7 +581,7 @@ export default function InspecaoForm() {
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {isEditing ? "Salvar AlteraÃ§Ãµes" : "Salvar InspeÃ§Ã£o"}
+              {isEditing ? "Salvar Alterações" : "Salvar Inspeção"}
             </Button>
           </Actions>
         </FormGrid>

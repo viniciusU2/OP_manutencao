@@ -184,7 +184,7 @@ export default function InspecoesPage() {
     api
       .get("/subestacao/ativas")
       .then((res) => setSubestacoes(res.data))
-      .catch(() => toast.error("Erro ao carregar subestaÃ§Ãµes"));
+      .catch(() => toast.error("Erro ao carregar subestações"));
   }, []);
 
   useEffect(() => {
@@ -220,10 +220,7 @@ export default function InspecoesPage() {
       const matchStatus = status === "all" || inspecao.status_geral === status;
       const matchPeriodicidade =
         periodicidade === "all" || inspecao.periodicidade === periodicidade;
-      const matchSubestacao =
-        subestacao === "all" || String(inspecao.id_subestacao ?? "") === subestacao;
-
-      return matchSearch && matchStatus && matchPeriodicidade && matchSubestacao;
+      return matchSearch && matchStatus && matchPeriodicidade;
     });
   }, [inspecoes, periodicidade, search, status, subestacao]);
 
@@ -241,7 +238,7 @@ export default function InspecoesPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
         <Select value={subestacao} onChange={(e) => setSubestacao(e.target.value)}>
-          <option value="all">Todas subestaÃ§Ãµes</option>
+          <option value="all">Todas subestações</option>
           {subestacoes.map((item) => (
             <option key={item.id_subestacao} value={String(item.id_subestacao)}>
               {item.nome}

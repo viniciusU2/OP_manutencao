@@ -32,6 +32,7 @@ interface InspecaoDetalheData {
   data_inspecao: string;
   periodicidade: string;
   responsavel?: string;
+  ficha_inspecao_url?: string | null;
   observacao_geral?: string;
   status_geral: "OK" | "NOK" | "NA";
   codigo_ativo?: string;
@@ -191,6 +192,22 @@ export function InspecaoDetalhe() {
               <p className="font-medium">{inspecao.responsavel || "Não informado"}</p>
             </div>
           </div>
+
+          {inspecao.ficha_inspecao_url && (
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Ficha de inspeção física
+              </p>
+              <a
+                href={inspecao.ficha_inspecao_url}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-blue-700 underline"
+              >
+                Abrir ficha
+              </a>
+            </div>
+          )}
 
           {inspecao.observacao_geral && (
             <div>
