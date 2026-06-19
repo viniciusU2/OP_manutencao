@@ -90,8 +90,8 @@ const equipamentosConfiguracao = [
   { label: "SE BJD: Reator 05E11", equipamento: "SE BJD: Reator 05E11", subestacao: "BJD", ordem: 10 },
   { label: "SE BJD: Reator 05E12", equipamento: "SE BJD: Reator 05E12", subestacao: "BJD", ordem: 11 },
   { label: "SE BJD: Reator 05E13", equipamento: "SE BJD: Reator 05E13", subestacao: "BJD", ordem: 12 },
-  { label: "SE JAB: Reator 5REDZ", equipamento: "SE JAB: Reator 5REDZ", subestacao: "JAB", ordem: 13 },
-  { label: "SE JAB: Reator 5REEZ", equipamento: "SE JAB: Reator 5REEZ", subestacao: "JAB", ordem: 14 },
+  { label: "SE JAB: Reator 9138", equipamento: "SE JAB: Reator 9138", subestacao: "JAB", ordem: 13 },
+  { label: "SE JAB: Reator 9168", equipamento: "SE JAB: Reator 9168", subestacao: "JAB", ordem: 14 },
 ];
 
 const estadosConfiguracao = ["Ligada", "Ligado", "Desligada", "Desligado"];
