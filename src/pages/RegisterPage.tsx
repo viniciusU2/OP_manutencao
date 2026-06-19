@@ -114,7 +114,6 @@ export function RegisterPage() {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [role, setRole] = useState("usuario");
   const [erro, setErro] = useState("");
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -126,7 +125,7 @@ export function RegisterPage() {
         nome,
         email,
         senha,
-        role,
+        role: "usuario",
       });
 
       alert("Usuário criado com sucesso!");
@@ -175,14 +174,6 @@ export function RegisterPage() {
                   onChange={(e) => setSenha(e.target.value)}
                   required
                 />
-              </FormGroup>
-
-              <FormGroup>
-                <label>Perfil</label>
-                <select value={role} onChange={(e) => setRole(e.target.value)}>
-                  <option value="usuario">Usuario</option>
-                  <option value="mantenedor">Mantenedor</option>
-                </select>
               </FormGroup>
             </FormGrid>
 

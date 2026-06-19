@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
-import { Edit, Eye, Plus } from "lucide-react";
+import { Edit, Eye, ListChecks, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import api from "../api/api";
@@ -47,11 +47,34 @@ function periodicidadeLabel(value: string) {
   return value.replace("_", " ");
 }
 
+type OsPrevistaPlano = {
+  id_plano_manutencao: number;
+  plano?: string | null;
+  tipo_ativo?: string | null;
+  ativo?: string | null;
+  fase?: string | null;
+  vao?: string | null;
+  data_programada?: string | null;
+  esquema_servicos?: string | null;
+  descricao_servicos?: string | null;
+  responsavel?: string | null;
+  substituto?: string | null;
+  itens_plano?: {
+    id_plano_item: number;
+    nome_item?: string | null;
+    periodicidade?: string | null;
+    proxima_execucao?: string | null;
+  }[];
+};
+
 export default function PlanosManutencaoPage() {
   const [planos, setPlanos] = useState<PlanoManutencaoReadFull[]>([]);
   const [loading, setLoading] = useState(true);
   const [dataSimulacao, setDataSimulacao] = useState("");
   const [gerandoOs, setGerandoOs] = useState(false);
+  const [simulandoOs, setSimulandoOs] = useState(false);
+  const [osPrevistas, setOsPrevistas] = useState<OsPrevistaPlano[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedPlano, setSelectedPlano] =
     useState<PlanoManutencaoReadFull | null>(null);
 
@@ -183,6 +206,37 @@ export default function PlanosManutencaoPage() {
     }
   }
 
+  async function simularOsPorData() {
+    if (!dataSimulacao) {
+      toast.error("Informe uma data para simular as OS");
+      return;
+    }
+
+    setSimulandoOs(true);
+
+    try {
+      const { data } = await api.post("/os/gerar-os-planos", {
+        data_simulacao: `${dataSimulacao}T23:59:59`,
+        simular: true,
+      });
+
+      const previstas = data.os_previstas ?? [];
+      setOsPrevistas(previstas);
+      setPreviewOpen(true);
+
+      const total = data.total_os ?? previstas.length;
+      toast.success(
+        total === 1
+          ? "Simulacao concluida: 1 OS seria criada."
+          : `Simulacao concluida: ${total} OS seriam criadas.`
+      );
+    } catch {
+      toast.error("Erro ao simular OS pela data informada");
+    } finally {
+      setSimulandoOs(false);
+    }
+  }
+
   return (
     <Container>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -211,8 +265,18 @@ export default function PlanosManutencaoPage() {
           <Button
             type="button"
             variant="outline"
+            onClick={simularOsPorData}
+            disabled={simulandoOs || gerandoOs}
+          >
+            <ListChecks size={16} />
+            {simulandoOs ? "Simulando..." : "Simular OS"}
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
             onClick={gerarOsPorData}
-            disabled={gerandoOs}
+            disabled={gerandoOs || simulandoOs}
           >
             {gerandoOs ? "Gerando..." : "Gerar OS"}
           </Button>
@@ -264,7 +328,98 @@ export default function PlanosManutencaoPage() {
           <ItensPlanoTable itens={selectedPlano?.itens ?? []} />
         </DialogContent>
       </Dialog>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-h-[86vh] overflow-y-auto sm:max-w-6xl">
+          <DialogHeader>
+            <DialogTitle>OS previstas para {dataSimulacao}</DialogTitle>
+            <DialogDescription>
+              {osPrevistas.length
+                ? `${osPrevistas.length} OS seriam criadas nessa data.`
+                : "Nenhuma OS seria criada nessa data."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <OsPrevistasTable osPrevistas={osPrevistas} />
+        </DialogContent>
+      </Dialog>
     </Container>
+  );
+}
+
+function formatarData(data?: string | null) {
+  if (!data) return "-";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(data));
+}
+
+function OsPrevistasTable({
+  osPrevistas,
+}: {
+  osPrevistas: OsPrevistaPlano[];
+}) {
+  if (!osPrevistas.length) {
+    return (
+      <div className="rounded-md border p-4 text-sm text-slate-500">
+        Nenhuma OS prevista para a data informada.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Ativo</TableHead>
+            <TableHead>Tipo</TableHead>
+            <TableHead>Plano</TableHead>
+            <TableHead>Data programada</TableHead>
+            <TableHead>Esquema</TableHead>
+            <TableHead>Itens</TableHead>
+            <TableHead>Equipe</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {osPrevistas.map((osPrevista, index) => (
+            <TableRow
+              key={`${osPrevista.id_plano_manutencao}-${osPrevista.ativo ?? index}`}
+            >
+              <TableCell>
+                <div className="font-medium">{osPrevista.ativo ?? "-"}</div>
+                <div className="text-xs text-slate-500">
+                  {[osPrevista.vao, osPrevista.fase].filter(Boolean).join(" / ") ||
+                    "-"}
+                </div>
+              </TableCell>
+              <TableCell>{osPrevista.tipo_ativo ?? "-"}</TableCell>
+              <TableCell className="max-w-[280px] whitespace-normal">
+                {resumo(osPrevista.plano ?? undefined)}
+              </TableCell>
+              <TableCell>{formatarData(osPrevista.data_programada)}</TableCell>
+              <TableCell>{osPrevista.esquema_servicos ?? "-"}</TableCell>
+              <TableCell className="max-w-[320px] whitespace-normal">
+                {osPrevista.itens_plano?.length
+                  ? osPrevista.itens_plano
+                      .map((item) => item.nome_item)
+                      .filter(Boolean)
+                      .join("; ")
+                  : "-"}
+              </TableCell>
+              <TableCell>
+                <div>{osPrevista.responsavel ?? "-"}</div>
+                <div className="text-xs text-slate-500">
+                  {osPrevista.substituto ?? "-"}
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 

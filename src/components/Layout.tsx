@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Calendar,
   Download,
+  FileClock,
   LogOut,
   Menu,
   UserCog,
@@ -18,7 +19,13 @@ import {
 } from "lucide-react"
 
 import { useAuth } from "../context/AuthContext"
-import { canDelete, canManage } from "../lib/permissions"
+import {
+  OPERATOR_MENU_PATHS,
+  canAccessOperational,
+  canDelete,
+  canManage,
+  isOperator,
+} from "../lib/permissions"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 
 /* ================= CONFIG ================= */
@@ -295,6 +302,7 @@ const menu = [
   { name: "OS", path: "/controle", icon: ClipboardList, restricted: true },
   { name: "SS", path: "/ss", icon: FileText, restricted: true },
   { name: "SI", path: "/si", icon: Calendar, restricted: true },
+  { name: "RDO", path: "/rdo", icon: FileClock, restricted: true },
   { name: "Plano Manut.", path: "/planos-manutencao", icon: Wrench, restricted: true, adminOnly: true },
   { name: "Exec. Planos", path: "/planos-manutencao/execucoes", icon: ListChecks, restricted: true, adminOnly: true },
   { name: "Inspeções", path: "/inspecoes", icon: ListChecks, restricted: true },
@@ -313,8 +321,11 @@ export default function Layout() {
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const visibleMenu = menu.filter((item) => {
+    if (isOperator(usuario?.role)) {
+      return OPERATOR_MENU_PATHS.includes(item.path)
+    }
     if (item.adminOnly) return canDelete(usuario?.role)
-    return !item.restricted || canManage(usuario?.role)
+    return !item.restricted || canManage(usuario?.role) || canAccessOperational(usuario?.role)
   })
 
   // Persistência

@@ -20,6 +20,7 @@ interface Resultado {
   unidade?: string;
   status_item: "OK" | "NOK" | "NA";
   observacao_item?: string;
+  foto?: string | null;
 }
 
 interface InspecaoDetalheData {
@@ -226,6 +227,25 @@ export function InspecaoDetalhe() {
                       <p className="mt-1 text-sm text-muted-foreground">
                         {resultado.observacao_item}
                       </p>
+                    )}
+                    {resultado.foto && (
+                      <div className="mt-3">
+                        <a
+                          href={resultado.foto}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm font-medium text-blue-700 underline"
+                        >
+                          Abrir foto
+                        </a>
+                        {/^(https?:|data:image\/)/i.test(resultado.foto) && (
+                          <img
+                            src={resultado.foto}
+                            alt={`Foto do item ${resultado.nome_item || ""}`}
+                            className="mt-2 max-h-40 rounded-md border object-contain"
+                          />
+                        )}
+                      </div>
                     )}
                   </div>
                   <Badge className={statusClass(resultado.status_item)}>

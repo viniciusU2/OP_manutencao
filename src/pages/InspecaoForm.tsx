@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import { toast } from "sonner";
@@ -17,15 +17,22 @@ interface ResultadoItem {
   valor_medido?: number | "";
   status_item: Status;
   observacao_item?: string;
+  foto?: string;
 }
 
 interface Ativo {
   id_ativo: number;
+  id_subestacao: number;
   codigo_ativo: string;
   id_tipo_ativo: number;
   fase?: string;
   vao?: string;
   tipo_ativo?: string;
+}
+
+interface Subestacao {
+  id_subestacao: number;
+  nome: string;
 }
 
 interface PlanoItem {
@@ -137,7 +144,7 @@ const ItemHeader = styled.div`
 
 const ItemGrid = styled.div`
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) 120px minmax(160px, 2fr);
+  grid-template-columns: minmax(120px, 1fr) 120px minmax(160px, 1.4fr) minmax(160px, 1.4fr);
   gap: 10px;
 
   @media (max-width: 760px) {
@@ -178,11 +185,13 @@ export default function InspecaoForm() {
   const navigate = useNavigate();
   const isEditing = Boolean(id);
 
+  const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
   const [ativos, setAtivos] = useState<Ativo[]>([]);
   const [itens, setItens] = useState<PlanoItem[]>([]);
   const [ordensServico, setOrdensServico] = useState<OrdemServicoOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
+    id_subestacao: 0,
     id_ativo: 0,
     id_os: 0,
     periodicidade: "MENSAL",
@@ -193,21 +202,45 @@ export default function InspecaoForm() {
 
   useEffect(() => {
     api
-      .get("/ativo")
-      .then((res) => setAtivos(res.data))
-      .catch(() => toast.error("Erro ao carregar ativos"));
+      .get("/subestacao/ativas")
+      .then((res) => setSubestacoes(res.data))
+      .catch(() => toast.error("Erro ao carregar subestaÃ§Ãµes"));
   }, []);
+
+  useEffect(() => {
+    if (!form.id_subestacao) {
+      setAtivos([]);
+      return;
+    }
+
+    api
+      .get(`/ativos/${form.id_subestacao}`)
+      .then((res) => setAtivos(res.data))
+      .catch(() => toast.error("Erro ao carregar ativos da subestaÃ§Ã£o"));
+  }, [form.id_subestacao]);
 
   useEffect(() => {
     if (isEditing) return;
     const ativoParam = Number(searchParams.get("id_ativo"));
     const osParam = Number(searchParams.get("id_os"));
     if (Number.isFinite(ativoParam) && ativoParam > 0) {
-      setForm((prev) => ({
-        ...prev,
-        id_ativo: ativoParam,
-        id_os: Number.isFinite(osParam) && osParam > 0 ? osParam : prev.id_os,
-      }));
+      api
+        .get(`/ativo/${ativoParam}`)
+        .then((res) => {
+          setForm((prev) => ({
+            ...prev,
+            id_subestacao: Number(res.data.id_subestacao) || prev.id_subestacao,
+            id_ativo: ativoParam,
+            id_os: Number.isFinite(osParam) && osParam > 0 ? osParam : prev.id_os,
+          }));
+        })
+        .catch(() => {
+          setForm((prev) => ({
+            ...prev,
+            id_ativo: ativoParam,
+            id_os: Number.isFinite(osParam) && osParam > 0 ? osParam : prev.id_os,
+          }));
+        });
     }
   }, [isEditing, searchParams]);
 
@@ -220,6 +253,7 @@ export default function InspecaoForm() {
       .then((res) => {
         const inspecao = res.data;
         setForm({
+          id_subestacao: inspecaoNumero(inspecao.id_subestacao),
           id_ativo: inspecaoNumero(inspecao.id_ativo),
           id_os: inspecaoNumero(inspecao.id_os),
           periodicidade: inspecaoTexto(inspecao.periodicidade, "MENSAL"),
@@ -230,10 +264,23 @@ export default function InspecaoForm() {
             valor_medido: resultado.valor_medido ?? "",
             status_item: resultado.status_item ?? "NA",
             observacao_item: resultado.observacao_item ?? "",
+            foto: resultado.foto ?? "",
           })),
         });
+
+        if (!inspecao.id_subestacao && inspecao.id_ativo) {
+          api
+            .get(`/ativo/${inspecao.id_ativo}`)
+            .then((ativoRes) => {
+              setForm((prev) => ({
+                ...prev,
+                id_subestacao: inspecaoNumero(ativoRes.data.id_subestacao),
+              }));
+            })
+            .catch(() => undefined);
+        }
       })
-      .catch(() => toast.error("Erro ao carregar inspeção"))
+      .catch(() => toast.error("Erro ao carregar inspeÃ§Ã£o"))
       .finally(() => setLoading(false));
   }, [id, isEditing]);
 
@@ -267,11 +314,12 @@ export default function InspecaoForm() {
               status_item: existentes.get(item.id_plano_item)?.status_item ?? "NA",
               valor_medido: existentes.get(item.id_plano_item)?.valor_medido ?? "",
               observacao_item: existentes.get(item.id_plano_item)?.observacao_item ?? "",
+              foto: existentes.get(item.id_plano_item)?.foto ?? "",
             })),
           };
         });
       })
-      .catch(() => toast.error("Erro ao carregar itens de inspeção"));
+      .catch(() => toast.error("Erro ao carregar itens de inspeÃ§Ã£o"));
   }, [form.id_ativo, form.periodicidade]);
 
   const ativoSelecionado = useMemo(
@@ -299,17 +347,26 @@ export default function InspecaoForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    if (!form.id_subestacao) {
+      toast.error("Selecione a subestaÃ§Ã£o");
+      return;
+    }
+
     if (!form.id_ativo) {
       toast.error("Selecione um ativo");
       return;
     }
 
+    const { id_subestacao: _idSubestacao, ...dadosInspecao } = form;
+    void _idSubestacao;
+
     const payload = {
-      ...form,
+      ...dadosInspecao,
       id_os: form.id_os || null,
       resultados: form.resultados.map((resultado) => ({
         ...resultado,
         valor_medido: resultado.valor_medido === "" ? null : resultado.valor_medido,
+        foto: resultado.foto?.trim() || null,
       })),
     };
 
@@ -317,17 +374,17 @@ export default function InspecaoForm() {
       const res = isEditing
         ? await api.put(`/inspecoes/${id}`, payload)
         : await api.post("/inspecoes", payload);
-      toast.success(isEditing ? "Inspeção atualizada" : "Inspeção salva");
+      toast.success(isEditing ? "InspeÃ§Ã£o atualizada" : "InspeÃ§Ã£o salva");
       navigate(`/inspecoes/${res.data.id_inspecao}`);
     } catch {
-      toast.error("Erro ao salvar inspeção");
+      toast.error("Erro ao salvar inspeÃ§Ã£o");
     }
   }
 
   return (
     <Container>
       <Header>
-        <Title>{isEditing ? "Editar Inspeção" : "Nova Inspeção"}</Title>
+        <Title>{isEditing ? "Editar InspeÃ§Ã£o" : "Nova InspeÃ§Ã£o"}</Title>
         <Button variant="outline" type="button" onClick={() => navigate("/inspecoes")}>
           Voltar
         </Button>
@@ -336,15 +393,41 @@ export default function InspecaoForm() {
       <Card className="p-6">
         <FormGrid onSubmit={handleSubmit}>
           <Field>
+            SubestaÃ§Ã£o
+            <Select
+              value={form.id_subestacao ? String(form.id_subestacao) : ""}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  id_subestacao: Number(e.target.value),
+                  id_ativo: 0,
+                  id_os: 0,
+                  resultados: [],
+                })
+              }
+              disabled={loading || isEditing}
+            >
+              <option value="">Selecione a subestaÃ§Ã£o</option>
+              {subestacoes.map((subestacao) => (
+                <option key={subestacao.id_subestacao} value={subestacao.id_subestacao}>
+                  {subestacao.nome}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field>
             Ativo
             <Select
               value={form.id_ativo ? String(form.id_ativo) : ""}
               onChange={(e) =>
                 setForm({ ...form, id_ativo: Number(e.target.value), id_os: 0 })
               }
-              disabled={loading || isEditing}
+              disabled={loading || isEditing || !form.id_subestacao}
             >
-              <option value="">Selecione o ativo</option>
+              <option value="">
+                {form.id_subestacao ? "Selecione o ativo" : "Selecione primeiro a subestaÃ§Ã£o"}
+              </option>
               {ativos.map((ativo) => (
                 <option key={ativo.id_ativo} value={ativo.id_ativo}>
                   {ativo.codigo_ativo} - {[ativo.fase, ativo.vao].filter(Boolean).join(" - ")}
@@ -369,7 +452,7 @@ export default function InspecaoForm() {
           </Field>
 
           <Field>
-            Responsável
+            ResponsÃ¡vel
             <UsuarioSelect
               value={form.responsavel}
               onChange={(e) => setForm({ ...form, responsavel: e.target.value })}
@@ -409,7 +492,7 @@ export default function InspecaoForm() {
 
           <FullWidth>
             <Field>
-              Observação geral
+              ObservaÃ§Ã£o geral
               <Textarea
                 value={form.observacao_geral}
                 onChange={(e) => setForm({ ...form, observacao_geral: e.target.value })}
@@ -467,6 +550,11 @@ export default function InspecaoForm() {
                           updateResultado(index, "observacao_item", e.target.value)
                         }
                       />
+                      <Input
+                        placeholder="Foto opcional (URL ou caminho)"
+                        value={resultado?.foto ?? ""}
+                        onChange={(e) => updateResultado(index, "foto", e.target.value)}
+                      />
                     </ItemGrid>
                   </CardItem>
                 );
@@ -479,7 +567,7 @@ export default function InspecaoForm() {
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {isEditing ? "Salvar Alterações" : "Salvar Inspeção"}
+              {isEditing ? "Salvar AlteraÃ§Ãµes" : "Salvar InspeÃ§Ã£o"}
             </Button>
           </Actions>
         </FormGrid>
@@ -496,3 +584,4 @@ function inspecaoNumero(valor: unknown) {
   const n = Number(valor);
   return Number.isFinite(n) ? n : 0;
 }
+

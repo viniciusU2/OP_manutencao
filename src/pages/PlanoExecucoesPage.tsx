@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Edit, RefreshCw, Search } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  CheckCircle2,
+  ClipboardList,
+  Edit,
+  RefreshCw,
+  RotateCcw,
+  Search,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import api from "../api/api";
@@ -70,6 +79,45 @@ function isVencida(execucao: PlanoExecucaoPlanilha) {
   return new Date(execucao.proxima_execucao).getTime() < Date.now();
 }
 
+function normalizeFilterValue(value?: string | null) {
+  const text = value?.trim();
+  return text || "";
+}
+
+function formatPeriodicidade(value?: string | null) {
+  return value ? value.replace("_", " ") : "-";
+}
+
+function isInsideDateRange(value: string, inicio: string, fim: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+
+  if (inicio) {
+    const start = new Date(`${inicio}T00:00:00`);
+    if (date.getTime() < start.getTime()) return false;
+  }
+
+  if (fim) {
+    const end = new Date(`${fim}T23:59:59`);
+    if (date.getTime() > end.getTime()) return false;
+  }
+
+  return true;
+}
+
+function uniqueOptions(
+  execucoes: PlanoExecucaoPlanilha[],
+  getter: (execucao: PlanoExecucaoPlanilha) => string | null | undefined
+) {
+  return Array.from(
+    new Set(
+      execucoes
+        .map((execucao) => normalizeFilterValue(getter(execucao)))
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+
 function resumo(value?: string | null) {
   const text = value?.trim();
   if (!text) return "-";
@@ -83,7 +131,17 @@ export default function PlanoExecucoesPage() {
   const [sincronizando, setSincronizando] = useState(false);
   const [saving, setSaving] = useState(false);
   const [busca, setBusca] = useState("");
-  const [somenteVencidas, setSomenteVencidas] = useState(false);
+  const [filtros, setFiltros] = useState({
+    status: "todos",
+    instalacao: "todos",
+    tipo_ativo: "todos",
+    periodicidade: "todos",
+    fase: "todos",
+    vao: "todos",
+    ultima_execucao: "todos",
+    proxima_inicio: "",
+    proxima_fim: "",
+  });
   const [selected, setSelected] = useState<PlanoExecucaoPlanilha | null>(null);
   const [form, setForm] = useState({
     ultima_execucao: "",
@@ -109,11 +167,89 @@ export default function PlanoExecucoesPage() {
     carregarExecucoes();
   }, []);
 
+  const opcoes = useMemo(
+    () => ({
+      instalacoes: uniqueOptions(execucoes, (execucao) => execucao.instalacao),
+      tiposAtivo: uniqueOptions(execucoes, (execucao) => execucao.tipo_ativo),
+      periodicidades: uniqueOptions(
+        execucoes,
+        (execucao) => execucao.periodicidade
+      ),
+      fases: uniqueOptions(execucoes, (execucao) => execucao.fase),
+      vaos: uniqueOptions(execucoes, (execucao) => execucao.vao),
+    }),
+    [execucoes]
+  );
+
+  const indicadores = useMemo(() => {
+    const vencidas = execucoes.filter(isVencida).length;
+    const semUltimaExecucao = execucoes.filter(
+      (execucao) => !execucao.ultima_execucao
+    ).length;
+
+    return {
+      total: execucoes.length,
+      vencidas,
+      programadas: execucoes.length - vencidas,
+      semUltimaExecucao,
+    };
+  }, [execucoes]);
+
   const filtradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
 
     return execucoes.filter((execucao) => {
-      if (somenteVencidas && !isVencida(execucao)) return false;
+      const vencida = isVencida(execucao);
+
+      if (filtros.status === "vencidas" && !vencida) return false;
+      if (filtros.status === "programadas" && vencida) return false;
+      if (
+        filtros.instalacao !== "todos" &&
+        normalizeFilterValue(execucao.instalacao) !== filtros.instalacao
+      ) {
+        return false;
+      }
+      if (
+        filtros.tipo_ativo !== "todos" &&
+        normalizeFilterValue(execucao.tipo_ativo) !== filtros.tipo_ativo
+      ) {
+        return false;
+      }
+      if (
+        filtros.periodicidade !== "todos" &&
+        execucao.periodicidade !== filtros.periodicidade
+      ) {
+        return false;
+      }
+      if (
+        filtros.fase !== "todos" &&
+        normalizeFilterValue(execucao.fase) !== filtros.fase
+      ) {
+        return false;
+      }
+      if (
+        filtros.vao !== "todos" &&
+        normalizeFilterValue(execucao.vao) !== filtros.vao
+      ) {
+        return false;
+      }
+      if (filtros.ultima_execucao === "com" && !execucao.ultima_execucao) {
+        return false;
+      }
+      if (filtros.ultima_execucao === "sem" && execucao.ultima_execucao) {
+        return false;
+      }
+      if (
+        (filtros.proxima_inicio || filtros.proxima_fim) &&
+        !isInsideDateRange(
+          execucao.proxima_execucao,
+          filtros.proxima_inicio,
+          filtros.proxima_fim
+        )
+      ) {
+        return false;
+      }
+
       if (!termo) return true;
 
       return [
@@ -129,7 +265,26 @@ export default function PlanoExecucoesPage() {
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(termo));
     });
-  }, [busca, execucoes, somenteVencidas]);
+  }, [busca, execucoes, filtros]);
+
+  function updateFiltro(name: keyof typeof filtros, value: string) {
+    setFiltros((current) => ({ ...current, [name]: value }));
+  }
+
+  function limparFiltros() {
+    setBusca("");
+    setFiltros({
+      status: "todos",
+      instalacao: "todos",
+      tipo_ativo: "todos",
+      periodicidade: "todos",
+      fase: "todos",
+      vao: "todos",
+      ultima_execucao: "todos",
+      proxima_inicio: "",
+      proxima_fim: "",
+    });
+  }
 
   function abrirEdicao(execucao: PlanoExecucaoPlanilha) {
     setSelected(execucao);
@@ -222,25 +377,213 @@ export default function PlanoExecucoesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-              <Input
-                value={busca}
-                onChange={(event) => setBusca(event.target.value)}
-                className="pl-9"
-                placeholder="Buscar por ativo, item, instalacao ou periodicidade..."
-              />
+          <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-lg border bg-slate-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-slate-500">Total</span>
+                <ClipboardList className="h-4 w-4 text-slate-500" />
+              </div>
+              <div className="mt-2 text-2xl font-semibold text-slate-900">
+                {indicadores.total}
+              </div>
             </div>
 
-            <label className="flex items-center gap-2 text-sm text-slate-600">
-              <input
-                type="checkbox"
-                checked={somenteVencidas}
-                onChange={(event) => setSomenteVencidas(event.target.checked)}
-              />
-              Somente vencidas
-            </label>
+            <div className="rounded-lg border bg-red-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-red-700">Vencidas</span>
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+              </div>
+              <div className="mt-2 text-2xl font-semibold text-red-700">
+                {indicadores.vencidas}
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-emerald-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-emerald-700">Programadas</span>
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div className="mt-2 text-2xl font-semibold text-emerald-700">
+                {indicadores.programadas}
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-amber-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-amber-700">Sem ultima execucao</span>
+                <CalendarDays className="h-4 w-4 text-amber-600" />
+              </div>
+              <div className="mt-2 text-2xl font-semibold text-amber-700">
+                {indicadores.semUltimaExecucao}
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-5 rounded-lg border bg-white p-4">
+            <div className="grid gap-3 lg:grid-cols-[minmax(260px,1.4fr)_repeat(3,minmax(160px,1fr))]">
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                Busca
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Input
+                    value={busca}
+                    onChange={(event) => setBusca(event.target.value)}
+                    className="pl-9"
+                    placeholder="Ativo, item, plano, instalacao..."
+                  />
+                </div>
+              </label>
+
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                Status
+                <select
+                  value={filtros.status}
+                  onChange={(event) => updateFiltro("status", event.target.value)}
+                  className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="todos">Todos</option>
+                  <option value="vencidas">Vencidas</option>
+                  <option value="programadas">Programadas</option>
+                </select>
+              </label>
+
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                Instalacao
+                <select
+                  value={filtros.instalacao}
+                  onChange={(event) =>
+                    updateFiltro("instalacao", event.target.value)
+                  }
+                  className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="todos">Todas</option>
+                  {opcoes.instalacoes.map((instalacao) => (
+                    <option key={instalacao} value={instalacao}>
+                      {instalacao}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                Tipo equipamento
+                <select
+                  value={filtros.tipo_ativo}
+                  onChange={(event) =>
+                    updateFiltro("tipo_ativo", event.target.value)
+                  }
+                  className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="todos">Todos</option>
+                  {opcoes.tiposAtivo.map((tipo) => (
+                    <option key={tipo} value={tipo}>
+                      {tipo}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                Periodicidade
+                <select
+                  value={filtros.periodicidade}
+                  onChange={(event) =>
+                    updateFiltro("periodicidade", event.target.value)
+                  }
+                  className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="todos">Todas</option>
+                  {opcoes.periodicidades.map((periodicidade) => (
+                    <option key={periodicidade} value={periodicidade}>
+                      {formatPeriodicidade(periodicidade)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                Fase
+                <select
+                  value={filtros.fase}
+                  onChange={(event) => updateFiltro("fase", event.target.value)}
+                  className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="todos">Todas</option>
+                  {opcoes.fases.map((fase) => (
+                    <option key={fase} value={fase}>
+                      {fase}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                Vao
+                <select
+                  value={filtros.vao}
+                  onChange={(event) => updateFiltro("vao", event.target.value)}
+                  className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="todos">Todos</option>
+                  {opcoes.vaos.map((vao) => (
+                    <option key={vao} value={vao}>
+                      {vao}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                Ultima execucao
+                <select
+                  value={filtros.ultima_execucao}
+                  onChange={(event) =>
+                    updateFiltro("ultima_execucao", event.target.value)
+                  }
+                  className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="todos">Todas</option>
+                  <option value="com">Com ultima</option>
+                  <option value="sem">Sem ultima</option>
+                </select>
+              </label>
+
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                Proxima de
+                <Input
+                  type="date"
+                  value={filtros.proxima_inicio}
+                  onChange={(event) =>
+                    updateFiltro("proxima_inicio", event.target.value)
+                  }
+                />
+              </label>
+
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                Proxima ate
+                <Input
+                  type="date"
+                  value={filtros.proxima_fim}
+                  onChange={(event) =>
+                    updateFiltro("proxima_fim", event.target.value)
+                  }
+                />
+              </label>
+
+              <div className="flex items-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={limparFiltros}
+                >
+                  <RotateCcw size={16} />
+                  Limpar
+                </Button>
+              </div>
+            </div>
           </div>
 
           <div className="overflow-x-auto rounded-md border bg-white">
@@ -293,7 +636,7 @@ export default function PlanoExecucoesPage() {
                         {resumo(execucao.plano_descricao)}
                       </TableCell>
                       <TableCell>
-                        <div>{execucao.periodicidade.replace("_", " ")}</div>
+                        <div>{formatPeriodicidade(execucao.periodicidade)}</div>
                         <div className="text-xs text-slate-500">
                           Intervalo {execucao.intervalo} | Antecedencia {execucao.antecedencia}d
                         </div>

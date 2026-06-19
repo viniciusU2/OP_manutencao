@@ -24,7 +24,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import "./index.css";
 import type { JSX } from "react";
 import { Toaster } from "./components/ui/sonner"
-import { FULL_ACCESS_ROLES } from "./lib/permissions";
+import { FULL_ACCESS_ROLES, OPERATIONAL_ACCESS_ROLES } from "./lib/permissions";
 import { SIPage } from "./pages/SIPage";
 import SIForm from "./pages/SIForm";
 import { SSForm } from "./pages/SSForm"
@@ -40,6 +40,7 @@ import PlanosManutencaoPage from "./pages/PlanosManutencaoPage";
 import PlanoExecucoesPage from "./pages/PlanoExecucoesPage";
 import DownloadsPage from "./pages/DownloadsPage";
 import PerfisPage from "./pages/PerfisPage";
+import RdoPage from "./pages/RdoPage";
 import { useGerarOsPlanosManutencao } from "./hooks/useGerarOsPlanosManutencao";
 
 /* ================= STYLES ================= */
@@ -117,30 +118,37 @@ function AppContent() {
 
         {/* 🔒 ADMIN */}
         <Route
+          element={<RoleRoute allowedRoles={OPERATIONAL_ACCESS_ROLES} />}
+        >
+          <Route path="/controle" element={<ControleOrdemServico />} />
+          <Route path="/os" element={<OrdemServicoPage />} />
+          <Route path="/os/lote" element={<OrdemServicoLotePage />} />
+          <Route path="/os/:id" element={<OrdemServicoPage />} />
+          <Route path="/si" element={<SIPage />} />
+          <Route path="/ss" element={<SSPage />} />
+          <Route path="/ss/nova" element={<SSForm />} />
+          <Route path="/ss/:id" element={<SSForm />} />
+          <Route path="/si/nova" element={<SIForm />} />
+          <Route path="/si/:id" element={<SIForm />} />
+          <Route path="/rdo" element={<RdoPage />} />
+        </Route>
+
+        <Route
           element={<RoleRoute allowedRoles={FULL_ACCESS_ROLES} />}
         >
           <Route path="/subestacao" element={<Subestacao />} />
           <Route path="/subestacaoPage" element={<SubestacoesPage />} />
           <Route path="/os" element={<OrdemServicoPage />} />
           <Route path="/os/lote" element={<OrdemServicoLotePage />} />
-          <Route path="/controle" element={<ControleOrdemServico />} />
           <Route path="/iteminspecao" element={<CreateItemInspecaoForm />} />
-
-
           <Route path="/os/:id" element={<OrdemServicoPage />} />
-          <Route path="/si" element={<SIPage />} />
-          <Route path="/ss" element={<SSPage />} />
           <Route path="/lr" element={<LivroRegistro />} />
           <Route path="/item-template" element={<ItemTemplateForm />} />
           <Route path="/inspecao" element={<InspecaoForm />} />
           <Route path="/inspecoes" element={<InspecoesPage />} />
           <Route path="/inspecoes/nova" element={<InspecaoForm />} />
-          <Route path="/ss/nova" element={<SSForm />} />
           <Route path="/inspecoes/:id" element={<InspecaoDetalhe />} />
           <Route path="/inspecoes/:id/editar" element={<InspecaoForm />} />
-          <Route path="/ss/:id" element={<SSForm />} />
-          <Route path="/si/nova" element={<SIForm />} />
-          <Route path="/si/:id" element={<SIForm />} />
           <Route path="/downloads" element={<DownloadsPage />} />
         </Route>
 

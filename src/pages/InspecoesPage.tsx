@@ -11,6 +11,7 @@ import { Button } from "../components/ui/button";
 interface Inspecao {
   id_inspecao: number;
   id_ativo: number;
+  id_subestacao?: number | null;
   data_inspecao: string;
   periodicidade: string;
   responsavel?: string;
@@ -24,6 +25,11 @@ interface Inspecao {
   vao?: string;
   instalacao?: string;
   tipo_ativo?: string;
+}
+
+interface Subestacao {
+  id_subestacao: number;
+  nome: string;
 }
 
 const Header = styled.div`
@@ -150,15 +156,22 @@ function formatarData(data?: string) {
 export default function InspecoesPage() {
   const navigate = useNavigate();
   const [inspecoes, setInspecoes] = useState<Inspecao[]>([]);
+  const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [subestacao, setSubestacao] = useState("all");
   const [status, setStatus] = useState("all");
   const [periodicidade, setPeriodicidade] = useState("all");
 
   async function carregar() {
     setLoading(true);
     try {
-      const { data } = await api.get("/inspecoes");
+      const params: Record<string, string> = {};
+      if (subestacao !== "all") params.id_subestacao = subestacao;
+      if (status !== "all") params.status = status;
+      if (periodicidade !== "all") params.periodicidade = periodicidade;
+
+      const { data } = await api.get("/inspecoes", { params });
       setInspecoes(data);
     } catch {
       toast.error("Erro ao carregar inspeções");
@@ -168,8 +181,15 @@ export default function InspecoesPage() {
   }
 
   useEffect(() => {
-    carregar();
+    api
+      .get("/subestacao/ativas")
+      .then((res) => setSubestacoes(res.data))
+      .catch(() => toast.error("Erro ao carregar subestaÃ§Ãµes"));
   }, []);
+
+  useEffect(() => {
+    carregar();
+  }, [subestacao, status, periodicidade]);
 
   async function excluir(inspecao: Inspecao) {
     if (!confirm(`Deseja excluir a inspeção #${inspecao.id_inspecao}?`)) return;
@@ -200,10 +220,12 @@ export default function InspecoesPage() {
       const matchStatus = status === "all" || inspecao.status_geral === status;
       const matchPeriodicidade =
         periodicidade === "all" || inspecao.periodicidade === periodicidade;
+      const matchSubestacao =
+        subestacao === "all" || String(inspecao.id_subestacao ?? "") === subestacao;
 
-      return matchSearch && matchStatus && matchPeriodicidade;
+      return matchSearch && matchStatus && matchPeriodicidade && matchSubestacao;
     });
-  }, [inspecoes, periodicidade, search, status]);
+  }, [inspecoes, periodicidade, search, status, subestacao]);
 
   return (
     <Container>
@@ -218,6 +240,14 @@ export default function InspecoesPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <Select value={subestacao} onChange={(e) => setSubestacao(e.target.value)}>
+          <option value="all">Todas subestaÃ§Ãµes</option>
+          {subestacoes.map((item) => (
+            <option key={item.id_subestacao} value={String(item.id_subestacao)}>
+              {item.nome}
+            </option>
+          ))}
+        </Select>
         <Select value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="all">Todos status</option>
           <option value="OK">OK</option>

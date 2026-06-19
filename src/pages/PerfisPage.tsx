@@ -31,7 +31,7 @@ import {
   TableRow,
 } from "../components/ui/table";
 
-type PerfilRole = "admin" | "mantenedor" | "usuario";
+type PerfilRole = "admin" | "mantenedor" | "operador" | "usuario";
 
 type UsuarioPerfil = {
   id: number;
@@ -60,6 +60,11 @@ const PERFIS: Array<{ value: PerfilRole; label: string; description: string }> =
     description: "Acesso operacional completo, sem deletar.",
   },
   {
+    value: "operador",
+    label: "Operador",
+    description: "Acesso somente às abas SS, OS, SI e RDO.",
+  },
+  {
     value: "usuario",
     label: "Usuario",
     description: "Acesso basico ao sistema.",
@@ -68,7 +73,12 @@ const PERFIS: Array<{ value: PerfilRole; label: string; description: string }> =
 
 function normalizarPerfil(role?: string | null): PerfilRole {
   const normalized = (role ?? "usuario").trim().toLowerCase();
-  if (normalized === "admin" || normalized === "mantenedor" || normalized === "usuario") {
+  if (
+    normalized === "admin" ||
+    normalized === "mantenedor" ||
+    normalized === "operador" ||
+    normalized === "usuario"
+  ) {
     return normalized;
   }
   return "usuario";
