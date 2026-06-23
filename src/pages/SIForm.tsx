@@ -150,6 +150,16 @@ const TIPOS_PROGRAMACAO_SI = [
   { value: "CONTINUA", label: "Contínua" },
 ];
 
+const STATUS_OPERACAO_SI = [
+  { value: "PROGRAMADA", label: "Programada" },
+  { value: "EM_ANALISE", label: "Em análise" },
+  { value: "APROVADA", label: "Aprovada" },
+  { value: "REJEITADA", label: "Rejeitada" },
+  { value: "EM_EXECUCAO", label: "Em execução" },
+  { value: "ENCERRADA", label: "Encerrada" },
+  { value: "CANCELADA", label: "Cancelada" },
+];
+
 /* ================= COMPONENT ================= */
 
 export default function SIForm() {
@@ -181,6 +191,7 @@ export default function SIForm() {
     id_ativo: null,
 
     status_manutencao: "PROGRAMADA",
+    status_operacao: "PROGRAMADA",
 
     data_inicio_preriodo_total: null,
     data_fim_preriodo_total: null,
@@ -280,6 +291,8 @@ export default function SIForm() {
 
             status_manutencao:
               si.status_manutencao ?? "PROGRAMADA",
+            status_operacao:
+              si.status_operacao ?? "PROGRAMADA",
 
             descricao_servicos:
               si.descricao_servicos ?? "",
@@ -957,6 +970,25 @@ export default function SIForm() {
         <SectionTitle>Liberação para operação</SectionTitle>
 
         <FormGrid>
+          <FormGroup>
+            <label>Status operação</label>
+            <select
+              name="status_operacao"
+              onChange={handleChange}
+              value={form.status_operacao ?? "PROGRAMADA"}
+            >
+              {form.status_operacao &&
+                !STATUS_OPERACAO_SI.some((status) => status.value === form.status_operacao) && (
+                  <option value={form.status_operacao}>{form.status_operacao}</option>
+                )}
+              {STATUS_OPERACAO_SI.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {status.label}
+                </option>
+              ))}
+            </select>
+          </FormGroup>
+
           <FormGroup>
             <label>Responsável ONS</label>
             <input
