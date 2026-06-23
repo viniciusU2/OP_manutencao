@@ -154,6 +154,7 @@ function AppContent() {
 
         <Route element={<RoleRoute allowedRoles={["admin"]} />}>
           <Route path="/ativo" element={<Ativo />} />
+          <Route path="/ativo/:id/editar" element={<Ativo />} />
           <Route path="/ativo/:id" element={<AtivoDetalhe />} />
           <Route path="/importar-ativos" element={<ImportarAtivos />} />
           <Route path="/planos-manutencao" element={<PlanosManutencaoPage />} />

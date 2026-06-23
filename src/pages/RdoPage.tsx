@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 import api from "../api/api";
 import Container from "../components/Container";
+import { useAuth } from "../context/AuthContext";
 import { OnlyAdmin } from "../components/onlyAdmin";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -38,6 +39,7 @@ import {
   TableRow,
 } from "../components/ui/table";
 import { Textarea } from "../components/ui/textarea";
+import { canDelete } from "../lib/permissions";
 import type { Rdo, RdoConfiguracaoSistema, RdoEvento, RdoHistorico } from "../types/Rdo";
 
 type RdoForm = {
@@ -155,6 +157,8 @@ function badgeVariant(status: string) {
 }
 
 export default function RdoPage() {
+  const { usuario } = useAuth();
+  const podeAlterar = canDelete(usuario?.role);
   const [rdos, setRdos] = useState<Rdo[]>([]);
   const [selecionado, setSelecionado] = useState<Rdo | null>(null);
   const [historico, setHistorico] = useState<RdoHistorico[]>([]);
@@ -234,6 +238,7 @@ export default function RdoPage() {
   }, []);
 
   async function salvarRdo() {
+    if (!podeAlterar) return;
     if (!form.data_rdo || !form.emissor.trim()) {
       toast.error("Informe a data e o emissor do RDO");
       return;
@@ -270,6 +275,7 @@ export default function RdoPage() {
   }
 
   async function validarRdo() {
+    if (!podeAlterar) return;
     if (!selecionado) return;
 
     try {
@@ -308,6 +314,7 @@ export default function RdoPage() {
   }
 
   async function excluirRdo() {
+    if (!podeAlterar) return;
     if (!selecionado) return;
 
     const confirmar = window.confirm(
@@ -331,6 +338,7 @@ export default function RdoPage() {
   }
 
   async function adicionarConfiguracao() {
+    if (!podeAlterar) return;
     if (!selecionado || !configForm.equipamento.trim() || !configForm.estado.trim()) {
       toast.error("Selecione equipamento e estado");
       return;
@@ -351,6 +359,7 @@ export default function RdoPage() {
   }
 
   async function removerConfiguracao(id: number) {
+    if (!podeAlterar) return;
     if (!selecionado) return;
 
     try {
@@ -363,6 +372,7 @@ export default function RdoPage() {
   }
 
   async function adicionarEvento() {
+    if (!podeAlterar) return;
     if (!selecionado || !eventoForm.descricao.trim()) {
       toast.error("Informe a descricao do evento");
       return;
@@ -387,6 +397,7 @@ export default function RdoPage() {
   }
 
   async function removerEvento(id: number) {
+    if (!podeAlterar) return;
     if (!selecionado) return;
 
     try {
@@ -399,6 +410,7 @@ export default function RdoPage() {
   }
 
   function novoRdo() {
+    if (!podeAlterar) return;
     setSelecionado(null);
     setHistorico([]);
     setTelaAtiva("dados");
@@ -437,16 +449,20 @@ export default function RdoPage() {
                   Apagar
                 </Button>
               </OnlyAdmin>
-              <Button type="button" variant="outline" onClick={validarRdo} disabled={form.status === "VALIDADO"}>
-                <CheckCircle2 size={16} />
-                Validar
-              </Button>
+              {podeAlterar && (
+                <Button type="button" variant="outline" onClick={validarRdo} disabled={form.status === "VALIDADO"}>
+                  <CheckCircle2 size={16} />
+                  Validar
+                </Button>
+              )}
             </>
           )}
-          <Button type="button" onClick={novoRdo}>
-            <Plus size={16} />
-            Novo RDO
-          </Button>
+          {podeAlterar && (
+            <Button type="button" onClick={novoRdo}>
+              <Plus size={16} />
+              Novo RDO
+            </Button>
+          )}
         </div>
       </div>
 
@@ -643,32 +659,33 @@ export default function RdoPage() {
               <div className="grid gap-3 md:grid-cols-2">
                 <label className="grid gap-1 text-sm font-medium text-slate-700">
                   Data
-                  <Input type="date" value={form.data_rdo} onChange={(event) => setForm((prev) => ({ ...prev, data_rdo: event.target.value }))} />
+                  <Input disabled={!podeAlterar} type="date" value={form.data_rdo} onChange={(event) => setForm((prev) => ({ ...prev, data_rdo: event.target.value }))} />
                 </label>
                 <label className="grid gap-1 text-sm font-medium text-slate-700">
                   Sistema
-                  <Input value={form.sistema} onChange={(event) => setForm((prev) => ({ ...prev, sistema: event.target.value }))} />
+                  <Input disabled={!podeAlterar} value={form.sistema} onChange={(event) => setForm((prev) => ({ ...prev, sistema: event.target.value }))} />
                 </label>
                 <label className="grid gap-1 text-sm font-medium text-slate-700 md:col-span-2">
                   Titulo
-                  <Input value={form.titulo} onChange={(event) => setForm((prev) => ({ ...prev, titulo: event.target.value }))} />
+                  <Input disabled={!podeAlterar} value={form.titulo} onChange={(event) => setForm((prev) => ({ ...prev, titulo: event.target.value }))} />
                 </label>
                 <label className="grid gap-1 text-sm font-medium text-slate-700">
                   Procedimento
-                  <Input value={form.codigo_procedimento} onChange={(event) => setForm((prev) => ({ ...prev, codigo_procedimento: event.target.value }))} />
+                  <Input disabled={!podeAlterar} value={form.codigo_procedimento} onChange={(event) => setForm((prev) => ({ ...prev, codigo_procedimento: event.target.value }))} />
                 </label>
                 <label className="grid gap-1 text-sm font-medium text-slate-700">
                   Revisao
-                  <Input value={form.revisao} onChange={(event) => setForm((prev) => ({ ...prev, revisao: event.target.value }))} />
+                  <Input disabled={!podeAlterar} value={form.revisao} onChange={(event) => setForm((prev) => ({ ...prev, revisao: event.target.value }))} />
                 </label>
                 <label className="grid gap-1 text-sm font-medium text-slate-700">
                   Emissor
-                  <Input value={form.emissor} onChange={(event) => setForm((prev) => ({ ...prev, emissor: event.target.value }))} />
+                  <Input disabled={!podeAlterar} value={form.emissor} onChange={(event) => setForm((prev) => ({ ...prev, emissor: event.target.value }))} />
                 </label>
                 <label className="grid gap-1 text-sm font-medium text-slate-700">
                   Status
                   <select
                     value={form.status}
+                    disabled={!podeAlterar}
                     onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value }))}
                     className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
                   >
@@ -680,7 +697,7 @@ export default function RdoPage() {
                 </label>
                 <label className="grid gap-1 text-sm font-medium text-slate-700 md:col-span-2">
                   Arquivo PDF
-                  <Input value={form.arquivo_pdf} onChange={(event) => setForm((prev) => ({ ...prev, arquivo_pdf: event.target.value }))} placeholder="Nome ou caminho do PDF importado" />
+                  <Input disabled={!podeAlterar} value={form.arquivo_pdf} onChange={(event) => setForm((prev) => ({ ...prev, arquivo_pdf: event.target.value }))} placeholder="Nome ou caminho do PDF importado" />
                 </label>
               </div>
 
@@ -691,10 +708,12 @@ export default function RdoPage() {
                     Historico
                   </Button>
                 )}
-                <Button type="button" onClick={salvarRdo} disabled={salvando}>
-                  <Save size={16} />
-                  {salvando ? "Salvando..." : "Salvar"}
-                </Button>
+                {podeAlterar && (
+                  <Button type="button" onClick={salvarRdo} disabled={salvando}>
+                    <Save size={16} />
+                    {salvando ? "Salvando..." : "Salvar"}
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -718,6 +737,7 @@ export default function RdoPage() {
                     <label className="grid gap-1 text-xs font-medium text-slate-600 md:col-span-2">
                       Período
                       <select
+                        disabled={!podeAlterar}
                         value={`${configForm.periodo_inicio}-${configForm.periodo_fim}`}
                         onChange={(event) => {
                           const periodo = periodosConfiguracao.find((item) => `${item.inicio}-${item.fim}` === event.target.value);
@@ -740,6 +760,7 @@ export default function RdoPage() {
                     <label className="grid gap-1 text-xs font-medium text-slate-600 md:col-span-2">
                       Equipamento
                       <select
+                        disabled={!podeAlterar}
                         value={configForm.equipamento}
                         onChange={(event) => {
                           const equipamento = equipamentosConfiguracao.find((item) => item.equipamento === event.target.value);
@@ -763,6 +784,7 @@ export default function RdoPage() {
                     <label className="grid gap-1 text-xs font-medium text-slate-600">
                       Estado
                       <select
+                        disabled={!podeAlterar}
                         value={configForm.estado}
                         onChange={(event) => setConfigForm((prev) => ({ ...prev, estado: event.target.value }))}
                         className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
@@ -777,19 +799,22 @@ export default function RdoPage() {
                     <label className="grid gap-1 text-xs font-medium text-slate-600">
                       Ordem
                       <Input
+                        disabled={!podeAlterar}
                         type="number"
                         value={configForm.ordem ?? 0}
                         onChange={(event) => setConfigForm((prev) => ({ ...prev, ordem: Number(event.target.value) }))}
                       />
                     </label>
                   </div>
-                  <div className="flex justify-end">
-                    <Button type="button" variant="outline" onClick={adicionarConfiguracao}>
-                      <Plus size={16} />
-                      Adicionar
-                    </Button>
-                  </div>
-                  <TabelaConfiguracoes configuracoes={selecionado.configuracoes ?? []} onRemove={removerConfiguracao} />
+                  {podeAlterar && (
+                    <div className="flex justify-end">
+                      <Button type="button" variant="outline" onClick={adicionarConfiguracao}>
+                        <Plus size={16} />
+                        Adicionar
+                      </Button>
+                    </div>
+                  )}
+                  <TabelaConfiguracoes configuracoes={selecionado.configuracoes ?? []} onRemove={removerConfiguracao} canRemove={podeAlterar} />
                 </CardContent>
               </Card>
         )}
@@ -824,6 +849,7 @@ export default function RdoPage() {
                   </div>
                   <div className="grid gap-3 md:grid-cols-4">
                     <select
+                      disabled={!podeAlterar}
                       value={eventoForm.categoria}
                       onChange={(event) => setEventoForm((prev) => ({ ...prev, categoria: event.target.value }))}
                       className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm md:col-span-2"
@@ -834,21 +860,23 @@ export default function RdoPage() {
                         </option>
                       ))}
                     </select>
-                    <Input value={eventoForm.sistema ?? ""} onChange={(event) => setEventoForm((prev) => ({ ...prev, sistema: event.target.value }))} placeholder="Sistema" />
-                    <Input value={eventoForm.subestacao ?? ""} onChange={(event) => setEventoForm((prev) => ({ ...prev, subestacao: event.target.value }))} placeholder="SE" />
-                    <Input value={eventoForm.status_evento ?? ""} onChange={(event) => setEventoForm((prev) => ({ ...prev, status_evento: event.target.value }))} placeholder="Status" />
-                    <Input type="time" value={eventoForm.hora_inicio ?? ""} onChange={(event) => setEventoForm((prev) => ({ ...prev, hora_inicio: event.target.value }))} />
-                    <Input type="time" value={eventoForm.hora_fim ?? ""} onChange={(event) => setEventoForm((prev) => ({ ...prev, hora_fim: event.target.value }))} />
-                    <Input className="md:col-span-2" value={eventoForm.titulo ?? ""} onChange={(event) => setEventoForm((prev) => ({ ...prev, titulo: event.target.value }))} placeholder="Titulo" />
-                    <Textarea className="md:col-span-4" value={eventoForm.descricao} onChange={(event) => setEventoForm((prev) => ({ ...prev, descricao: event.target.value }))} placeholder="Descricao do evento" />
+                    <Input disabled={!podeAlterar} value={eventoForm.sistema ?? ""} onChange={(event) => setEventoForm((prev) => ({ ...prev, sistema: event.target.value }))} placeholder="Sistema" />
+                    <Input disabled={!podeAlterar} value={eventoForm.subestacao ?? ""} onChange={(event) => setEventoForm((prev) => ({ ...prev, subestacao: event.target.value }))} placeholder="SE" />
+                    <Input disabled={!podeAlterar} value={eventoForm.status_evento ?? ""} onChange={(event) => setEventoForm((prev) => ({ ...prev, status_evento: event.target.value }))} placeholder="Status" />
+                    <Input disabled={!podeAlterar} type="time" value={eventoForm.hora_inicio ?? ""} onChange={(event) => setEventoForm((prev) => ({ ...prev, hora_inicio: event.target.value }))} />
+                    <Input disabled={!podeAlterar} type="time" value={eventoForm.hora_fim ?? ""} onChange={(event) => setEventoForm((prev) => ({ ...prev, hora_fim: event.target.value }))} />
+                    <Input disabled={!podeAlterar} className="md:col-span-2" value={eventoForm.titulo ?? ""} onChange={(event) => setEventoForm((prev) => ({ ...prev, titulo: event.target.value }))} placeholder="Titulo" />
+                    <Textarea disabled={!podeAlterar} className="md:col-span-4" value={eventoForm.descricao} onChange={(event) => setEventoForm((prev) => ({ ...prev, descricao: event.target.value }))} placeholder="Descricao do evento" />
                   </div>
-                  <div className="flex justify-end">
-                    <Button type="button" variant="outline" onClick={adicionarEvento}>
-                      <Plus size={16} />
-                      Adicionar registro
-                    </Button>
-                  </div>
-                  <TabelaEventos eventos={selecionado.eventos ?? []} onRemove={removerEvento} />
+                  {podeAlterar && (
+                    <div className="flex justify-end">
+                      <Button type="button" variant="outline" onClick={adicionarEvento}>
+                        <Plus size={16} />
+                        Adicionar registro
+                      </Button>
+                    </div>
+                  )}
+                  <TabelaEventos eventos={selecionado.eventos ?? []} onRemove={removerEvento} canRemove={podeAlterar} />
                 </CardContent>
               </Card>
         )}
@@ -892,7 +920,7 @@ export default function RdoPage() {
                 <CardDescription>{totaisSelecionado.configuracoes} registro{totaisSelecionado.configuracoes === 1 ? "" : "s"}</CardDescription>
               </CardHeader>
               <CardContent>
-                <TabelaConfiguracoes configuracoes={selecionado.configuracoes ?? []} onRemove={removerConfiguracao} />
+                <TabelaConfiguracoes configuracoes={selecionado.configuracoes ?? []} onRemove={removerConfiguracao} canRemove={podeAlterar} />
               </CardContent>
             </Card>
 
@@ -902,7 +930,7 @@ export default function RdoPage() {
                 <CardDescription>{totaisSelecionado.eventos} registro{totaisSelecionado.eventos === 1 ? "" : "s"}</CardDescription>
               </CardHeader>
               <CardContent>
-                <TabelaEventos eventos={selecionado.eventos ?? []} onRemove={removerEvento} />
+                <TabelaEventos eventos={selecionado.eventos ?? []} onRemove={removerEvento} canRemove={podeAlterar} />
               </CardContent>
             </Card>
           </div>
@@ -945,9 +973,11 @@ export default function RdoPage() {
 function TabelaConfiguracoes({
   configuracoes,
   onRemove,
+  canRemove = true,
 }: {
   configuracoes: RdoConfiguracaoSistema[];
   onRemove: (id: number) => void;
+  canRemove?: boolean;
 }) {
   return (
     <div className="rounded-md border">
@@ -969,7 +999,7 @@ function TabelaConfiguracoes({
               <TableCell>{item.equipamento}</TableCell>
               <TableCell>{item.estado}</TableCell>
               <TableCell className="text-right">
-                {item.id_configuracao && (
+                {canRemove && item.id_configuracao && (
                   <Button type="button" size="sm" variant="outline" onClick={() => onRemove(item.id_configuracao!)}>
                     <Trash2 size={15} />
                   </Button>
@@ -993,9 +1023,11 @@ function TabelaConfiguracoes({
 function TabelaEventos({
   eventos,
   onRemove,
+  canRemove = true,
 }: {
   eventos: RdoEvento[];
   onRemove: (id: number) => void;
+  canRemove?: boolean;
 }) {
   const eventosPorTabela = tabelasRdo
     .map((tabela) => ({
@@ -1047,7 +1079,7 @@ function TabelaEventos({
                   </TableCell>
                   <TableCell>{item.status_evento ?? "-"}</TableCell>
                   <TableCell className="text-right">
-                    {item.id_evento && (
+                    {canRemove && item.id_evento && (
                       <Button type="button" size="sm" variant="outline" onClick={() => onRemove(item.id_evento!)}>
                         <Trash2 size={15} />
                       </Button>

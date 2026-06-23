@@ -3,6 +3,10 @@ export interface Ativo {
   id_subestacao: number;
   id_tipo_ativo: number;
   codigo_ativo: string;
+  foto?: string | null;
+  imagem?: string | null;
+  imagem_url?: string | null;
+  foto_url?: string | null;
   fabricante?: string;
   numero_serie?: string;
   modelo?: string;

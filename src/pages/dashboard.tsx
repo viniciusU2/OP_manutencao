@@ -6,8 +6,12 @@ import {
   AlertTriangle,
   Building2,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
+  ExternalLink,
   FileText,
+  ImageIcon,
   Loader2,
   RefreshCcw,
   Wrench,
@@ -15,7 +19,6 @@ import {
 } from "lucide-react";
 import api from "../api/api";
 import { StatsCard } from "../components/StatsCard";
-import { CalendarioOSSI } from "../components/calendar";
 import { useAuth } from "../context/AuthContext";
 import { filtroInicialInstalacao } from "../lib/instalacaoPreferida";
 
@@ -57,10 +60,32 @@ interface SI {
   data_inicio_preriodo_total?: string | null;
 }
 
+interface Inspecao {
+  id_inspecao: number;
+  id_ativo?: number | null;
+  id_subestacao?: number | null;
+  data_inspecao: string;
+  codigo_ativo?: string;
+  tipo_ativo?: string;
+  status_geral?: string;
+}
+
 interface Subestacao {
   id_subestacao: number;
   nome: string;
   status?: string;
+}
+
+interface FotoInspecao {
+  url: string;
+  id_inspecao: number;
+  id_ativo?: number | null;
+  id_subestacao?: number | null;
+  codigo_ativo?: string;
+  tipo_ativo?: string;
+  data_inspecao: string;
+  item?: string | null;
+  status?: string | null;
 }
 
 type WorkItem = {
@@ -72,6 +97,16 @@ type WorkItem = {
   date?: string | null;
   path: string;
   priority?: string;
+};
+
+type AgendaItem = {
+  id: string;
+  kind: "OS" | "SI";
+  label: string;
+  status: string;
+  description?: string;
+  date: string;
+  path: string;
 };
 
 const Page = styled.div`
@@ -211,6 +246,168 @@ const ContentGrid = styled.div`
 
   @media (max-width: 1050px) {
     grid-template-columns: 1fr;
+  }
+`;
+
+const FeaturedCarousel = styled.section`
+  position: relative;
+  min-height: 420px;
+  overflow: hidden;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+`;
+
+const FeaturedImage = styled.img`
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+`;
+
+const FeaturedOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 22px;
+  padding: 28px;
+  background: linear-gradient(90deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.52) 48%, rgba(15, 23, 42, 0.16));
+
+  @media (max-width: 720px) {
+    padding: 20px;
+    background: linear-gradient(0deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.38));
+  }
+`;
+
+const FeaturedContent = styled.div`
+  max-width: 660px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #dbeafe;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0;
+  }
+
+  h2 {
+    margin: 14px 0 8px;
+    font-size: clamp(30px, 4vw, 56px);
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  p {
+    max-width: 560px;
+    margin: 0;
+    color: #dbe3ef;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+`;
+
+const FeaturedActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+`;
+
+const FeaturedButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.22);
+  }
+`;
+
+const CarouselNav = styled.button<{ $side: "left" | "right" }>`
+  position: absolute;
+  top: 50%;
+  ${({ $side }) => $side}: 18px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.56);
+  color: #ffffff;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(15, 23, 42, 0.78);
+  }
+`;
+
+const PhotoStrip = styled.div`
+  display: flex;
+  gap: 10px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 2px;
+`;
+
+const PhotoThumb = styled.button<{ $active: boolean }>`
+  width: 84px;
+  height: 58px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 2px solid ${({ $active }) => ($active ? "#ffffff" : "rgba(255, 255, 255, 0.28)")};
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+const CarouselEmpty = styled.div`
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  text-align: center;
+
+  svg {
+    margin: 0 auto 12px;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 28px;
+  }
+
+  p {
+    margin: 8px 0 0;
+    color: #cbd5e1;
   }
 `;
 
@@ -357,12 +554,46 @@ const Fill = styled.div<{ $width: number }>`
   background: #2563eb;
 `;
 
-const CalendarWrap = styled.div`
-  padding: 12px;
+const AgendaList = styled.div`
+  display: grid;
+`;
 
-  @media (max-width: 640px) {
-    padding: 8px;
+const AgendaRow = styled.button`
+  display: grid;
+  grid-template-columns: 112px 54px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
+  padding: 14px 16px;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: #f8fafc;
   }
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  @media (max-width: 760px) {
+    grid-template-columns: 78px minmax(0, 1fr);
+
+    > span:nth-child(2),
+    > span:last-child {
+      grid-column: 2;
+      justify-self: start;
+    }
+  }
+`;
+
+const AgendaDate = styled.span`
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 800;
 `;
 
 const Empty = styled.div`
@@ -377,8 +608,13 @@ function normalizedStatus(status?: string) {
 }
 
 function isOpenStatus(status?: string) {
+  if (!status) return false;
   const value = normalizedStatus(status);
   return !["CONCLUIDA", "CONCLUIDO", "ENCERRADA", "FINALIZADA", "CANCELADA", "INATIVO"].includes(value);
+}
+
+function isOperationalAsset(status?: string) {
+  return ["ATIVO", "OPERANTE", "OPERACIONAL"].includes(normalizedStatus(status));
 }
 
 function statusStyle(status: string) {
@@ -404,6 +640,35 @@ function formatDate(value?: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleDateString("pt-BR");
+}
+
+function normalizePhotoUrl(url?: string | null) {
+  const value = url?.trim();
+  if (!value) return "";
+
+  if (/^(data:image\/|blob:)/i.test(value)) return value;
+
+  try {
+    const parsed = new URL(value);
+    const host = parsed.hostname.toLowerCase();
+
+    if (host.includes("sharepoint.com") || host.includes("onedrive.live.com")) {
+      parsed.searchParams.set("download", "1");
+      return parsed.toString();
+    }
+
+    return value;
+  } catch {
+    return value;
+  }
+}
+
+function sortByDateDesc<T>(items: T[], pickDate: (item: T) => string | null | undefined) {
+  return [...items].sort((a, b) => {
+    const dateA = new Date(pickDate(a) ?? "").getTime() || 0;
+    const dateB = new Date(pickDate(b) ?? "").getTime() || 0;
+    return dateB - dateA;
+  });
 }
 
 function statusCounts(items: Array<{ status?: string }>) {
@@ -447,22 +712,28 @@ export function Dashboard() {
   const [os, setOS] = useState<OS[]>([]);
   const [ss, setSS] = useState<SS[]>([]);
   const [si, setSI] = useState<SI[]>([]);
+  const [inspecoes, setInspecoes] = useState<Inspecao[]>([]);
+  const [fotosInspecao, setFotosInspecao] = useState<FotoInspecao[]>([]);
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
   const [filtroSubestacao, setFiltroSubestacao] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [currentPhoto, setCurrentPhoto] = useState(0);
+  const [photoLoadErrors, setPhotoLoadErrors] = useState<Record<string, boolean>>({});
 
   async function fetchData() {
     setLoading(true);
     setError("");
+    setPhotoLoadErrors({});
 
     try {
-      const [ativosRes, osRes, ssRes, siRes, subRes] = await Promise.all([
+      const [ativosRes, osRes, ssRes, siRes, subRes, inspecoesRes] = await Promise.all([
         api.get("/ativo"),
         api.get("/os"),
         api.get("/ss"),
         api.get("/si"),
         api.get("/subestacao"),
+        api.get("/inspecoes"),
       ]);
 
       setAtivos(asArray<Ativo>(ativosRes.data));
@@ -470,6 +741,36 @@ export function Dashboard() {
       setSS(asArray<SS>(ssRes.data));
       setSI(asArray<SI>(siRes.data));
       setSubestacoes(asArray<Subestacao>(subRes.data));
+
+      const inspecoesData = asArray<Inspecao>(inspecoesRes.data);
+      setInspecoes(inspecoesData);
+
+      const detalhes = await Promise.allSettled(
+        sortByDateDesc(inspecoesData, (inspecao) => inspecao.data_inspecao)
+          .slice(0, 18)
+          .map((inspecao) => api.get(`/inspecoes/${inspecao.id_inspecao}`))
+      );
+
+      const fotos = detalhes.flatMap((detalhe) => {
+        if (detalhe.status !== "fulfilled") return [];
+
+        const inspecao = detalhe.value.data;
+        return (inspecao.resultados ?? [])
+          .filter((resultado: any) => Boolean(resultado.foto?.trim()))
+          .map((resultado: any) => ({
+            url: resultado.foto.trim(),
+            id_inspecao: inspecao.id_inspecao,
+            id_ativo: inspecao.id_ativo,
+            id_subestacao: inspecao.id_subestacao,
+            codigo_ativo: inspecao.codigo_ativo,
+            tipo_ativo: inspecao.tipo_ativo,
+            data_inspecao: inspecao.data_inspecao,
+            item: resultado.nome_item,
+            status: resultado.status_item,
+          }));
+      });
+
+      setFotosInspecao(fotos);
     } catch {
       setError("Nao foi possivel carregar todos os indicadores.");
     } finally {
@@ -505,14 +806,29 @@ export function Dashboard() {
       os: os.filter(bySub),
       ss: ss.filter(bySub),
       si: si.filter(bySub),
+      inspecoes: inspecoes.filter(bySub),
     };
-  }, [ativos, os, ss, si, filtroSubestacao, subestacaoById]);
+  }, [ativos, os, ss, si, inspecoes, filtroSubestacao, subestacaoById]);
+
+  const fotosFiltradas = useMemo(() => {
+    if (!filtroSubestacao) return fotosInspecao;
+
+    return fotosInspecao.filter((foto) => Number(foto.id_subestacao) === Number(filtroSubestacao));
+  }, [filtroSubestacao, fotosInspecao]);
+
+  useEffect(() => {
+    setCurrentPhoto(0);
+  }, [fotosFiltradas.length, filtroSubestacao]);
+
+  const fotoAtual = fotosFiltradas[currentPhoto] ?? fotosFiltradas[0];
+  const fotoAtualSrc = normalizePhotoUrl(fotoAtual?.url);
+  const fotoAtualComErro = fotoAtual ? photoLoadErrors[fotoAtual.url] : false;
 
   const totals = useMemo(() => {
     const osAbertas = filtered.os.filter((item) => isOpenStatus(item.status)).length;
     const ssAbertas = filtered.ss.filter((item) => isOpenStatus(item.status)).length;
     const siPendentes = filtered.si.filter((item) => isOpenStatus(item.status_operacao) || isOpenStatus(item.status_manutencao)).length;
-    const ativosAtivos = filtered.ativos.filter((item) => normalizedStatus(item.status) !== "INATIVO").length;
+    const ativosAtivos = filtered.ativos.filter((item) => isOperationalAsset(item.status)).length;
 
     return { osAbertas, ssAbertas, siPendentes, ativosAtivos };
   }, [filtered]);
@@ -579,6 +895,36 @@ export function Dashboard() {
       .slice(0, 6);
   }, [subestacoes, os, si, ss]);
 
+  const agendaProxima = useMemo<AgendaItem[]>(() => {
+    const osAgenda = filtered.os
+      .filter((item) => item.data_inicio_programado)
+      .map((item) => ({
+        id: `agenda-os-${item.id_os}`,
+        kind: "OS" as const,
+        label: item.numero_os,
+        status: item.status || "SEM_STATUS",
+        description: item.descricao_servicos || item.esquema_servicos,
+        date: item.data_inicio_programado as string,
+        path: `/os/${item.id_os}`,
+      }));
+
+    const siAgenda = filtered.si
+      .filter((item) => item.data_inicio_preriodo_total)
+      .map((item) => ({
+        id: `agenda-si-${item.id_si}`,
+        kind: "SI" as const,
+        label: item.numero_si,
+        status: item.status_operacao || item.status_manutencao || "SEM_STATUS",
+        description: "Solicitacao de intervencao",
+        date: item.data_inicio_preriodo_total as string,
+        path: `/si/${item.id_si}`,
+      }));
+
+    return [...osAgenda, ...siAgenda]
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(0, 10);
+  }, [filtered.os, filtered.si]);
+
   if (loading) {
     return (
       <div style={{ minHeight: "60vh", display: "grid", placeItems: "center", color: "#334155" }}>
@@ -634,11 +980,119 @@ export function Dashboard() {
         </Select>
       </FilterBand>
 
+      <FeaturedCarousel>
+        {fotoAtual && !fotoAtualComErro ? (
+          <FeaturedImage
+            src={fotoAtualSrc}
+            alt={`Foto da inspeção ${fotoAtual.id_inspecao}`}
+            referrerPolicy="no-referrer"
+            onError={() =>
+              setPhotoLoadErrors((prev) => ({
+                ...prev,
+                [fotoAtual.url]: true,
+              }))
+            }
+          />
+        ) : (
+          <CarouselEmpty>
+            <div>
+              <ImageIcon size={44} />
+              <h2>{fotoAtualComErro ? "Previa bloqueada pelo SharePoint" : "Fotos das inspeções"}</h2>
+              <p>
+                {fotoAtualComErro
+                  ? "Abra o link da foto ou ajuste o compartilhamento para permitir visualização direta."
+                  : "As fotos enviadas nas inspeções aparecerão aqui em destaque."}
+              </p>
+              {fotoAtual?.url && (
+                <FeaturedActions style={{ justifyContent: "center" }}>
+                  <FeaturedButton type="button" onClick={() => window.open(fotoAtual.url, "_blank", "noreferrer")}>
+                    <ExternalLink size={16} />
+                    Abrir foto
+                  </FeaturedButton>
+                </FeaturedActions>
+              )}
+            </div>
+          </CarouselEmpty>
+        )}
+
+        {fotoAtual && (
+          <FeaturedOverlay>
+            <FeaturedContent>
+              <span>Galeria de inspeções</span>
+              <h2>{fotoAtual.codigo_ativo || "Ativo inspecionado"}</h2>
+              <p>
+                {[fotoAtual.tipo_ativo, fotoAtual.item, formatDate(fotoAtual.data_inspecao)]
+                  .filter(Boolean)
+                  .join(" - ") || "Foto registrada durante inspeção de campo."}
+              </p>
+              <FeaturedActions>
+                <FeaturedButton type="button" onClick={() => navigate(`/inspecoes/${fotoAtual.id_inspecao}`)}>
+                  <ClipboardList size={16} />
+                  Abrir inspeção
+                </FeaturedButton>
+                <FeaturedButton type="button" onClick={() => navigate(`/ativo/${fotoAtual.id_ativo}`)}>
+                  <Zap size={16} />
+                  Ver ativo
+                </FeaturedButton>
+                <FeaturedButton type="button" onClick={() => window.open(fotoAtual.url, "_blank", "noreferrer")}>
+                  <ExternalLink size={16} />
+                  Abrir foto
+                </FeaturedButton>
+              </FeaturedActions>
+            </FeaturedContent>
+
+            {fotosFiltradas.length > 1 && (
+              <PhotoStrip>
+                {fotosFiltradas.map((foto, index) => (
+                  <PhotoThumb
+                    key={`${foto.id_inspecao}-${foto.url}-${index}`}
+                    type="button"
+                    $active={index === currentPhoto}
+                    onClick={() => setCurrentPhoto(index)}
+                  >
+                    <img
+                      src={normalizePhotoUrl(foto.url)}
+                      alt={foto.item ?? `Foto ${index + 1}`}
+                      referrerPolicy="no-referrer"
+                      onError={() =>
+                        setPhotoLoadErrors((prev) => ({
+                          ...prev,
+                          [foto.url]: true,
+                        }))
+                      }
+                    />
+                  </PhotoThumb>
+                ))}
+              </PhotoStrip>
+            )}
+          </FeaturedOverlay>
+        )}
+
+        {fotosFiltradas.length > 1 && (
+          <>
+            <CarouselNav
+              type="button"
+              $side="left"
+              onClick={() => setCurrentPhoto((prev) => (prev === 0 ? fotosFiltradas.length - 1 : prev - 1))}
+            >
+              <ChevronLeft size={22} />
+            </CarouselNav>
+            <CarouselNav
+              type="button"
+              $side="right"
+              onClick={() => setCurrentPhoto((prev) => (prev >= fotosFiltradas.length - 1 ? 0 : prev + 1))}
+            >
+              <ChevronRight size={22} />
+            </CarouselNav>
+          </>
+        )}
+      </FeaturedCarousel>
+
       <StatsGrid>
-        <StatsCard title="OS abertas" value={totals.osAbertas} icon={ClipboardList} color="blue" subtitle={`${filtered.os.length} OS no recorte`} />
-        <StatsCard title="SS abertas" value={totals.ssAbertas} icon={AlertTriangle} color="amber" subtitle={`${filtered.ss.length} SS cadastradas`} />
+        <StatsCard title="OS em aberto" value={totals.osAbertas} icon={ClipboardList} color="blue" subtitle={`${filtered.os.length} OS no recorte`} />
+        <StatsCard title="SS em aberto" value={totals.ssAbertas} icon={AlertTriangle} color="amber" subtitle={`${filtered.ss.length} SS cadastradas`} />
         <StatsCard title="SI pendentes" value={totals.siPendentes} icon={CalendarDays} color="emerald" subtitle={`${filtered.si.length} SI cadastradas`} />
-        <StatsCard title="Ativos operacionais" value={totals.ativosAtivos} icon={Zap} color="violet" subtitle={`${filtered.ativos.length} ativos no total`} />
+        <StatsCard title="Fotos de inspeção" value={fotosFiltradas.length} icon={ImageIcon} color="violet" subtitle={`${filtered.inspecoes.length} inspeções no recorte`} />
       </StatsGrid>
 
       <ContentGrid>
@@ -705,13 +1159,28 @@ export function Dashboard() {
           <PanelHeader>
             <h2>
               <CalendarDays size={18} />
-              Calendario
+              Agenda proxima
             </h2>
-            <span>OS e SI programadas</span>
+            <span>{agendaProxima.length} eventos</span>
           </PanelHeader>
-          <CalendarWrap>
-            <CalendarioOSSI />
-          </CalendarWrap>
+
+          <AgendaList>
+            {agendaProxima.length === 0 ? (
+              <Empty>Nenhuma OS ou SI programada neste recorte.</Empty>
+            ) : (
+              agendaProxima.map((item) => (
+                <AgendaRow key={item.id} type="button" onClick={() => navigate(item.path)}>
+                  <AgendaDate>{formatDate(item.date)}</AgendaDate>
+                  <Kind $kind={item.kind}>{item.kind}</Kind>
+                  <RowTitle>
+                    <strong>{item.label}</strong>
+                    <small>{item.description || "Sem detalhes adicionais"}</small>
+                  </RowTitle>
+                  <Status $status={item.status}>{item.status}</Status>
+                </AgendaRow>
+              ))
+            )}
+          </AgendaList>
         </Panel>
 
         <Panel>
