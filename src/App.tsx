@@ -130,6 +130,9 @@ function AppContent() {
           <Route path="/ss/:id" element={<SSForm />} />
           <Route path="/si/nova" element={<SIForm />} />
           <Route path="/si/:id" element={<SIForm />} />
+        </Route>
+
+        <Route element={<RoleRoute allowedRoles={OPERATIONAL_ACCESS_ROLES} />}>
           <Route path="/rdo" element={<RdoPage />} />
         </Route>
 

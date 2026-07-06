@@ -39,7 +39,7 @@ import {
   TableRow,
 } from "../components/ui/table";
 import { Textarea } from "../components/ui/textarea";
-import { canDelete } from "../lib/permissions";
+import { canAccessOperational, canDelete } from "../lib/permissions";
 import type { Rdo, RdoConfiguracaoSistema, RdoEvento, RdoHistorico } from "../types/Rdo";
 
 type RdoForm = {
@@ -158,7 +158,8 @@ function badgeVariant(status: string) {
 
 export default function RdoPage() {
   const { usuario } = useAuth();
-  const podeAlterar = canDelete(usuario?.role);
+  const podeAlterar = canAccessOperational(usuario?.role);
+  const podeExcluir = canDelete(usuario?.role);
   const [rdos, setRdos] = useState<Rdo[]>([]);
   const [selecionado, setSelecionado] = useState<Rdo | null>(null);
   const [historico, setHistorico] = useState<RdoHistorico[]>([]);
@@ -314,7 +315,7 @@ export default function RdoPage() {
   }
 
   async function excluirRdo() {
-    if (!podeAlterar) return;
+    if (!podeExcluir) return;
     if (!selecionado) return;
 
     const confirmar = window.confirm(
