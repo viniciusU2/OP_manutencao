@@ -50,11 +50,7 @@ export const columns: ColumnDef<Ativo>[] = [
     header: "Tipo",
     cell: ({ row }) => getTipoAtivoNome(row.original),
   },
-  {
-    accessorKey: "especie",
-    header: "Especie",
-    cell: ({ row }) => row.original.especie || "-",
-  },
+
   {
     accessorKey: "fase",
     header: "Fase",
