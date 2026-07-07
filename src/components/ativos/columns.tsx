@@ -56,9 +56,9 @@ export const columns: ColumnDef<Ativo>[] = [
     },
   },
   {
-    accessorKey: "vao",
-    header: "Vao",
-    cell: ({ row }) => row.original.vao || "-",
+    accessorKey: "bay",
+    header: "Bay",
+    cell: ({ row }) => row.original.bay || "-",
   },
   {
     accessorKey: "modelo",

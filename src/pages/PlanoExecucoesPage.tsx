@@ -137,7 +137,7 @@ export default function PlanoExecucoesPage() {
     tipo_ativo: "todos",
     periodicidade: "todos",
     fase: "todos",
-    vao: "todos",
+    bay: "todos",
     ultima_execucao: "todos",
     proxima_inicio: "",
     proxima_fim: "",
@@ -176,7 +176,7 @@ export default function PlanoExecucoesPage() {
         (execucao) => execucao.periodicidade
       ),
       fases: uniqueOptions(execucoes, (execucao) => execucao.fase),
-      vaos: uniqueOptions(execucoes, (execucao) => execucao.vao),
+      bays: uniqueOptions(execucoes, (execucao) => execucao.bay),
     }),
     [execucoes]
   );
@@ -228,8 +228,8 @@ export default function PlanoExecucoesPage() {
         return false;
       }
       if (
-        filtros.vao !== "todos" &&
-        normalizeFilterValue(execucao.vao) !== filtros.vao
+        filtros.bay !== "todos" &&
+        normalizeFilterValue(execucao.bay) !== filtros.bay
       ) {
         return false;
       }
@@ -259,7 +259,7 @@ export default function PlanoExecucoesPage() {
         execucao.plano_descricao,
         execucao.instalacao,
         execucao.tipo_ativo,
-        execucao.vao,
+        execucao.bay,
         execucao.fase,
       ]
         .filter(Boolean)
@@ -279,7 +279,7 @@ export default function PlanoExecucoesPage() {
       tipo_ativo: "todos",
       periodicidade: "todos",
       fase: "todos",
-      vao: "todos",
+      bay: "todos",
       ultima_execucao: "todos",
       proxima_inicio: "",
       proxima_fim: "",
@@ -520,16 +520,16 @@ export default function PlanoExecucoesPage() {
               </label>
 
               <label className="grid gap-1.5 text-sm font-medium text-slate-700">
-                Vao
+                Bay
                 <select
-                  value={filtros.vao}
-                  onChange={(event) => updateFiltro("vao", event.target.value)}
+                  value={filtros.bay}
+                  onChange={(event) => updateFiltro("bay", event.target.value)}
                   className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="todos">Todos</option>
-                  {opcoes.vaos.map((vao) => (
-                    <option key={vao} value={vao}>
-                      {vao}
+                  {opcoes.bays.map((bay) => (
+                    <option key={bay} value={bay}>
+                      {bay}
                     </option>
                   ))}
                 </select>
@@ -622,7 +622,7 @@ export default function PlanoExecucoesPage() {
                       <TableCell>
                         <div className="font-medium">{execucao.codigo_ativo}</div>
                         <div className="text-xs text-slate-500">
-                          {[execucao.instalacao, execucao.vao]
+                          {[execucao.instalacao, execucao.bay]
                             .filter(Boolean)
                             .join(" | ") || "-"}
                         </div>

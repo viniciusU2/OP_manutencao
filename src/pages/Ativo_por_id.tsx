@@ -487,7 +487,7 @@ export function AtivoDetalhe() {
             )}
             <div className="grid grid-cols-2 gap-3 text-sm">
               <Info label="Subestacao" value={ativo.id_subestacao} />
-              <Info label="Vao" value={ativo.vao} />
+              <Info label="Bay" value={ativo.bay} />
               <Info label="Tensao" value={ativo.tensao_nominal_kv ? `${ativo.tensao_nominal_kv} kV` : "-"} />
               <Info label="Serie" value={ativo.numero_serie} />
             </div>
@@ -560,7 +560,7 @@ export function AtivoDetalhe() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Info label="Fase" value={ativo.fase} />
-                <Info label="Vao" value={ativo.vao} />
+                <Info label="Bay" value={ativo.bay} />
                 <Info label="Ultima inspecao" value={formatDate(inspecoesOrdenadas[0]?.data_inspecao)} />
               </CardContent>
             </Card>

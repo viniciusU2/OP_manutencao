@@ -53,7 +53,7 @@ type OsPrevistaPlano = {
   tipo_ativo?: string | null;
   ativo?: string | null;
   fase?: string | null;
-  vao?: string | null;
+  bay?: string | null;
   data_programada?: string | null;
   esquema_servicos?: string | null;
   descricao_servicos?: string | null;
@@ -391,7 +391,7 @@ function OsPrevistasTable({
               <TableCell>
                 <div className="font-medium">{osPrevista.ativo ?? "-"}</div>
                 <div className="text-xs text-slate-500">
-                  {[osPrevista.vao, osPrevista.fase].filter(Boolean).join(" / ") ||
+                  {[osPrevista.bay, osPrevista.fase].filter(Boolean).join(" / ") ||
                     "-"}
                 </div>
               </TableCell>

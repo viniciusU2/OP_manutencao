@@ -71,7 +71,7 @@ export interface PlanoExecucaoPlanilha {
   codigo_ativo: string;
   instalacao?: string | null;
   tipo_ativo?: string | null;
-  vao?: string | null;
+  bay?: string | null;
   fase?: string | null;
   ultima_execucao?: string | null;
   proxima_execucao: string;

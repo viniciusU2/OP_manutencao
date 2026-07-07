@@ -168,7 +168,7 @@ const initialForm: Ativo = {
   tensao_nominal_kv: undefined,
   data_instalacao: null,
   status: "ATIVO",
-  vao: "",
+  bay: "",
   fase: "",
 };
 
@@ -221,7 +221,7 @@ export default function AtivoPage() {
           numero_serie: res.data.numero_serie ?? "",
           data_instalacao: res.data.data_instalacao ?? null,
           status: res.data.status ?? "ATIVO",
-          vao: res.data.vao ?? "",
+          bay: res.data.bay ?? "",
           fase: res.data.fase ?? "",
         });
       })
@@ -295,7 +295,7 @@ export default function AtivoPage() {
       modelo: nullableText(form.modelo),
       especie: nullableText(form.especie),
       numero_serie: nullableText(form.numero_serie),
-      vao: nullableText(form.vao),
+      bay: nullableText(form.bay),
       fase: nullableText(form.fase),
       data_instalacao: form.data_instalacao || null,
       tensao_nominal_kv:
@@ -447,8 +447,8 @@ export default function AtivoPage() {
           </FormGroup>
 
           <FormGroup>
-            <label>Vao</label>
-            <input name="vao" value={form.vao ?? ""} onChange={handleChange} />
+            <label>Bay</label>
+            <input name="bay" value={form.bay ?? ""} onChange={handleChange} />
           </FormGroup>
 
           <FormGroup>
@@ -486,7 +486,7 @@ export default function AtivoPage() {
         <>
           <FilterCard>
             <SearchInput
-              placeholder="Buscar por codigo, modelo, serie, fase ou vao..."
+              placeholder="Buscar por codigo, modelo, serie, fase ou bay..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />

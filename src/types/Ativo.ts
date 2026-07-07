@@ -15,5 +15,5 @@ export interface Ativo {
   data_instalacao?: string | null;
   status?: string;
   fase?: string;
-  vao?: string;
+  bay?: string;
 }

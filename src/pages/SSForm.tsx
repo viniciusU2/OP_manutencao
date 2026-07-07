@@ -461,7 +461,7 @@ async function salvarOuEditar() {
 
               {ativos.map(a => (
                 <option key={a.id_ativo} value={String(a.id_ativo ?? "")}>
-                  {a.codigo_ativo} - {[a.fase, a.vao].filter(Boolean).join("-")}
+                  {a.codigo_ativo} - {[a.fase, a.bay].filter(Boolean).join("-")}
                 </option>
               ))}
 

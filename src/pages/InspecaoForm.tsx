@@ -26,7 +26,7 @@ interface Ativo {
   codigo_ativo: string;
   id_tipo_ativo: number;
   fase?: string;
-  vao?: string;
+  bay?: string;
   tipo_ativo?: string;
 }
 
@@ -433,7 +433,7 @@ export default function InspecaoForm() {
               </option>
               {ativos.map((ativo) => (
                 <option key={ativo.id_ativo} value={ativo.id_ativo}>
-                  {ativo.codigo_ativo} - {[ativo.fase, ativo.vao].filter(Boolean).join(" - ")}
+                  {ativo.codigo_ativo} - {[ativo.fase, ativo.bay].filter(Boolean).join(" - ")}
                 </option>
               ))}
             </Select>

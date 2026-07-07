@@ -22,7 +22,7 @@ interface Inspecao {
   numero_apr?: string | null;
   codigo_ativo?: string;
   fase?: string;
-  vao?: string;
+  bay?: string;
   instalacao?: string;
   tipo_ativo?: string;
 }
@@ -300,7 +300,7 @@ export default function InspecoesPage() {
                   <td>
                     {inspecao.codigo_ativo || "-"}
                     <br />
-                    <small>{[inspecao.fase, inspecao.vao].filter(Boolean).join(" - ")}</small>
+                    <small>{[inspecao.fase, inspecao.bay].filter(Boolean).join(" - ")}</small>
                   </td>
                   <td>
                     {inspecao.id_os && inspecao.numero_os ? (

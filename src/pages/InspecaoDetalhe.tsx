@@ -50,7 +50,7 @@ interface InspecaoDetalheData {
   fabricante?: string;
   modelo?: string;
   fase?: string;
-  vao?: string;
+  bay?: string;
   instalacao?: string;
   tipo_ativo?: string;
   resultados?: Resultado[];
@@ -224,9 +224,9 @@ export function InspecaoDetalhe() {
               <p className="font-medium">{inspecao.instalacao || "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Fase / Vão</p>
+              <p className="text-sm text-muted-foreground">Fase / Bay</p>
               <p className="font-medium">
-                {[inspecao.fase, inspecao.vao].filter(Boolean).join(" - ") || "-"}
+                {[inspecao.fase, inspecao.bay].filter(Boolean).join(" - ") || "-"}
               </p>
             </div>
             <div>

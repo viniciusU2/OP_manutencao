@@ -57,7 +57,7 @@ export function AtivoPage1({
         (ativo.fase ?? "")
           .toLowerCase()
           .includes(search.toLowerCase()) ||
-        (ativo.vao ?? "")
+        (ativo.bay ?? "")
           .toLowerCase()
           .includes(search.toLowerCase());
 
