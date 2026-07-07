@@ -126,12 +126,22 @@ function normalizePhotoUrl(url?: string | null) {
 }
 
 function getTipoAtivo(ativo: Ativo) {
-  const tipo = (ativo as Ativo & { tipo_ativo?: string | { nome?: string | null } | null }).tipo_ativo;
+  const tipo = ativo.tipo_ativo;
 
   if (typeof tipo === "string") return tipo;
   if (tipo?.nome) return tipo.nome;
 
-  return ativo.id_tipo_ativo ? `Tipo ${ativo.id_tipo_ativo}` : "-";
+  return "-";
+}
+
+function getSubestacaoSigla(ativo: Ativo) {
+  const subestacao = ativo.subestacao;
+
+  if (typeof subestacao === "string") return subestacao;
+  if (subestacao?.sigla) return subestacao.sigla;
+  if (subestacao?.nome) return subestacao.nome;
+
+  return "-";
 }
 
 function sortByDateDesc<T>(items: T[], pickDate: (item: T) => string | null | undefined) {
@@ -486,7 +496,7 @@ export function AtivoDetalhe() {
               </div>
             )}
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <Info label="Subestacao" value={ativo.id_subestacao} />
+              <Info label="Subestacao" value={getSubestacaoSigla(ativo)} />
               <Info label="Bay" value={ativo.bay} />
               <Info label="Tensao" value={ativo.tensao_nominal_kv ? `${ativo.tensao_nominal_kv} kV` : "-"} />
               <Info label="Serie" value={ativo.numero_serie} />

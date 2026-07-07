@@ -4,6 +4,25 @@ import { Link } from "react-router-dom";
 import type { Ativo } from "../../types/Ativo";
 import { StatusBadge } from "../statusBadge";
 
+function getSubestacaoSigla(ativo: Ativo) {
+  const subestacao = ativo.subestacao;
+
+  if (typeof subestacao === "string") return subestacao;
+  if (subestacao?.sigla) return subestacao.sigla;
+  if (subestacao?.nome) return subestacao.nome;
+
+  return "-";
+}
+
+function getTipoAtivoNome(ativo: Ativo) {
+  const tipo = ativo.tipo_ativo;
+
+  if (typeof tipo === "string") return tipo;
+  if (tipo?.nome) return tipo.nome;
+
+  return "-";
+}
+
 export const columns: ColumnDef<Ativo>[] = [
   {
     accessorKey: "codigo_ativo",
@@ -22,12 +41,14 @@ export const columns: ColumnDef<Ativo>[] = [
     },
   },
   {
-    accessorKey: "id_subestacao",
+    accessorKey: "subestacao",
     header: "Subestacao",
+    cell: ({ row }) => getSubestacaoSigla(row.original),
   },
   {
-    accessorKey: "id_tipo_ativo",
+    accessorKey: "tipo_ativo",
     header: "Tipo",
+    cell: ({ row }) => getTipoAtivoNome(row.original),
   },
   {
     accessorKey: "especie",

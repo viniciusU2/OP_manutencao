@@ -2,6 +2,15 @@ export interface Ativo {
   id_ativo?: number;
   id_subestacao: number;
   id_tipo_ativo: number;
+  subestacao?: string | {
+    id_subestacao?: number;
+    nome?: string | null;
+    sigla?: string | null;
+  } | null;
+  tipo_ativo?: string | {
+    id_tipo_ativo?: number;
+    nome?: string | null;
+  } | null;
   codigo_ativo: string;
   foto?: string | null;
   imagem?: string | null;
