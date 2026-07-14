@@ -157,6 +157,15 @@ const SearchInput = styled.input`
 
 type FieldErrors = Partial<Record<keyof Ativo, string>>;
 
+const STATUS_ATIVO = [
+  { value: "ATIVO", label: "Ativo" },
+  { value: "OPERANTE", label: "Operante" },
+  { value: "OPERACIONAL", label: "Operacional" },
+  { value: "MANUTENCAO", label: "Manutencao" },
+  { value: "DESATIVADO", label: "Desativado" },
+  { value: "INATIVO", label: "Inativo" },
+];
+
 const initialForm: Ativo = {
   id_subestacao: 0,
   id_tipo_ativo: 0,
@@ -171,6 +180,27 @@ const initialForm: Ativo = {
   bay: "",
   fase: "",
 };
+
+function getErrorMessage(error: unknown) {
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const response = (error as { response?: { data?: { detail?: unknown } } }).response;
+    const detail = response?.data?.detail;
+
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) {
+      return detail
+        .map((item) =>
+          typeof item === "object" && item !== null && "msg" in item
+            ? String((item as { msg?: unknown }).msg)
+            : String(item)
+        )
+        .join("; ");
+    }
+  }
+
+  if (error instanceof Error) return error.message;
+  return "Erro ao salvar ativo.";
+}
 
 export default function AtivoPage() {
   const { id } = useParams();
@@ -288,9 +318,9 @@ export default function AtivoPage() {
     }
 
     const payload = {
-      ...form,
       id_subestacao: Number(form.id_subestacao),
       id_tipo_ativo: Number(form.id_tipo_ativo),
+      codigo_ativo: form.codigo_ativo.trim(),
       fabricante: nullableText(form.fabricante),
       modelo: nullableText(form.modelo),
       especie: nullableText(form.especie),
@@ -298,6 +328,7 @@ export default function AtivoPage() {
       bay: nullableText(form.bay),
       fase: nullableText(form.fase),
       data_instalacao: form.data_instalacao || null,
+      status: form.status || "ATIVO",
       tensao_nominal_kv:
         form.tensao_nominal_kv === undefined ? null : Number(form.tensao_nominal_kv),
     };
@@ -316,7 +347,7 @@ export default function AtivoPage() {
       navigate("/ativo");
     } catch (error) {
       console.error("Erro ao salvar ativo:", error);
-      toast.error("Erro ao salvar ativo.");
+      toast.error(getErrorMessage(error));
     } finally {
       setSaving(false);
     }
@@ -468,8 +499,15 @@ export default function AtivoPage() {
           <FormGroup $invalid={!!errors.status}>
             <label>Status</label>
             <select name="status" value={form.status ?? "ATIVO"} onChange={handleChange}>
-              <option value="ATIVO">Ativo</option>
-              <option value="INATIVO">Inativo</option>
+              {form.status &&
+                !STATUS_ATIVO.some((status) => status.value === form.status) && (
+                  <option value={form.status}>{form.status}</option>
+                )}
+              {STATUS_ATIVO.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {status.label}
+                </option>
+              ))}
             </select>
             {errors.status && <ErrorText>{errors.status}</ErrorText>}
           </FormGroup>
@@ -493,8 +531,11 @@ export default function AtivoPage() {
 
             <select value={status} onChange={(event) => setStatus(event.target.value)}>
               <option value="all">Todos status</option>
-              <option value="ATIVO">Ativo</option>
-              <option value="INATIVO">Inativo</option>
+              {STATUS_ATIVO.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {status.label}
+                </option>
+              ))}
             </select>
 
             <select
