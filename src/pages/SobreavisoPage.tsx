@@ -597,10 +597,12 @@ export default function SobreavisoPage() {
   async function sincronizarColaboradores() {
     try {
       const result = await sincronizarColaboradoresSobreaviso();
-      setData(result);
-      toast.success("Colaboradores sincronizados com o banco.");
-    } catch {
-      toast.error("Nao foi possivel sincronizar os colaboradores.");
+      setData(result.data);
+      toast.success(
+        `Sincronizado: ${result.resumo.criados ?? 0} criados, ${result.resumo.atualizados ?? 0} atualizados, ${result.resumo.usuarios_ativos ?? 0} usuarios ativos.`
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel sincronizar os colaboradores.");
     }
   }
 
@@ -631,9 +633,13 @@ export default function SobreavisoPage() {
   }
 
   async function changeStatus(id: number, status: SobreavisoStatus) {
-    const result = await alterarStatusSobreaviso(id, status, usuarioNome, sobreavisoForm.justificativa);
-    setData(result);
-    toast.success(`Sobreaviso ${status.toLowerCase()}.`);
+    try {
+      const result = await alterarStatusSobreaviso(id, status, usuarioNome, sobreavisoForm.justificativa);
+      setData(result);
+      toast.success(`Sobreaviso ${status.toLowerCase()}.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel alterar o status.");
+    }
   }
 
   async function submitAjuste(event: React.FormEvent<HTMLFormElement>) {

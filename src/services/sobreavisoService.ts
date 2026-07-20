@@ -197,6 +197,22 @@ function hasHttpResponse(error: unknown) {
   );
 }
 
+function apiErrorMessage(error: unknown, fallback: string) {
+  if (!error || typeof error !== "object") return fallback;
+
+  const response = (error as { response?: { data?: unknown } }).response;
+  const data = response?.data;
+
+  if (data && typeof data === "object" && "detail" in data) {
+    const detail = (data as { detail?: unknown }).detail;
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) return detail.map((item) => item?.msg ?? String(item)).join("; ");
+  }
+
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+}
+
 function mapEquipe(item: any): EquipeSobreaviso {
   return {
     id: item.id_equipe,
@@ -324,8 +340,22 @@ export async function listarSobreavisoDataSet() {
 }
 
 export async function sincronizarColaboradoresSobreaviso() {
-  await api.post("/sobreaviso/colaboradores/sincronizar");
-  return listarApiDataSet();
+  try {
+    const response = await api.post("/sobreaviso/colaboradores/sincronizar");
+    return {
+      data: await listarApiDataSet(),
+      resumo: response.data as {
+        usuarios_ativos?: number;
+        ignorados_admin?: number;
+        criados?: number;
+        atualizados?: number;
+        total_colaboradores?: number;
+      },
+    };
+  } catch (error) {
+    if (hasHttpResponse(error)) throw new Error(apiErrorMessage(error, "Nao foi possivel sincronizar os colaboradores."));
+    throw error;
+  }
 }
 
 export async function salvarColaborador(
@@ -353,7 +383,7 @@ export async function salvarColaborador(
 
     return await listarApiDataSet();
   } catch (error) {
-    if (hasHttpResponse(error)) throw error;
+    if (hasHttpResponse(error)) throw new Error(apiErrorMessage(error, "Nao foi possivel salvar o sobreaviso."));
   }
 
   const data = readData();
@@ -476,14 +506,19 @@ export async function alterarStatusSobreaviso(
     } else if (status === "REPROVADO") {
       await api.post(`/sobreaviso/${id}/reprovar`, null, { params: { justificativa } });
     } else if (status === "CANCELADO") {
-      await api.post(`/sobreaviso/${id}/cancelar`, null, { params: { justificativa } });
+      try {
+        await api.post(`/sobreaviso/${id}/cancelar`, null, { params: { justificativa } });
+      } catch (error) {
+        if (!hasHttpResponse(error)) throw error;
+        await api.put(`/sobreaviso/${id}`, { status, justificativa });
+      }
     } else {
       await api.put(`/sobreaviso/${id}`, { status, justificativa });
     }
 
     return await listarApiDataSet();
   } catch (error) {
-    if (hasHttpResponse(error)) throw error;
+    if (hasHttpResponse(error)) throw new Error(apiErrorMessage(error, "Nao foi possivel alterar o status do sobreaviso."));
   }
 
   const data = readData();
