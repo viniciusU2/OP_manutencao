@@ -41,6 +41,7 @@ import PlanoExecucoesPage from "./pages/PlanoExecucoesPage";
 import DownloadsPage from "./pages/DownloadsPage";
 import PerfisPage from "./pages/PerfisPage";
 import RdoPage from "./pages/RdoPage";
+import SobreavisoPage from "./pages/SobreavisoPage";
 import { useGerarOsPlanosManutencao } from "./hooks/useGerarOsPlanosManutencao";
 
 /* ================= STYLES ================= */
@@ -134,6 +135,7 @@ function AppContent() {
 
         <Route element={<RoleRoute allowedRoles={OPERATIONAL_ACCESS_ROLES} />}>
           <Route path="/rdo" element={<RdoPage />} />
+          <Route path="/sobreaviso" element={<SobreavisoPage />} />
         </Route>
 
         <Route
