@@ -198,6 +198,8 @@ function hasHttpResponse(error: unknown) {
 }
 
 function apiErrorMessage(error: unknown, fallback: string) {
+  const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+
   if (!error || typeof error !== "object") return fallback;
 
   const response = (error as { response?: { data?: unknown } }).response;
@@ -209,6 +211,7 @@ function apiErrorMessage(error: unknown, fallback: string) {
     if (Array.isArray(detail)) return detail.map((item) => item?.msg ?? String(item)).join("; ");
   }
 
+  if (!response) return `Erro de rede ao acessar a API (${apiUrl}). Verifique VITE_API_URL, HTTPS/CORS e se o backend esta online.`;
   if (error instanceof Error && error.message) return error.message;
   return fallback;
 }
@@ -353,8 +356,7 @@ export async function sincronizarColaboradoresSobreaviso() {
       },
     };
   } catch (error) {
-    if (hasHttpResponse(error)) throw new Error(apiErrorMessage(error, "Nao foi possivel sincronizar os colaboradores."));
-    throw error;
+    throw new Error(apiErrorMessage(error, "Nao foi possivel sincronizar os colaboradores."));
   }
 }
 
