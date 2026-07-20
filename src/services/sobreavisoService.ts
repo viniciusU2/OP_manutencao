@@ -344,7 +344,7 @@ export async function listarSobreavisoDataSet() {
 
 export async function sincronizarColaboradoresSobreaviso() {
   try {
-    const response = await api.post("/sobreaviso/colaboradores/sincronizar");
+    const response = await api.post("/sobreaviso/sincronizar-colaboradores");
     return {
       data: await listarApiDataSet(),
       resumo: response.data as {
