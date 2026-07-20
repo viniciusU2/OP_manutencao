@@ -323,6 +323,11 @@ export async function listarSobreavisoDataSet() {
   }
 }
 
+export async function sincronizarColaboradoresSobreaviso() {
+  await api.post("/sobreaviso/colaboradores/sincronizar");
+  return listarApiDataSet();
+}
+
 export async function salvarColaborador(
   payload: Omit<ColaboradorSobreaviso, "id"> & { id?: number },
   usuario: string

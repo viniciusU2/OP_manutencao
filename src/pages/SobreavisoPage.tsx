@@ -28,6 +28,7 @@ import {
   salvarColaborador,
   salvarSolicitacaoAjuste,
   salvarSobreaviso,
+  sincronizarColaboradoresSobreaviso,
 } from "../services/sobreavisoService";
 import type {
   ColaboradorSobreaviso,
@@ -593,6 +594,16 @@ export default function SobreavisoPage() {
     toast.success("Colaborador salvo.");
   }
 
+  async function sincronizarColaboradores() {
+    try {
+      const result = await sincronizarColaboradoresSobreaviso();
+      setData(result);
+      toast.success("Colaboradores sincronizados com o banco.");
+    } catch {
+      toast.error("Nao foi possivel sincronizar os colaboradores.");
+    }
+  }
+
   async function submitSobreaviso(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -818,7 +829,13 @@ export default function SobreavisoPage() {
             <Users size={18} />
             Colaboradores
           </h2>
-          <span>{data.colaboradores.length} cadastrados</span>
+          <Actions>
+            <span>{data.colaboradores.length} cadastrados</span>
+            <Button type="button" size="sm" variant="outline" onClick={sincronizarColaboradores}>
+              <RefreshCcw />
+              Sincronizar
+            </Button>
+          </Actions>
         </PanelHeader>
         <TableWrap>
           <Table>
