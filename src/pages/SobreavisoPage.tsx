@@ -11,6 +11,7 @@ import {
   RefreshCcw,
   Save,
   ShieldCheck,
+  Trash2,
   UserRound,
   Users,
   XCircle,
@@ -23,6 +24,7 @@ import {
   avaliarSolicitacaoAjuste,
   calcularHoras,
   equipeNome,
+  excluirSobreavisoCancelado,
   exportarEscalaGeralSobreaviso,
   exportarFolhaPontoSobreaviso,
   listarSobreavisoDataSet,
@@ -31,6 +33,7 @@ import {
   salvarSobreaviso,
   sincronizarColaboradoresSobreaviso,
 } from "../services/sobreavisoService";
+import { canDelete } from "../lib/permissions";
 import type {
   ColaboradorSobreaviso,
   Sobreaviso,
@@ -386,10 +389,10 @@ function getUserName(nome?: string) {
   return nome?.trim() || "Usuario";
 }
 
-function fechamentoFolhaRange(month: string) {
+function calendarioMesRange(month: string) {
   const [year, monthNumber] = month.split("-").map(Number);
-  const inicio = new Date(year, monthNumber - 2, 21, 0, 0, 0);
-  const fim = new Date(year, monthNumber - 1, 20, 23, 59, 59);
+  const inicio = new Date(year, monthNumber - 1, 1, 0, 0, 0);
+  const fim = new Date(year, monthNumber, 0, 23, 59, 59);
 
   return {
     inicio,
@@ -400,7 +403,7 @@ function fechamentoFolhaRange(month: string) {
   };
 }
 
-function inFechamentoRange(item: Sobreaviso, range: ReturnType<typeof fechamentoFolhaRange>) {
+function inCalendarioRange(item: Sobreaviso, range: ReturnType<typeof calendarioMesRange>) {
   const inicio = new Date(item.inicio).getTime();
   const fim = new Date(item.fim).getTime();
   return inicio <= range.fim.getTime() && fim >= range.inicio.getTime();
@@ -441,6 +444,8 @@ export default function SobreavisoPage() {
   const [selectedColaborador, setSelectedColaborador] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [relatorioColaboradorId, setRelatorioColaboradorId] = useState("");
+  const [relatorioInicio, setRelatorioInicio] = useState(() => dateInput(calendarioMesRange(monthInput(new Date())).inicio));
+  const [relatorioFim, setRelatorioFim] = useState(() => dateInput(calendarioMesRange(monthInput(new Date())).fim));
   const [editingColaborador, setEditingColaborador] = useState<ColaboradorSobreaviso | null>(null);
   const [editingSobreaviso, setEditingSobreaviso] = useState<Sobreaviso | null>(null);
   const [colaboradorForm, setColaboradorForm] = useState({
@@ -505,7 +510,12 @@ export default function SobreavisoPage() {
     }, {});
   }, [data.colaboradores]);
 
-  const fechamentoRange = useMemo(() => fechamentoFolhaRange(selectedMonth), [selectedMonth]);
+  const calendarioRange = useMemo(() => calendarioMesRange(selectedMonth), [selectedMonth]);
+
+  useEffect(() => {
+    setRelatorioInicio(dateInput(calendarioRange.inicio));
+    setRelatorioFim(dateInput(calendarioRange.fim));
+  }, [calendarioRange]);
 
   useEffect(() => {
     if (!relatorioColaboradorId && data.colaboradores[0]) {
@@ -520,25 +530,25 @@ export default function SobreavisoPage() {
       const subestacaoOk = !selectedSubestacao || String(colaborador?.subestacaoId ?? "") === selectedSubestacao;
       const colaboradorOk = !selectedColaborador || String(item.colaboradorId) === selectedColaborador;
       const statusOk = !selectedStatus || item.status === selectedStatus;
-      return inFechamentoRange(item, fechamentoRange) && equipeOk && subestacaoOk && colaboradorOk && statusOk;
+      return inCalendarioRange(item, calendarioRange) && equipeOk && subestacaoOk && colaboradorOk && statusOk;
     });
-  }, [colaboradorById, data.sobreavisos, fechamentoRange, selectedColaborador, selectedEquipe, selectedStatus, selectedSubestacao]);
+  }, [calendarioRange, colaboradorById, data.sobreavisos, selectedColaborador, selectedEquipe, selectedStatus, selectedSubestacao]);
 
   const calendarDays = useMemo(() => {
-    const startOffset = fechamentoRange.inicio.getDay();
+    const startOffset = calendarioRange.inicio.getDay();
     const totalDays =
-      Math.floor((fechamentoRange.fim.getTime() - fechamentoRange.inicio.getTime()) / 86_400_000) + 1;
+      Math.floor((calendarioRange.fim.getTime() - calendarioRange.inicio.getTime()) / 86_400_000) + 1;
     const totalCells = Math.ceil((startOffset + totalDays) / 7) * 7;
 
     return Array.from({ length: totalCells }, (_, index) => {
       const offset = index - startOffset;
       if (offset < 0 || offset >= totalDays) return null;
 
-      const date = new Date(fechamentoRange.inicio);
-      date.setDate(fechamentoRange.inicio.getDate() + offset);
+      const date = new Date(calendarioRange.inicio);
+      date.setDate(calendarioRange.inicio.getDate() + offset);
       return date;
     });
-  }, [fechamentoRange]);
+  }, [calendarioRange]);
 
   function resetColaboradorForm() {
     setEditingColaborador(null);
@@ -671,6 +681,27 @@ export default function SobreavisoPage() {
     }
   }
 
+  async function deleteSobreaviso(item: Sobreaviso) {
+    if (item.status !== "CANCELADO") {
+      toast.error("Somente sobreavisos cancelados podem ser excluidos.");
+      return;
+    }
+
+    const confirmado = window.confirm(
+      "Excluir definitivamente este sobreaviso cancelado? Esta acao tambem remove solicitacoes e historicos vinculados."
+    );
+    if (!confirmado) return;
+
+    try {
+      const result = await excluirSobreavisoCancelado(item.id);
+      setData(result);
+      if (editingSobreaviso?.id === item.id) resetSobreavisoForm();
+      toast.success("Sobreaviso cancelado excluido.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel excluir o sobreaviso.");
+    }
+  }
+
   async function submitAjuste(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -704,12 +735,16 @@ export default function SobreavisoPage() {
       toast.error("Selecione um colaborador para exportar.");
       return;
     }
+    if (!relatorioInicio || !relatorioFim || relatorioFim < relatorioInicio) {
+      toast.error("Informe um periodo valido para o relatorio.");
+      return;
+    }
 
     try {
       await exportarFolhaPontoSobreaviso(
         Number(relatorioColaboradorId),
-        fechamentoRange.inicioApi,
-        fechamentoRange.fimApi
+        `${relatorioInicio}T00:00:00`,
+        `${relatorioFim}T23:59:59`
       );
       toast.success("Relatorio exportado.");
     } catch {
@@ -718,8 +753,12 @@ export default function SobreavisoPage() {
   }
 
   async function exportarRelatorioGeral() {
+    if (!relatorioInicio || !relatorioFim || relatorioFim < relatorioInicio) {
+      toast.error("Informe um periodo valido para o relatorio.");
+      return;
+    }
     try {
-      await exportarEscalaGeralSobreaviso(fechamentoRange.inicioApi, fechamentoRange.fimApi);
+      await exportarEscalaGeralSobreaviso(`${relatorioInicio}T00:00:00`, `${relatorioFim}T23:59:59`);
       toast.success("Escala geral exportada em Excel.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Nao foi possivel exportar a escala geral.");
@@ -729,7 +768,7 @@ export default function SobreavisoPage() {
   const renderFilters = () => (
     <Toolbar>
       <FieldGroup>
-        <Input type="month" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} title="Competencia da folha" />
+        <Input type="month" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} title="Mes do calendario" />
         <Select value={selectedEquipe} onChange={(event) => setSelectedEquipe(event.target.value)}>
           <option value="">Todas as equipes</option>
           {data.equipes.map((equipe) => (
@@ -764,7 +803,7 @@ export default function SobreavisoPage() {
         </Select>
       </FieldGroup>
       <span style={{ color: "#475569", fontSize: 13, fontWeight: 700 }}>
-        Fechamento: {fechamentoRange.label}
+        Periodo exibido: {calendarioRange.label}
       </span>
       <Button type="button" variant="outline" onClick={carregar}>
         <RefreshCcw />
@@ -809,7 +848,7 @@ export default function SobreavisoPage() {
                     <Button type="button" size="sm" variant="outline" onClick={() => editSobreaviso(item)}>
                       Editar
                     </Button>
-                    {item.status !== "APROVADO" && (
+                    {item.status !== "APROVADO" && item.status !== "CANCELADO" && (
                       <Button type="button" size="sm" onClick={() => changeStatus(item.id, "APROVADO")}>
                         Aprovar
                       </Button>
@@ -817,6 +856,12 @@ export default function SobreavisoPage() {
                     {item.status !== "CANCELADO" && (
                       <Button type="button" size="sm" variant="destructive" onClick={() => changeStatus(item.id, "CANCELADO")}>
                         Cancelar
+                      </Button>
+                    )}
+                    {item.status === "CANCELADO" && canDelete(usuario?.role) && (
+                      <Button type="button" size="sm" variant="destructive" onClick={() => deleteSobreaviso(item)}>
+                        <Trash2 />
+                        Excluir
                       </Button>
                     )}
                   </Actions>
@@ -838,7 +883,7 @@ export default function SobreavisoPage() {
             <CalendarDays size={18} />
             Calendario da competencia
           </h2>
-          <span>{fechamentoRange.label}</span>
+          <span>{calendarioRange.label}</span>
         </PanelHeader>
         <CalendarGrid>
           {['Domingo', 'Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta', 'Sabado'].map((diaSemana) => (
@@ -1008,6 +1053,8 @@ export default function SobreavisoPage() {
           </h2>
           <Actions>
             <span>{filteredSobreavisos.length} registros no filtro</span>
+            <Input type="date" value={relatorioInicio} onChange={(event) => setRelatorioInicio(event.target.value)} title="Data inicial do relatorio" />
+            <Input type="date" value={relatorioFim} onChange={(event) => setRelatorioFim(event.target.value)} title="Data final do relatorio" />
             <Button type="button" size="sm" onClick={exportarRelatorioGeral}>
               <Download />
               Baixar Excel geral
@@ -1179,6 +1226,8 @@ export default function SobreavisoPage() {
             Relatorio consolidado
           </h2>
           <Actions>
+            <Input type="date" value={relatorioInicio} onChange={(event) => setRelatorioInicio(event.target.value)} title="Data inicial do relatorio" />
+            <Input type="date" value={relatorioFim} onChange={(event) => setRelatorioFim(event.target.value)} title="Data final do relatorio" />
             <Select value={relatorioColaboradorId} onChange={(event) => setRelatorioColaboradorId(event.target.value)}>
               {data.colaboradores.map((colaborador) => (
                 <option key={colaborador.id} value={colaborador.id}>

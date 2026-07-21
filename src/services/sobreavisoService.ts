@@ -293,6 +293,15 @@ export async function alterarStatusSobreaviso(
   }
 }
 
+export async function excluirSobreavisoCancelado(id: number) {
+  try {
+    await api.delete(`/sobreaviso/${id}`);
+    return await listarApiDataSet();
+  } catch (error) {
+    throw new Error(apiErrorMessage(error, "Nao foi possivel excluir o sobreaviso cancelado."));
+  }
+}
+
 export async function salvarSolicitacaoAjuste(
   payload: Omit<SolicitacaoAjusteSobreaviso, "id" | "status" | "criadoEm">,
   _usuario: string
