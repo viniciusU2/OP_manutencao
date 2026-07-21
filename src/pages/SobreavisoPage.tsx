@@ -442,7 +442,7 @@ export default function SobreavisoPage() {
     ativo: "true",
   });
   const [sobreavisoForm, setSobreavisoForm] = useState({
-    colaboradorId: "1",
+    colaboradorId: "",
     inicio: `${dateInput(new Date())}T18:00`,
     fim: `${dateInput(new Date(Date.now() + 86_400_000))}T06:00`,
     status: "PENDENTE" as SobreavisoStatus,
@@ -470,8 +470,15 @@ export default function SobreavisoPage() {
   }, []);
 
   useEffect(() => {
-    if (data.colaboradores[0] && sobreavisoForm.colaboradorId === "1") {
-      setSobreavisoForm((prev) => ({ ...prev, colaboradorId: String(data.colaboradores[0].id) }));
+    const selecionadoExiste = data.colaboradores.some(
+      (item) => item.ativo && String(item.id) === sobreavisoForm.colaboradorId
+    );
+    if (!selecionadoExiste) {
+      const primeiroAtivo = data.colaboradores.find((item) => item.ativo);
+      setSobreavisoForm((prev) => ({
+        ...prev,
+        colaboradorId: primeiroAtivo ? String(primeiroAtivo.id) : "",
+      }));
     }
   }, [data.colaboradores, sobreavisoForm.colaboradorId]);
 
@@ -563,7 +570,7 @@ export default function SobreavisoPage() {
   function resetSobreavisoForm() {
     setEditingSobreaviso(null);
     setSobreavisoForm({
-      colaboradorId: String(data.colaboradores[0]?.id ?? 1),
+      colaboradorId: String(data.colaboradores.find((item) => item.ativo)?.id ?? ""),
       inicio: `${dateInput(new Date())}T18:00`,
       fim: `${dateInput(new Date(Date.now() + 86_400_000))}T06:00`,
       status: "PENDENTE",
@@ -609,11 +616,17 @@ export default function SobreavisoPage() {
   async function submitSobreaviso(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    const colaboradorId = Number(sobreavisoForm.colaboradorId);
+    if (!Number.isInteger(colaboradorId) || colaboradorId <= 0) {
+      toast.error("Selecione um colaborador valido.");
+      return;
+    }
+
     try {
       const result = await salvarSobreaviso(
         {
           id: editingSobreaviso?.id,
-          colaboradorId: Number(sobreavisoForm.colaboradorId),
+          colaboradorId,
           inicio: sobreavisoForm.inicio,
           fim: sobreavisoForm.fim,
           status: sobreavisoForm.status,
@@ -984,6 +997,7 @@ export default function SobreavisoPage() {
               <label className="full">
                 Colaborador
                 <Select required value={sobreavisoForm.colaboradorId} onChange={(event) => setSobreavisoForm((prev) => ({ ...prev, colaboradorId: event.target.value }))}>
+                  <option value="" disabled>Selecione um colaborador</option>
                   {data.colaboradores.filter((item) => item.ativo).map((colaborador) => (
                     <option key={colaborador.id} value={colaborador.id}>
                       {colaborador.nome} - {equipeNome(data.equipes, colaborador.equipeId)}

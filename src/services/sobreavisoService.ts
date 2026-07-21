@@ -216,9 +216,25 @@ function apiErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+function asArray(payload: unknown): any[] {
+  if (Array.isArray(payload)) return payload;
+  if (payload && typeof payload === "object") {
+    const wrapped = payload as Record<string, unknown>;
+    for (const key of ["items", "data", "results"]) {
+      if (Array.isArray(wrapped[key])) return wrapped[key] as any[];
+    }
+  }
+  return [];
+}
+
+function asId(value: unknown): number {
+  const parsed = typeof value === "number" ? value : Number(String(value ?? "").trim());
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
+}
+
 function mapEquipe(item: any): EquipeSobreaviso {
   return {
-    id: item.id_equipe,
+    id: asId(item.id_equipe ?? item.id),
     nome: item.nome,
     descricao: item.descricao,
     ativo: Boolean(item.ativo),
@@ -227,15 +243,15 @@ function mapEquipe(item: any): EquipeSobreaviso {
 
 function mapColaborador(item: any): ColaboradorSobreaviso {
   return {
-    id: item.id_colaborador,
+    id: asId(item.id_colaborador ?? item.id),
     nome: item.nome,
     matricula: item.matricula,
     email: item.email,
     cargo: item.cargo ?? "",
     telefone: item.telefone,
-    equipeId: item.id_equipe,
-    subestacaoId: item.id_subestacao,
-    usuarioId: item.id_usuario,
+    equipeId: asId(item.id_equipe ?? item.equipeId),
+    subestacaoId: asId(item.id_subestacao ?? item.subestacaoId) || null,
+    usuarioId: asId(item.id_usuario ?? item.usuarioId) || null,
     ativo: Boolean(item.ativo),
   };
 }
@@ -246,7 +262,7 @@ function isAdminColaborador(item: ColaboradorSobreaviso) {
 
 function mapSubestacao(item: any): SubestacaoSobreaviso {
   return {
-    id: item.id_subestacao,
+    id: asId(item.id_subestacao ?? item.id),
     nome: item.nome,
     status: item.status,
   };
@@ -254,8 +270,8 @@ function mapSubestacao(item: any): SubestacaoSobreaviso {
 
 function mapSobreaviso(item: any): Sobreaviso {
   return {
-    id: item.id_sobreaviso,
-    colaboradorId: item.id_colaborador,
+    id: asId(item.id_sobreaviso ?? item.id),
+    colaboradorId: asId(item.id_colaborador ?? item.colaboradorId ?? item.colaborador?.id_colaborador),
     inicio: item.inicio,
     fim: item.fim,
     totalHoras: Number(item.total_horas ?? 0),
@@ -308,12 +324,14 @@ async function listarApiDataSet(): Promise<SobreavisoDataSet> {
   ]);
 
   return {
-    equipes: equipesRes.data.map(mapEquipe),
-    subestacoes: subestacoesRes.data.map(mapSubestacao),
-    colaboradores: colaboradoresRes.data.map(mapColaborador).filter((item: ColaboradorSobreaviso) => !isAdminColaborador(item)),
-    sobreavisos: sobreavisosRes.data.map(mapSobreaviso),
-    solicitacoes: solicitacoesRes.data.map(mapSolicitacao),
-    historico: historicoRes.data.map(mapHistorico),
+    equipes: asArray(equipesRes.data).map(mapEquipe).filter((item) => item.id > 0),
+    subestacoes: asArray(subestacoesRes.data).map(mapSubestacao).filter((item) => item.id > 0),
+    colaboradores: asArray(colaboradoresRes.data).map(mapColaborador)
+      .filter((item: ColaboradorSobreaviso) => item.id > 0 && !isAdminColaborador(item)),
+    sobreavisos: asArray(sobreavisosRes.data).map(mapSobreaviso)
+      .filter((item) => item.id > 0 && item.colaboradorId > 0),
+    solicitacoes: asArray(solicitacoesRes.data).map(mapSolicitacao),
+    historico: asArray(historicoRes.data).map(mapHistorico),
   };
 }
 
@@ -422,6 +440,13 @@ export async function salvarSobreaviso(
   },
   usuario: string
 ) {
+  if (!Number.isInteger(payload.colaboradorId) || payload.colaboradorId <= 0) {
+    throw new Error("Selecione um colaborador valido.");
+  }
+  if (calcularHoras(payload.inicio, payload.fim) <= 0) {
+    throw new Error("Informe um periodo valido: o fim deve ser maior que o inicio.");
+  }
+
   try {
     const body = {
       id_colaborador: payload.colaboradorId,
