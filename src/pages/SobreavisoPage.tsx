@@ -460,6 +460,9 @@ export default function SobreavisoPage() {
     setLoading(true);
     try {
       setData(await listarSobreavisoDataSet());
+    } catch (error) {
+      setData(initialData);
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel carregar o sobreaviso.");
     } finally {
       setLoading(false);
     }
