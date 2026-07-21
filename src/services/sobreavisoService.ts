@@ -348,6 +348,25 @@ export async function exportarFolhaPontoSobreaviso(
   window.URL.revokeObjectURL(url);
 }
 
+export async function exportarEscalaGeralSobreaviso(dataInicio: string, dataFim: string) {
+  const response = await api.get("/sobreaviso/relatorios/escala-geral/exportar", {
+    params: {
+      data_inicio: dataInicio,
+      data_fim: dataFim,
+    },
+    responseType: "blob",
+  });
+
+  const url = window.URL.createObjectURL(response.data);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `escala_geral_sobreaviso_${dataInicio.slice(0, 10)}_${dataFim.slice(0, 10)}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 export function equipeNome(equipes: EquipeSobreaviso[], equipeId: number) {
   return equipes.find((item) => item.id === equipeId)?.nome ?? "Sem equipe";
 }

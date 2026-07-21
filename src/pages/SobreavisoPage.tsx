@@ -23,6 +23,7 @@ import {
   avaliarSolicitacaoAjuste,
   calcularHoras,
   equipeNome,
+  exportarEscalaGeralSobreaviso,
   exportarFolhaPontoSobreaviso,
   listarSobreavisoDataSet,
   salvarColaborador,
@@ -37,12 +38,12 @@ import type {
   SobreavisoStatus,
 } from "../types/Sobreaviso";
 
-type Tab = "calendario" | "colaboradores" | "escala" | "aprovacao" | "relatorios";
+type Tab = "calendario" | "colaboradores" | "geral" | "aprovacao" | "relatorios";
 
 const tabs: Array<{ id: Tab; label: string }> = [
   { id: "calendario", label: "Calendario" },
   { id: "colaboradores", label: "Colaboradores" },
-  { id: "escala", label: "Escala" },
+  { id: "geral", label: "Geral" },
   { id: "aprovacao", label: "Aprovacao" },
   { id: "relatorios", label: "Relatorios" },
 ];
@@ -288,6 +289,18 @@ const CalendarGrid = styled.div`
   border-top: 1px solid #e2e8f0;
   border-left: 1px solid #e2e8f0;
   overflow-x: auto;
+`;
+
+const WeekDayHeader = styled.div`
+  min-width: 120px;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  padding: 9px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
 `;
 
 const DayCell = styled.div`
@@ -567,7 +580,7 @@ export default function SobreavisoPage() {
       origem: sobreaviso.origem,
       justificativa: sobreaviso.justificativa ?? "",
     });
-    setActiveTab("escala");
+    setActiveTab("geral");
   }
 
   function resetSobreavisoForm() {
@@ -704,6 +717,15 @@ export default function SobreavisoPage() {
     }
   }
 
+  async function exportarRelatorioGeral() {
+    try {
+      await exportarEscalaGeralSobreaviso(fechamentoRange.inicioApi, fechamentoRange.fimApi);
+      toast.success("Escala geral exportada em Excel.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel exportar a escala geral.");
+    }
+  }
+
   const renderFilters = () => (
     <Toolbar>
       <FieldGroup>
@@ -819,6 +841,9 @@ export default function SobreavisoPage() {
           <span>{fechamentoRange.label}</span>
         </PanelHeader>
         <CalendarGrid>
+          {['Domingo', 'Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta', 'Sabado'].map((diaSemana) => (
+            <WeekDayHeader key={diaSemana}>{diaSemana}</WeekDayHeader>
+          ))}
           {calendarDays.map((day, index) => {
             const dayKey = day ? dateInput(day) : "";
             const events = day ? filteredSobreavisos.filter((item) => sobreavisoAtingeDia(item, day)) : [];
@@ -971,15 +996,23 @@ export default function SobreavisoPage() {
     </Grid>
   );
 
-  const renderEscala = () => (
-    <Grid>
+  const renderGeral = () => (
+    <>
+      {renderFilters()}
+      <Grid>
       <Panel>
         <PanelHeader>
           <h2>
             <Clock3 size={18} />
-            Escala de sobreaviso
+            Sobreaviso geral
           </h2>
-          <span>{filteredSobreavisos.length} registros no filtro</span>
+          <Actions>
+            <span>{filteredSobreavisos.length} registros no filtro</span>
+            <Button type="button" size="sm" onClick={exportarRelatorioGeral}>
+              <Download />
+              Baixar Excel geral
+            </Button>
+          </Actions>
         </PanelHeader>
         {renderTabelaSobreavisos(filteredSobreavisos)}
       </Panel>
@@ -1044,7 +1077,8 @@ export default function SobreavisoPage() {
           </form>
         </PanelBody>
       </Panel>
-    </Grid>
+      </Grid>
+    </>
   );
 
   const renderAprovacao = () => {
@@ -1179,7 +1213,7 @@ export default function SobreavisoPage() {
           <h1>Gestao de Sobreaviso</h1>
           <p>Controle de escalas, horas, aprovacoes, ajustes e relatorios de colaboradores.</p>
         </div>
-        <Button type="button" onClick={() => setActiveTab("escala")}>
+        <Button type="button" onClick={() => setActiveTab("geral")}>
           <Plus />
           Novo sobreaviso
         </Button>
@@ -1195,7 +1229,7 @@ export default function SobreavisoPage() {
 
       {activeTab === "calendario" && renderCalendario()}
       {activeTab === "colaboradores" && renderColaboradores()}
-      {activeTab === "escala" && renderEscala()}
+      {activeTab === "geral" && renderGeral()}
       {activeTab === "aprovacao" && renderAprovacao()}
       {activeTab === "relatorios" && renderRelatorios()}
     </Page>
