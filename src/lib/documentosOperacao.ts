@@ -44,9 +44,9 @@ function abreviarTipoAtivo(nome?: string | null) {
   if (normalizado.includes("DISJUNT")) return "DJ";
   if (normalizado.includes("TC") || normalizado.includes("CORRENTE")) return "TC";
   if (normalizado.includes("TP") || normalizado.includes("POTENCIAL")) return "TP";
-  if (normalizado.includes("REATOR")) return "RC";
+  if (normalizado.includes("REATOR")) return "RE";
   if (normalizado.includes("TRANSFORMADOR") || normalizado.includes("TRAFO")) return "TR";
-  if (normalizado.includes("BARRA")) return "BR";
+  if (normalizado.includes("BARRA")) return "BA";
   if (normalizado.includes("TORRE")) return "TOR";
 
   const palavras = normalizado.match(/[A-Z0-9]+/g) ?? [];
@@ -60,7 +60,7 @@ function formatarClasseTensao(valor?: number | string | null) {
   const numero = Number(valor);
   if (!Number.isFinite(numero)) return "";
 
-  return `${Number.isInteger(numero) ? numero : Number(numero.toFixed(2))}K`;
+  return `${Number.isInteger(numero) ? numero : Number(numero.toFixed(2))}KV`;
 }
 
 export function especiePorAtivo(ativo?: Ativo | null, tipos: TipoAtivo[] = []) {

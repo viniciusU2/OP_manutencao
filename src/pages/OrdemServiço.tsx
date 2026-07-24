@@ -580,10 +580,10 @@ export  function OrdemServicoPage() {
                 !LOCALIZACOES_FISICAS.some((local) => local.value === form.localizacao) && (
                   <option value={form.localizacao}>{form.localizacao}</option>
                 )}
-              <option value="Bom Jesus da Lapa-BA">Bom Jesus da Lapa</option>
-              <option value="Gentio do Ouro-BA">Gentio do Ouro</option>
-              <option value="Jaíba-MG">Jaíba</option>
-              <option value="BURITIZEIRO-MG">Buritizeiro</option>
+              <option value="Bom Jesus da Lapa II">Bom Jesus da Lapa II</option>
+              <option value="Gentio do Ouro-BA II">Gentio do Ouro II</option>
+              <option value="Jaíba">Jaíba</option>
+              <option value="BURITIZEIRO III">Buritizeiro III</option>
             </select>
           </FormGroup>
 
