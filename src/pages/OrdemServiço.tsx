@@ -581,7 +581,7 @@ export  function OrdemServicoPage() {
                   <option value={form.localizacao}>{form.localizacao}</option>
                 )}
               <option value="Bom Jesus da Lapa II">Bom Jesus da Lapa II</option>
-              <option value="Gentio do Ouro-BA II">Gentio do Ouro II</option>
+              <option value="Gentio do Ouro II">Gentio do Ouro II</option>
               <option value="Jaíba">Jaíba</option>
               <option value="BURITIZEIRO III">Buritizeiro III</option>
             </select>
