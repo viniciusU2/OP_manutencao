@@ -34,6 +34,8 @@ export interface Sobreaviso {
   inicio: string;
   fim: string;
   totalHoras: number;
+  totalHorasAtendimento?: number;
+  intervalos?: SobreavisoIntervalo[];
   status: SobreavisoStatus;
   origem: SobreavisoOrigem;
   justificativa?: string;
@@ -41,6 +43,18 @@ export interface Sobreaviso {
   atualizadoPor?: string;
   criadoEm: string;
   atualizadoEm?: string;
+}
+
+export type SobreavisoTipoIntervalo = "SOBREAVISO" | "ATENDIMENTO";
+
+export interface SobreavisoIntervalo {
+  id?: number;
+  sobreavisoId?: number;
+  tipo: SobreavisoTipoIntervalo;
+  inicio: string;
+  fim: string;
+  idOcorrencia?: number | null;
+  observacao?: string;
 }
 
 export interface SolicitacaoAjusteSobreaviso {

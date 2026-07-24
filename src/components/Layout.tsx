@@ -88,6 +88,14 @@ const Logo = styled.div<{ $collapsed: boolean }>`
   font-weight: bold;
 `
 
+const LogoIcon = styled.svg`
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  border-radius: 7px;
+  object-fit: contain;
+`
+
 const Nav = styled.nav`
   padding: 20px 12px;
   display: flex;
@@ -347,7 +355,15 @@ export default function Layout() {
 
       <Sidebar $open={open} $collapsed={collapsed}>
         <Logo $collapsed={collapsed}>
-          <Zap size={20} />
+          <LogoIcon viewBox="0 0 1024 1024" aria-label="EV">
+            <rect x="86" y="162" width="86" height="638" rx="6" fill="#FFFFFF" />
+            <rect x="86" y="162" width="494" height="86" rx="6" fill="#FFFFFF" />
+            <rect x="86" y="456" width="404" height="78" rx="6" fill="#FFFFFF" />
+            <rect x="86" y="714" width="494" height="86" rx="6" fill="#FFFFFF" />
+            <polygon points="414,162 548,162 668,634 788,162 922,162 668,800" fill="#FFFFFF" />
+            <polygon points="580,116 656,116 603,450 684,450 568,916 520,916 565,504 486,504" fill="#FFFFFF" opacity="0.38" />
+            <polygon points="593,138 636,138 588,462 652,462 561,892 540,892 582,490 518,490" fill="#FFFFFF" />
+          </LogoIcon>
           {!collapsed && "O&M"}
         </Logo>
 
