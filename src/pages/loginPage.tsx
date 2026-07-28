@@ -52,14 +52,31 @@ const Brand = styled.div`
   letter-spacing: 0;
 `;
 
-const BrandIcon = styled.div`
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
+const BrandLogo = styled.img`
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 10px;
+  object-fit: contain;
+  box-shadow: 0 8px 24px rgba(2, 8, 23, 0.28);
+`;
+
+const BrandText = styled.div`
   display: grid;
-  place-items: center;
-  color: #04111f;
-  background: #facc15;
+  gap: 2px;
+
+  strong {
+    font-size: 20px;
+    line-height: 1;
+    letter-spacing: 0.08em;
+  }
+
+  span {
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
 `;
 
 const Hero = styled.div`
@@ -264,10 +281,14 @@ export function LoginPage() {
     <Page>
       <Intro>
         <Brand>
-          <BrandIcon>
-            <Zap size={22} />
-          </BrandIcon>
-          Operacao & Manutencao
+          <BrandLogo
+            src="/icone-v.svg"
+            alt="Logo ENGVI"
+          />
+          <BrandText>
+            <strong>ENGVI</strong>
+            <span>Gestão da Vida e Integridade dos Ativos</span>
+          </BrandText>
         </Brand>
 
         <Hero>
