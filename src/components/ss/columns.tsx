@@ -61,6 +61,11 @@ export const columns = (
     ),
   },
   {
+    accessorKey: "codigo_ativo",
+    header: "Código do ativo",
+    cell: ({ row }) => row.original.codigo_ativo || "-",
+  },
+  {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => (

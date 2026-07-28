@@ -40,6 +40,12 @@ export const columns = (
     },
   },
   {
+    id: "codigo_ativo",
+    header: "Código do ativo",
+    cell: ({ row }) =>
+      row.original.codigo_ativo || row.original.ativo?.codigo_ativo || "-",
+  },
+  {
     accessorKey: "instalacao",
     header: " Instalacao",
   },

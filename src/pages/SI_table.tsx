@@ -99,6 +99,7 @@ async function baixarSI(si: SI) {
     const matchSearch =
       !search ||
       si.numero_si.toLowerCase().includes(search.toLowerCase()) ||
+      (si.codigo_ativo ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (si.descricao_servicos ?? "")
         .toLowerCase()
         .includes(search.toLowerCase());
@@ -112,7 +113,7 @@ async function baixarSI(si: SI) {
       (si.id_ativo != null && subestacaoPorAtivo[si.id_ativo] === Number(subestacao));
 
     return matchSearch && matchStatus && matchSubestacao;
-  });
+  }).sort((a, b) => b.id_si - a.id_si);
 
   return (
     <div className="container mx-auto py-6">

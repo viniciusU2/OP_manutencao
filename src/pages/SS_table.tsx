@@ -99,6 +99,7 @@ export function SSPage1({ search, status, subestacao }: Props) {
     const matchSearch =
       !search ||
       (ss.numero_ss ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (ss.codigo_ativo ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (ss.descricao_problema ?? "")
         .toLowerCase()
         .includes(search.toLowerCase());

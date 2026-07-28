@@ -150,13 +150,10 @@ const TIPOS_PROGRAMACAO_SI = [
   { value: "CONTINUA", label: "Contínua" },
 ];
 
-const STATUS_OPERACAO_SI = [
+const STATUS_LIBERACAO_SI = [
   { value: "PROGRAMADA", label: "Programada" },
-  { value: "EM_ANALISE", label: "Em análise" },
-  { value: "APROVADA", label: "Aprovada" },
-  { value: "REJEITADA", label: "Rejeitada" },
-  { value: "EM_EXECUCAO", label: "Em execução" },
-  { value: "ENCERRADA", label: "Encerrada" },
+  { value: "INTERROMPIDA", label: "Interrompida" },
+  { value: "CONCLUIDA", label: "Concluída" },
   { value: "CANCELADA", label: "Cancelada" },
 ];
 
@@ -192,6 +189,7 @@ export default function SIForm() {
 
     status_manutencao: "PROGRAMADA",
     status_operacao: "PROGRAMADA",
+    postergacao_traz_risco: "NAO",
 
     data_inicio_preriodo_total: null,
     data_fim_preriodo_total: null,
@@ -293,6 +291,7 @@ export default function SIForm() {
               si.status_manutencao ?? "PROGRAMADA",
             status_operacao:
               si.status_operacao ?? "PROGRAMADA",
+            postergacao_traz_risco: si.postergacao_traz_risco || "NAO",
 
             descricao_servicos:
               si.descricao_servicos ?? "",
@@ -654,21 +653,6 @@ export default function SIForm() {
             </select>
           </FormGroup>
 
-          <FormGroup>
-            <label>Status</label>
-            <select
-              name="status_manutencao"
-              onChange={handleChange}
-              value={form.status_manutencao ?? "PROGRAMADA"}
-            >
-              {form.status_manutencao === "ABERTA" && (
-                <option value="ABERTA">Aberta</option>
-              )}
-              <option value="PROGRAMADA">Programada</option>
-              <option value="EM_EXECUCAO">Em Execução</option>
-              <option value="CONCLUIDA">Concluída</option>
-            </select>
-          </FormGroup>
         </FormGrid>
 
         <SectionTitle>Informações Operacionais</SectionTitle>
@@ -781,6 +765,20 @@ export default function SIForm() {
               <option value="">Selecione</option>
               <option value="SIM">Sim</option>
               <option value="NAO">Não</option>
+            </select>
+          </FormGroup>
+
+          <FormGroup>
+            <label>Postergação traz risco?</label>
+            <select
+              name="postergacao_traz_risco"
+              onChange={handleChange}
+              value={form.postergacao_traz_risco ?? ""}
+            >
+              <option value="">Selecione</option>
+              <option value="NAO">Não</option>
+              <option value="SIM_EQUIPAMENTO">Sim - Equipamento</option>
+              <option value="SIM_PESSOA">Sim - Pessoa</option>
             </select>
           </FormGroup>
 
@@ -910,6 +908,26 @@ export default function SIForm() {
 
         <FormGrid>
           <FormGroup>
+            <label>Status de liberação para manutenção</label>
+            <select
+              name="status_manutencao"
+              onChange={handleChange}
+              value={form.status_manutencao ?? "PROGRAMADA"}
+            >
+              <option value="">Selecione</option>
+              {form.status_manutencao &&
+                !STATUS_LIBERACAO_SI.some((status) => status.value === form.status_manutencao) && (
+                  <option value={form.status_manutencao}>{form.status_manutencao}</option>
+                )}
+              {STATUS_LIBERACAO_SI.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {status.label}
+                </option>
+              ))}
+            </select>
+          </FormGroup>
+
+          <FormGroup>
             <label>Responsável ONS</label>
             <input
               name="responsavel_ons_manutencao"
@@ -971,17 +989,17 @@ export default function SIForm() {
 
         <FormGrid>
           <FormGroup>
-            <label>Status operação</label>
+            <label>Status de liberação para operação</label>
             <select
               name="status_operacao"
               onChange={handleChange}
               value={form.status_operacao ?? "PROGRAMADA"}
             >
               {form.status_operacao &&
-                !STATUS_OPERACAO_SI.some((status) => status.value === form.status_operacao) && (
+                !STATUS_LIBERACAO_SI.some((status) => status.value === form.status_operacao) && (
                   <option value={form.status_operacao}>{form.status_operacao}</option>
                 )}
-              {STATUS_OPERACAO_SI.map((status) => (
+              {STATUS_LIBERACAO_SI.map((status) => (
                 <option key={status.value} value={status.value}>
                   {status.label}
                 </option>

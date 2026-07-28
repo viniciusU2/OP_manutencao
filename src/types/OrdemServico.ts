@@ -9,6 +9,7 @@ export interface OrdemServico {
   id_os?: number;
   tipo_ativo?: string | { nome?: string | null } | null;
   ativo?: {
+    codigo_ativo?: string | null;
     fase?: string | null;
     id_tipo_ativo?: number | null;
     tipo_ativo?: string | { nome?: string | null } | null;

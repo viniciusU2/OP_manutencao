@@ -7,6 +7,7 @@ export interface SI {
 
   id_subestacao?: number | null;
   id_ativo?: number | null;
+  codigo_ativo?: string | null;
 
   especie?: string;
   numero_apr?: string;
@@ -37,6 +38,7 @@ export interface SI {
   risco_desligamento?: string;
   condicoes_climaticas?: string;
   execucao_periodo_noturno?: string;
+  postergacao_traz_risco?: string;
 
   // 🔧 MANUTENÇÃO
   responsavel_ons_manutencao?: string;

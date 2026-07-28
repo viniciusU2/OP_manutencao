@@ -16,6 +16,7 @@ export interface SS {
   localizacao?: string;
   complemento?: string;
   id_ativo?: number | null;
+  codigo_ativo?: string | null;
   esquema_servico?: string;
   centro_custo?: string;
   causa?: string;

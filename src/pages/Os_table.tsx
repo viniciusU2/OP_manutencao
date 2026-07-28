@@ -144,6 +144,9 @@ function nomeSeguro(texto: string) {
     const matchSearch =
       !search ||
       os.numero_os?.toLowerCase().includes(search.toLowerCase()) ||
+      (os.codigo_ativo ?? os.ativo?.codigo_ativo ?? "")
+        .toLowerCase()
+        .includes(search.toLowerCase()) ||
       (os.descricao_servicos ?? "")
         .toLowerCase()
         .includes(search.toLowerCase());
