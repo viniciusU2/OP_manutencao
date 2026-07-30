@@ -115,7 +115,7 @@ async function baixarOS(os: OrdemServico) {
 
     try {
 
-      await api.delete(`os/${osSelecionada}`);
+      await api.delete(`/os/${osSelecionada}`);
 
       setData((prev) =>
         prev.filter((os) => os.id_os !== osSelecionada)

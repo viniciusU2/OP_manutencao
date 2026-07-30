@@ -47,6 +47,18 @@ function periodicidadeLabel(value: string) {
   return value.replace("_", " ");
 }
 
+function apiErrorMessage(error: any, fallback: string) {
+  const detail = error?.response?.data?.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => item?.msg || item?.message || JSON.stringify(item))
+      .join("; ");
+  }
+  if (detail) return JSON.stringify(detail);
+  return error?.message || fallback;
+}
+
 type OsPrevistaPlano = {
   id_plano_manutencao: number;
   plano?: string | null;
@@ -199,8 +211,8 @@ export default function PlanosManutencaoPage() {
           ? "Geracao concluida: 1 OS foi criada."
           : `Geracao concluida: ${total} OS foram criadas.`
       );
-    } catch {
-      toast.error("Erro ao gerar OS pela data informada");
+    } catch (error: any) {
+      toast.error(apiErrorMessage(error, "Erro ao gerar OS pela data informada"));
     } finally {
       setGerandoOs(false);
     }
@@ -230,8 +242,8 @@ export default function PlanosManutencaoPage() {
           ? "Simulacao concluida: 1 OS seria criada."
           : `Simulacao concluida: ${total} OS seriam criadas.`
       );
-    } catch {
-      toast.error("Erro ao simular OS pela data informada");
+    } catch (error: any) {
+      toast.error(apiErrorMessage(error, "Erro ao simular OS pela data informada"));
     } finally {
       setSimulandoOs(false);
     }
