@@ -31,6 +31,7 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
+import type { Subestacao } from "../types/Subestacao";
 import {
   Table,
   TableBody,
@@ -40,8 +41,12 @@ import {
   TableRow,
 } from "../components/ui/table";
 import type {
+  PlanoExecucoesReagendarPlano,
+  PlanoExecucoesReagendarPlanoResponse,
   PlanoExecucaoPlanilha,
   PlanoExecucaoUpdate,
+  PlanoManutencaoRead,
+  TipoAtivoPlano,
 } from "../types/planoManutencao";
 
 function formatDateTime(value?: string | null) {
@@ -130,6 +135,10 @@ export default function PlanoExecucoesPage() {
   const [loading, setLoading] = useState(true);
   const [sincronizando, setSincronizando] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingPlano, setSavingPlano] = useState(false);
+  const [planos, setPlanos] = useState<PlanoManutencaoRead[]>([]);
+  const [tiposAtivo, setTiposAtivo] = useState<TipoAtivoPlano[]>([]);
+  const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
   const [busca, setBusca] = useState("");
   const [filtros, setFiltros] = useState({
     status: "todos",
@@ -147,6 +156,14 @@ export default function PlanoExecucoesPage() {
     ultima_execucao: "",
     proxima_execucao: "",
   });
+  const [reagendarOpen, setReagendarOpen] = useState(false);
+  const [reagendarForm, setReagendarForm] = useState({
+    id_plano_manutencao: "",
+    id_subestacao: "",
+    proxima_execucao: "",
+    atualizar_ultima_execucao: false,
+    ultima_execucao: "",
+  });
 
   async function carregarExecucoes() {
     setLoading(true);
@@ -163,14 +180,37 @@ export default function PlanoExecucoesPage() {
     }
   }
 
+  async function carregarDadosAuxiliares() {
+    try {
+      const [planosRes, tiposRes, subestacoesRes] = await Promise.all([
+        api.get<PlanoManutencaoRead[]>("/planos-manutencao/"),
+        api.get<TipoAtivoPlano[]>("/tipo-ativo"),
+        api.get<Subestacao[]>("/subestacao/ativas"),
+      ]);
+      setPlanos(planosRes.data);
+      setTiposAtivo(tiposRes.data);
+      setSubestacoes(subestacoesRes.data);
+    } catch {
+      toast.error("Erro ao carregar filtros de plano");
+    }
+  }
+
   useEffect(() => {
     carregarExecucoes();
+    carregarDadosAuxiliares();
   }, []);
 
   const opcoes = useMemo(
     () => ({
       instalacoes: uniqueOptions(execucoes, (execucao) => execucao.instalacao),
-      tiposAtivo: uniqueOptions(execucoes, (execucao) => execucao.tipo_ativo),
+      tiposAtivo: Array.from(
+        new Set([
+          ...tiposAtivo
+            .map((tipo) => normalizeFilterValue(tipo.nome))
+            .filter(Boolean),
+          ...uniqueOptions(execucoes, (execucao) => execucao.tipo_ativo),
+        ])
+      ).sort((a, b) => a.localeCompare(b, "pt-BR")),
       periodicidades: uniqueOptions(
         execucoes,
         (execucao) => execucao.periodicidade
@@ -178,7 +218,7 @@ export default function PlanoExecucoesPage() {
       fases: uniqueOptions(execucoes, (execucao) => execucao.fase),
       bays: uniqueOptions(execucoes, (execucao) => execucao.bay),
     }),
-    [execucoes]
+    [execucoes, tiposAtivo]
   );
 
   const indicadores = useMemo(() => {
@@ -310,6 +350,73 @@ export default function PlanoExecucoesPage() {
     }
   }
 
+  function abrirReagendamentoPlano() {
+    setReagendarForm({
+      id_plano_manutencao: "",
+      id_subestacao: "",
+      proxima_execucao: "",
+      atualizar_ultima_execucao: false,
+      ultima_execucao: "",
+    });
+    setReagendarOpen(true);
+  }
+
+  async function salvarReagendamentoPlano() {
+    if (!reagendarForm.id_plano_manutencao) {
+      toast.error("Selecione o plano.");
+      return;
+    }
+
+    if (!reagendarForm.proxima_execucao) {
+      toast.error("Informe a nova data da proxima execucao.");
+      return;
+    }
+
+    setSavingPlano(true);
+
+    const payload: PlanoExecucoesReagendarPlano = {
+      proxima_execucao: new Date(reagendarForm.proxima_execucao).toISOString(),
+      id_subestacao: reagendarForm.id_subestacao
+        ? Number(reagendarForm.id_subestacao)
+        : null,
+      atualizar_ultima_execucao: reagendarForm.atualizar_ultima_execucao,
+      ultima_execucao: reagendarForm.atualizar_ultima_execucao
+        ? toApiDate(reagendarForm.ultima_execucao)
+        : null,
+    };
+
+    try {
+      const { data } = await api.put<PlanoExecucoesReagendarPlanoResponse>(
+        `/planos-manutencao/execucoes/plano/${reagendarForm.id_plano_manutencao}/reagendar`,
+        payload
+      );
+
+      const atualizadas = new Map(
+        data.execucoes.map((execucao) => [execucao.id_execucao, execucao])
+      );
+
+      setExecucoes((current) => {
+        const idsAtuais = new Set(current.map((execucao) => execucao.id_execucao));
+        const mescladas = current.map((execucao) =>
+          atualizadas.get(execucao.id_execucao) ?? execucao
+        );
+        data.execucoes.forEach((execucao) => {
+          if (!idsAtuais.has(execucao.id_execucao)) {
+            mescladas.push(execucao);
+          }
+        });
+        return mescladas;
+      });
+
+      setReagendarOpen(false);
+      toast.success(`${data.total_atualizadas} execucao${data.total_atualizadas === 1 ? "" : "es"} reagendada${data.total_atualizadas === 1 ? "" : "s"}.`);
+    } catch {
+      toast.error("Erro ao reagendar execucoes do plano");
+    } finally {
+      setSavingPlano(false);
+    }
+  }
+
   async function salvarExecucao() {
     if (!selected) return;
 
@@ -359,14 +466,20 @@ export default function PlanoExecucoesPage() {
           </p>
         </div>
 
-        <Button
-          type="button"
-          onClick={sincronizarExecucoes}
-          disabled={sincronizando}
-        >
-          <RefreshCw size={16} />
-          {sincronizando ? "Sincronizando..." : "Sincronizar"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" onClick={abrirReagendamentoPlano}>
+            <CalendarDays size={16} />
+            Reagendar plano
+          </Button>
+          <Button
+            type="button"
+            onClick={sincronizarExecucoes}
+            disabled={sincronizando}
+          >
+            <RefreshCw size={16} />
+            {sincronizando ? "Sincronizando..." : "Sincronizar"}
+          </Button>
+        </div>
       </div>
 
       <Card className="rounded-lg">
@@ -723,6 +836,128 @@ export default function PlanoExecucoesPage() {
             </Button>
             <Button type="button" onClick={salvarExecucao} disabled={saving}>
               {saving ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={reagendarOpen} onOpenChange={setReagendarOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reagendar plano</DialogTitle>
+            <DialogDescription>
+              Altere a proxima execucao de todas as tarefas associadas ao plano.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4">
+            <label className="grid gap-2 text-sm">
+              Plano
+              <select
+                value={reagendarForm.id_plano_manutencao}
+                onChange={(event) =>
+                  setReagendarForm((current) => ({
+                    ...current,
+                    id_plano_manutencao: event.target.value,
+                  }))
+                }
+                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Selecione o plano</option>
+                {planos.map((plano) => (
+                  <option
+                    key={plano.id_plano_manutencao}
+                    value={plano.id_plano_manutencao}
+                  >
+                    #{plano.id_plano_manutencao} - {resumo(plano.descricao_geral)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-2 text-sm">
+              Nova proxima execucao
+              <Input
+                type="datetime-local"
+                value={reagendarForm.proxima_execucao}
+                onChange={(event) =>
+                  setReagendarForm((current) => ({
+                    ...current,
+                    proxima_execucao: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <label className="grid gap-2 text-sm">
+              Subestacao
+              <select
+                value={reagendarForm.id_subestacao}
+                onChange={(event) =>
+                  setReagendarForm((current) => ({
+                    ...current,
+                    id_subestacao: event.target.value,
+                  }))
+                }
+                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Todas as subestacoes</option>
+                {subestacoes.map((subestacao) => (
+                  <option
+                    key={subestacao.id_subestacao}
+                    value={subestacao.id_subestacao}
+                  >
+                    {subestacao.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={reagendarForm.atualizar_ultima_execucao}
+                onChange={(event) =>
+                  setReagendarForm((current) => ({
+                    ...current,
+                    atualizar_ultima_execucao: event.target.checked,
+                  }))
+                }
+              />
+              Alterar tambem a ultima execucao
+            </label>
+
+            {reagendarForm.atualizar_ultima_execucao && (
+              <label className="grid gap-2 text-sm">
+                Nova ultima execucao
+                <Input
+                  type="datetime-local"
+                  value={reagendarForm.ultima_execucao}
+                  onChange={(event) =>
+                    setReagendarForm((current) => ({
+                      ...current,
+                      ultima_execucao: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setReagendarOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={salvarReagendamentoPlano}
+              disabled={savingPlano}
+            >
+              {savingPlano ? "Reagendando..." : "Reagendar"}
             </Button>
           </DialogFooter>
         </DialogContent>

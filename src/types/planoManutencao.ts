@@ -81,3 +81,17 @@ export interface PlanoExecucaoUpdate {
   ultima_execucao?: string | null;
   proxima_execucao: string;
 }
+
+export interface PlanoExecucoesReagendarPlano {
+  proxima_execucao: string;
+  id_subestacao?: number | null;
+  ultima_execucao?: string | null;
+  atualizar_ultima_execucao: boolean;
+}
+
+export interface PlanoExecucoesReagendarPlanoResponse {
+  mensagem: string;
+  id_plano_manutencao: number;
+  total_atualizadas: number;
+  execucoes: PlanoExecucaoPlanilha[];
+}
