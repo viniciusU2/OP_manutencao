@@ -23,6 +23,10 @@ export function OsAtivoTable({ idAtivo }: Props) {
     setOpenDelete(true);
   }
 
+  function nomeSeguro(texto: string) {
+    return texto.replace(/[^a-zA-Z0-9_.-]/g, "_");
+  }
+
   async function baixarOS(os: OrdemServico) {
   if (!os.id_os) return;
 
@@ -31,17 +35,50 @@ export function OsAtivoTable({ idAtivo }: Props) {
       responseType: "blob",
     });
 
-    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const url = window.URL.createObjectURL(
+      new Blob([response.data], {
+        type: "application/vnd.ms-excel.sheet.macroEnabled.12",
+      })
+    );
     const link = document.createElement("a");
 
     link.href = url;
-    link.setAttribute("download", `OS_${os.id_os}.xlsm`);
+    link.setAttribute("download", nomeSeguro(`${os.numero_os}.xlsm`));
 
     document.body.appendChild(link);
     link.click();
     link.remove();
   } catch (error) {
     console.error("Erro ao baixar OS:", error);
+  }
+}
+
+  async function baixarAPR(os: OrdemServico) {
+  if (!os.id_os) return;
+
+  try {
+    const response = await api.get(`/os/${os.id_os}/apr/download`, {
+      responseType: "blob",
+    });
+
+    const url = window.URL.createObjectURL(
+      new Blob([response.data], {
+        type: "application/vnd.ms-excel.sheet.macroEnabled.12",
+      })
+    );
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.setAttribute(
+      "download",
+      nomeSeguro(`${os.numero_apr || `APR_${os.numero_os}`}.xlsm`)
+    );
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (error) {
+    console.error("Erro ao baixar APR:", error);
   }
 }
 
@@ -85,7 +122,7 @@ export function OsAtivoTable({ idAtivo }: Props) {
       
       
       <DataTable
-        columns={columns(abrirModalDelete,baixarOS)}
+        columns={columns(abrirModalDelete, baixarOS, baixarAPR)}
         data={data}
       />
 

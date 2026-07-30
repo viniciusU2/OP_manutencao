@@ -2,7 +2,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type { OrdemServico } from "../../types/OrdemServico";
 import { Link } from "react-router-dom";
 import { StatusBadge } from "../../components/statusBadge";
-import { Trash2, Download } from "lucide-react";
+import { Download, Trash2 } from "lucide-react";
 import { OnlyAdmin } from "../onlyAdmin";
 
 function getTipoEquipamento(os: OrdemServico) {
@@ -21,7 +21,8 @@ function getFaseEquipamento(os: OrdemServico) {
 
 export const columns = (
   onDelete: (id: number) => void,
-  onDownload: ( os: OrdemServico) => void
+  onDownload: (os: OrdemServico) => void,
+  onDownloadApr: (os: OrdemServico) => void
 ): ColumnDef<OrdemServico>[] => [
   {
     accessorKey: "numero_os",
@@ -66,6 +67,11 @@ export const columns = (
   {
     accessorKey: "emissor",
     header: "Emissor",
+  },
+  {
+    accessorKey: "editado_por",
+    header: "Editado por",
+    cell: ({ row }) => row.original.editado_por || "-",
   },
   {
     accessorKey: "esquema_servico",
@@ -118,6 +124,14 @@ export const columns = (
             onClick={() => onDownload(os)}
             className="text-blue-500 hover:text-blue-700 transition"
             title="Baixar OS"
+          >
+            <Download size={18} />
+          </button>
+
+          <button
+            onClick={() => onDownloadApr(os)}
+            className="text-emerald-600 hover:text-emerald-800 transition"
+            title="Baixar APR"
           >
             <Download size={18} />
           </button>

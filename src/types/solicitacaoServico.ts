@@ -34,5 +34,7 @@ data_hora_solicitacao: string
 data_hora_limite: string
 
 status: string
+emissor?: string
+editado_por?: string
 
 }

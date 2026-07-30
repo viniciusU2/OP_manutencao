@@ -10,6 +10,7 @@ import type { Ativo } from "../types/Ativo";
 import type { Subestacao } from "../types/Subestacao";
 import type { TipoAtivo } from "../types/TipoAtivo";
 import { especiePorAtivo } from "../lib/documentosOperacao";
+import { useAuth } from "../context/AuthContext";
 
 const PRIORIDADES_SS = [
   { value: "NIVEL_1", label: "Nivel 1 - Emergencial: 0 a 24h" },
@@ -146,6 +147,7 @@ export function SSForm() {
 
   const { id } = useParams();
   const isEdicao = Boolean(id);
+  const { usuario } = useAuth();
 
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
   const [ativos, setAtivos] = useState<Ativo[]>([]);
@@ -185,7 +187,9 @@ export function SSForm() {
     data_hora_solicitacao: "",
     data_hora_limite: "",
 
-    status: "ABERTA"
+    status: "ABERTA",
+    emissor: "",
+    editado_por: "",
   });
 
   const ativoSelecionadoLista = ativos.find(
@@ -342,7 +346,10 @@ async function salvarOuEditar() {
 
     const payload = {
       ...dadosEnvio,
-      id_ativo: dadosEnvio.id_ativo ? Number(dadosEnvio.id_ativo) : null
+      id_ativo: dadosEnvio.id_ativo ? Number(dadosEnvio.id_ativo) : null,
+      ...(isEdicao
+        ? { emissor: form.emissor, editado_por: usuario?.nome }
+        : { emissor: usuario?.nome }),
     };
 
     if (isEdicao) {

@@ -6,6 +6,7 @@ export interface OrdemServico {
   id_subestacao?: number | null;
   id_ativo?: number | null;
   id_tipo_ativo?: number | null;
+  id_frente_servico?: number | null;
   id_os?: number;
   tipo_ativo?: string | { nome?: string | null } | null;
   ativo?: {
@@ -34,6 +35,7 @@ export interface OrdemServico {
   responsavel_manutencao?: string; 
   responsavel_operacao?: string; 
   emissor?: string;
+  editado_por?: string;
 
 
 
@@ -78,6 +80,8 @@ export interface OrdemServicoCreateLote {
   responsavel_manutencao?: string;
   responsavel_operacao?: string;
   substituto?: string;
+  emissor?: string;
+  editado_por?: string;
 
   data_abertura_ss?: string;
   data_inicio_programado?: string;

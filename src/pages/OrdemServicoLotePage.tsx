@@ -126,6 +126,7 @@ export function OrdemServicoLotePage() {
     responsavel_operacao: "",
     substituto: "",
     emissor: "",
+    editado_por: "",
 
     data_abertura_ss: null,
     data_inicio_programado: null,

@@ -33,6 +33,11 @@ export const columns = (
     header: "Emissor",
   },
   {
+    accessorKey: "editado_por",
+    header: "Editado por",
+    cell: ({ row }) => row.original.editado_por || "-",
+  },
+  {
       accessorKey: "status_manutencao",
       header: "status_manutencao",
       cell: ({ row }) => {

@@ -24,5 +24,7 @@ export interface SS {
   equipe?: string;
   descricao_problema?: string;
   prioridade?: string;
+  emissor?: string | null;
+  editado_por?: string | null;
   status: string;
 }

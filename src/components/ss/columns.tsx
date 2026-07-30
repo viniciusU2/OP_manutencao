@@ -94,6 +94,16 @@ export const columns = (
     header: "Solicitante",
   },
   {
+    accessorKey: "emissor",
+    header: "Emissor",
+    cell: ({ row }) => row.original.emissor || "-",
+  },
+  {
+    accessorKey: "editado_por",
+    header: "Editado por",
+    cell: ({ row }) => row.original.editado_por || "-",
+  },
+  {
     accessorKey: "descricao_problema",
     header: "Descricao",
     cell: ({ row }) => (

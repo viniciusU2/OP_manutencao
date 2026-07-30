@@ -187,6 +187,7 @@ export  function OrdemServicoPage() {
     responsavel_operacao: "",
     substituto: "",
     emissor:"",
+    editado_por: "",
 
   data_abertura_ss: null,
   data_inicio_programado: null,
@@ -467,7 +468,9 @@ export  function OrdemServicoPage() {
         data_fim_programado: form.data_fim_programado?.trim() || null,
         data_inicio_execucao: form.data_inicio_execucao?.trim() || null,
         data_fim_execucao: form.data_fim_execucao?.trim() || null,
-        emissor: usuario?.nome,
+        ...(isEdicao
+          ? { emissor: form.emissor, editado_por: usuario?.nome }
+          : { emissor: usuario?.nome }),
       };
 
 

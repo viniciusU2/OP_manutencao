@@ -27,6 +27,7 @@ export interface SI {
 
   aproveitamento?: string;
   inclusao_servico?: string;
+  acarreta_risco_perdas_multiplas?: string;
 
   orgaos?: string;
   tipo_progrmacao?: string;
@@ -51,6 +52,7 @@ export interface SI {
   responsavel_data_se_manutencao?: string | null;
   status_manutencao?: string;
   emissor?: string;
+  editado_por?: string;
 
 
   // ⚡ OPERAÇÃO
@@ -81,3 +83,21 @@ export interface SI {
 export type SICreate = Omit<SI, "id_si" | "criado_em">;
 
 export type SIUpdate = Partial<SICreate>;
+
+export interface SILiberacao {
+  id_liberacao: number;
+  id_si: number;
+  data_utilizacao: string;
+  data_hora_liberacao: string;
+  usuario_solicitou_id?: number | null;
+  usuario_solicitou: string;
+  operador_liberou?: string | null;
+  data_hora_devolucao?: string | null;
+  usuario_devolveu_id?: number | null;
+  usuario_devolveu?: string | null;
+  operador_recebeu_devolucao?: string | null;
+  observacoes?: string | null;
+  status: "ABERTA" | "EM_EXECUCAO" | "ENCERRADA" | "CANCELADA" | string;
+  criado_em: string;
+  atualizado_em?: string | null;
+}
