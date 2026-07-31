@@ -1,6 +1,6 @@
 import { useLocation, Link, Outlet } from "react-router-dom"
 import styled from "styled-components"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 
 import {
   LayoutDashboard,
@@ -16,7 +16,8 @@ import {
   Menu,
   UserCog,
   Wrench,
-  ListChecks
+  ListChecks,
+  Workflow
 } from "lucide-react"
 
 import { useAuth } from "../context/AuthContext"
@@ -308,6 +309,7 @@ const menu = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard, restricted: false },
   { name: "Instalações", path: "/subestacaoPage", icon: Building2, restricted: true },
   { name: "Ativos", path: "/ativo", icon: Zap, restricted: true, adminOnly: true },
+  { name: "FO", path: "/funcoes-operacao", icon: Workflow, restricted: true, adminOnly: true },
   { name: "OS", path: "/controle", icon: ClipboardList, restricted: true },
   { name: "SS", path: "/ss", icon: FileText, restricted: true },
   { name: "SI", path: "/si", icon: Calendar, restricted: true },
@@ -329,7 +331,7 @@ export default function Layout() {
   const { usuario, logout } = useAuth()
 
   const [open, setOpen] = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("sidebar") === "true")
   const visibleMenu = menu.filter((item) => {
     if (isOperator(usuario?.role)) {
       return OPERATOR_MENU_PATHS.includes(item.path)
@@ -339,11 +341,6 @@ export default function Layout() {
   })
 
   // Persistência
-  useEffect(() => {
-    const saved = localStorage.getItem("sidebar")
-    if (saved) setCollapsed(saved === "true")
-  }, [])
-
   function toggleCollapse() {
     const newState = !collapsed
     setCollapsed(newState)

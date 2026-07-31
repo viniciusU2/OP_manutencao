@@ -7,10 +7,12 @@ import api from "../api/api";
 import type { Ativo } from "../types/Ativo";
 import type { Subestacao } from "../types/Subestacao";
 import type { TipoAtivo } from "../types/TipoAtivo";
+import type { FuncaoOperacao } from "../types/FuncaoOperacao";
 import Container from "../components/Container";
 import { AtivoPage1 } from "./Ativos-table";
 import { useAuth } from "../context/AuthContext";
 import { filtroInicialInstalacao } from "../lib/instalacaoPreferida";
+import { listarFuncoesOperacao } from "../services/funcaoOperacaoService";
 
 const PageTitle = styled.div`
   margin-bottom: 24px;
@@ -169,6 +171,7 @@ const STATUS_ATIVO = [
 const initialForm: Ativo = {
   id_subestacao: 0,
   id_tipo_ativo: 0,
+  id_funcao_operacao: null,
   codigo_ativo: "",
   fabricante: "",
   modelo: "",
@@ -210,6 +213,7 @@ export default function AtivoPage() {
 
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
   const [tipos, setTipos] = useState<TipoAtivo[]>([]);
+  const [funcoesOperacao, setFuncoesOperacao] = useState<FuncaoOperacao[]>([]);
   const [form, setForm] = useState<Ativo>(initialForm);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
@@ -235,6 +239,17 @@ export default function AtivoPage() {
       .then((res) => setTipos(res.data))
       .catch(() => toast.error("Erro ao carregar tipos de ativo"));
   }, []);
+
+  useEffect(() => {
+    if (!form.id_subestacao) {
+      setFuncoesOperacao([]);
+      return;
+    }
+
+    listarFuncoesOperacao(Number(form.id_subestacao))
+      .then((data) => setFuncoesOperacao(data))
+      .catch(() => toast.error("Erro ao carregar funcoes de operacao"));
+  }, [form.id_subestacao]);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -267,11 +282,16 @@ export default function AtivoPage() {
       [name]:
         name === "id_subestacao" || name === "id_tipo_ativo"
           ? Number(value)
+          : name === "id_funcao_operacao"
+          ? value
+            ? Number(value)
+            : null
           : name === "tensao_nominal_kv"
           ? value === ""
             ? undefined
             : Number(value)
           : value,
+      ...(name === "id_subestacao" ? { id_funcao_operacao: null } : {}),
     }));
   }
 
@@ -320,6 +340,7 @@ export default function AtivoPage() {
     const payload = {
       id_subestacao: Number(form.id_subestacao),
       id_tipo_ativo: Number(form.id_tipo_ativo),
+      id_funcao_operacao: form.id_funcao_operacao ? Number(form.id_funcao_operacao) : null,
       codigo_ativo: form.codigo_ativo.trim(),
       fabricante: nullableText(form.fabricante),
       modelo: nullableText(form.modelo),
@@ -400,6 +421,29 @@ export default function AtivoPage() {
               ))}
             </select>
             {errors.id_tipo_ativo && <ErrorText>{errors.id_tipo_ativo}</ErrorText>}
+          </FormGroup>
+
+          <FormGroup>
+            <label>Funcao de operacao</label>
+            <select
+              name="id_funcao_operacao"
+              value={form.id_funcao_operacao ?? ""}
+              onChange={handleChange}
+              disabled={!form.id_subestacao}
+            >
+              <option value="">
+                {form.id_subestacao ? "Selecione" : "Selecione a subestacao primeiro"}
+              </option>
+              {funcoesOperacao.map((funcaoOperacao) => (
+                <option
+                  key={funcaoOperacao.id_funcao_operacao}
+                  value={String(funcaoOperacao.id_funcao_operacao)}
+                >
+                  {funcaoOperacao.codigo}
+                  {funcaoOperacao.descricao ? ` - ${funcaoOperacao.descricao}` : ""}
+                </option>
+              ))}
+            </select>
           </FormGroup>
 
           <FormGroup $invalid={!!errors.codigo_ativo}>
