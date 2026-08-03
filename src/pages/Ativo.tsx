@@ -160,12 +160,10 @@ const SearchInput = styled.input`
 type FieldErrors = Partial<Record<keyof Ativo, string>>;
 
 const STATUS_ATIVO = [
-  { value: "ATIVO", label: "Ativo" },
-  { value: "OPERANTE", label: "Operante" },
-  { value: "OPERACIONAL", label: "Operacional" },
-  { value: "MANUTENCAO", label: "Manutencao" },
+  { value: "EM_OPERACAO", label: "Em Operação" },
+  { value: "SOBRESSALENTE", label: "Sobressalente" },
+  { value: "SUCATA", label: "Sucata" },
   { value: "DESATIVADO", label: "Desativado" },
-  { value: "INATIVO", label: "Inativo" },
 ];
 
 const initialForm: Ativo = {
@@ -179,7 +177,7 @@ const initialForm: Ativo = {
   numero_serie: "",
   tensao_nominal_kv: undefined,
   data_instalacao: null,
-  status: "ATIVO",
+  status: "EM_OPERACAO",
   bay: "",
   fase: "",
 };
@@ -349,7 +347,7 @@ export default function AtivoPage() {
       bay: nullableText(form.bay),
       fase: nullableText(form.fase),
       data_instalacao: form.data_instalacao || null,
-      status: form.status || "ATIVO",
+      status: form.status || "EM_OPERACAO",
       tensao_nominal_kv:
         form.tensao_nominal_kv === undefined ? null : Number(form.tensao_nominal_kv),
     };
@@ -424,7 +422,7 @@ export default function AtivoPage() {
           </FormGroup>
 
           <FormGroup>
-            <label>Funcao de operacao</label>
+            <label>Função de Transmissão</label>
             <select
               name="id_funcao_operacao"
               value={form.id_funcao_operacao ?? ""}
@@ -542,7 +540,7 @@ export default function AtivoPage() {
 
           <FormGroup $invalid={!!errors.status}>
             <label>Status</label>
-            <select name="status" value={form.status ?? "ATIVO"} onChange={handleChange}>
+            <select name="status" value={form.status ?? "EM_OPERACAO"} onChange={handleChange}>
               {form.status &&
                 !STATUS_ATIVO.some((status) => status.value === form.status) && (
                   <option value={form.status}>{form.status}</option>

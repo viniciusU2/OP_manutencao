@@ -7,6 +7,9 @@ export interface SI {
 
   id_subestacao?: number | null;
   id_ativo?: number | null;
+  id_grupo_ativo?: number | null;
+  id_funcao_operacao?: number | null;
+  escopo_ativo?: "GRUPO" | "FASE" | null;
   codigo_ativo?: string | null;
 
   especie?: string;

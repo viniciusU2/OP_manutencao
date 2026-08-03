@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import type { SolicitacaoServico } from "../types/solicitacaoServico";
 import type { Ativo } from "../types/Ativo";
+import { SelecaoHierarquicaAtivo } from "../components/SelecaoHierarquicaAtivo";
 import type { Subestacao } from "../types/Subestacao";
 import type { TipoAtivo } from "../types/TipoAtivo";
 import { especiePorAtivo } from "../lib/documentosOperacao";
@@ -303,7 +304,7 @@ function validarFormulario() {
     return false;
   }
 
-  if (!form.id_ativo) {
+  if (!form.id_ativo && !form.id_grupo_ativo) {
     toast.error("Selecione o ativo.");
     return false;
   }
@@ -455,7 +456,15 @@ async function salvarOuEditar() {
 
 
           <FormGroup>
-            <label>Ativo</label>
+            <SelecaoHierarquicaAtivo
+              idSubestacao={form.id_subestacao}
+              value={form}
+              onChange={(selecionado) => setForm((atual) => ({ ...atual, ...selecionado }))}
+            />
+          </FormGroup>
+
+          <FormGroup style={{ display: "none" }} aria-hidden="true">
+            <label>Ativo individual (legado)</label>
 
             <select
               name="id_ativo"

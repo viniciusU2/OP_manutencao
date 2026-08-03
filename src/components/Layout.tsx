@@ -309,7 +309,7 @@ const menu = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard, restricted: false },
   { name: "Instalações", path: "/subestacaoPage", icon: Building2, restricted: true },
   { name: "Ativos", path: "/ativo", icon: Zap, restricted: true, adminOnly: true },
-  { name: "FO", path: "/funcoes-operacao", icon: Workflow, restricted: true, adminOnly: true },
+  { name: "FT", path: "/funcoes-operacao", icon: Workflow, restricted: true, adminOnly: true },
   { name: "OS", path: "/controle", icon: ClipboardList, restricted: true },
   { name: "SS", path: "/ss", icon: FileText, restricted: true },
   { name: "SI", path: "/si", icon: Calendar, restricted: true },

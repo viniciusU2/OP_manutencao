@@ -8,6 +8,7 @@ import { CheckCircle2, Clock3, RotateCcw, Wrench, XCircle } from "lucide-react";
 import type { SI, SILiberacao } from "../types/SI";
 import type { Subestacao } from "../types/Subestacao";
 import type { Ativo } from "../types/Ativo";
+import { SelecaoHierarquicaAtivo } from "../components/SelecaoHierarquicaAtivo";
 import type { TipoAtivo } from "../types/TipoAtivo";
 import { useAuth } from "../context/AuthContext";
 import UsuarioSelect from "../components/UsuarioSelect";
@@ -516,7 +517,7 @@ export default function SIForm() {
   }, [id, isEdit]);
 
   useEffect(() => {
-    if (!form.id_ativo) {
+    if (!form.id_ativo && !form.id_grupo_ativo) {
       setAtivoSelecionadoDetalhes(null);
       return;
     }
@@ -582,7 +583,7 @@ export default function SIForm() {
       return false;
     }
 
-    if (!form.id_ativo) {
+    if (!form.id_ativo && !form.id_grupo_ativo) {
       toast.error("Selecione o ativo.");
       return false;
     }
@@ -937,7 +938,15 @@ export default function SIForm() {
           </FormGroup>
 
           <FormGroup>
-            <label>Ativo</label>
+            <SelecaoHierarquicaAtivo
+              idSubestacao={form.id_subestacao}
+              value={form}
+              onChange={(selecionado) => setForm((atual) => ({ ...atual, ...selecionado }))}
+            />
+          </FormGroup>
+
+          <FormGroup style={{ display: "none" }} aria-hidden="true">
+            <label>Ativo individual (legado)</label>
             <select
               name="id_ativo"
               value={form.id_ativo ?? ""}
@@ -1008,6 +1017,7 @@ export default function SIForm() {
               <option value="NAO">Não</option>
               <option value="SIM_EQUIPAMENTO">Sim - Equipamento</option>
               <option value="SIM_PESSOA">Sim - Pessoa</option>
+              <option value="SIM_SISTEMA">Sim - Sistema</option>
             </select>
           </FormGroup>
 

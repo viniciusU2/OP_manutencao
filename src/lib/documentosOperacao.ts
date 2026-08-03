@@ -77,5 +77,5 @@ export function especiePorAtivo(ativo?: Ativo | null, tipos: TipoAtivo[] = []) {
     return [abreviacao, classeTensao, fabricante].join("_");
   }
 
-  return "";
+  return ativo.especie?.trim() || "";
 }

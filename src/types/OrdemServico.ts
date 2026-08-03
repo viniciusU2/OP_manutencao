@@ -5,6 +5,9 @@ export interface OrdemServico {
   // 🔹 RELACIONAMENTOS
   id_subestacao?: number | null;
   id_ativo?: number | null;
+  id_grupo_ativo?: number | null;
+  id_funcao_operacao?: number | null;
+  escopo_ativo?: "GRUPO" | "FASE" | null;
   id_tipo_ativo?: number | null;
   id_frente_servico?: number | null;
   id_os?: number;

@@ -227,7 +227,7 @@ function getErrorMessage(error: unknown) {
   }
 
   if (error instanceof Error) return error.message;
-  return "Erro ao processar funcao de operacao.";
+  return "Erro ao processar função de transmissão.";
 }
 
 export default function FuncoesOperacaoPage() {
@@ -318,10 +318,10 @@ export default function FuncoesOperacaoPage() {
     try {
       if (editing) {
         await atualizarFuncaoOperacao(editing.id_funcao_operacao, payload);
-        toast.success("Funcao de operacao atualizada com sucesso.");
+        toast.success("Função de transmissão atualizada com sucesso.");
       } else {
         await criarFuncaoOperacao(payload);
-        toast.success("Funcao de operacao cadastrada com sucesso.");
+        toast.success("Função de transmissão cadastrada com sucesso.");
       }
       cancelarEdicao();
       await carregarFuncoes();
@@ -349,7 +349,7 @@ export default function FuncoesOperacaoPage() {
 
     try {
       await excluirFuncaoOperacao(funcaoOperacao.id_funcao_operacao);
-      toast.success("Funcao de operacao excluida com sucesso.");
+      toast.success("Função de transmissão excluída com sucesso.");
       await carregarFuncoes();
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -369,8 +369,8 @@ export default function FuncoesOperacaoPage() {
   return (
     <Container>
       <PageTitle>
-        <h2>Funções de Operação</h2>
-        <p>Cadastro das FOs por subestações e vínculo com os ativos.</p>
+        <h2>Funções de Transmissão</h2>
+        <p>Cadastro das FT por subestações e vínculo com os ativos.</p>
       </PageTitle>
 
       <Card>

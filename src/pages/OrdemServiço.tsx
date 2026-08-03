@@ -5,6 +5,7 @@ import Container from "../components/Container";
 import type { OrdemServico } from "../types/OrdemServico";
 import { useParams } from "react-router-dom";
 import type {Ativo} from "../types/Ativo"
+import { SelecaoHierarquicaAtivo } from "../components/SelecaoHierarquicaAtivo";
 import type {Subestacao} from "../types/Subestacao"
 import type { TipoAtivo } from "../types/TipoAtivo";
 import { useAuth } from "../context/AuthContext";
@@ -353,7 +354,7 @@ export  function OrdemServicoPage() {
       nextErrors.id_subestacao = "Selecione a instalacao.";
     }
 
-    if (!form.id_ativo && !isEdicao) {
+    if (!form.id_ativo && !form.id_grupo_ativo && !isEdicao) {
       nextErrors.id_ativo = "Selecione o ativo.";
     }
 
@@ -554,7 +555,15 @@ export  function OrdemServicoPage() {
             {errors.id_subestacao && <ErrorText>{errors.id_subestacao}</ErrorText>}
           </FormGroup>
 
-          <FormGroup $invalid={!!errors.id_ativo}>
+          <FormGroup>
+            <SelecaoHierarquicaAtivo
+              idSubestacao={form.id_subestacao}
+              value={form}
+              onChange={(selecionado) => setForm((atual) => ({ ...atual, ...selecionado }))}
+            />
+          </FormGroup>
+
+          <FormGroup $invalid={!!errors.id_ativo} style={{ display: "none" }} aria-hidden="true">
             <label>Ativo</label>
       
             <select

@@ -61,8 +61,9 @@ export const columns = (
     cell: ({ row }) => getFaseEquipamento(row.original),
   },
   {
-    accessorKey: "especie",
+    id: "especie",
     header: "Espécie",
+    cell: ({ row }) => row.original.especie || getTipoEquipamento(row.original) || "-",
   },
   {
     accessorKey: "emissor",

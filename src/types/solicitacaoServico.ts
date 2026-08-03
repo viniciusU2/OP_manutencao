@@ -5,6 +5,9 @@ numero_os?: string | null
 
 id_subestacao: number | null
 id_ativo: number | null
+id_grupo_ativo?: number | null
+id_funcao_operacao?: number | null
+escopo_ativo?: "GRUPO" | "FASE" | null
 
 solicitante: string
 matricula: string
