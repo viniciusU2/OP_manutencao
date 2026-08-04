@@ -24,17 +24,25 @@ import { Button } from "../ui/button";
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  pagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
+  };
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  pagination,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: pagination ? undefined : getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
 
@@ -80,13 +88,22 @@ export function DataTable<TData, TValue>({
         </TableBody>
       </Table>
 
-      <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-end">
+      <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-sm text-gray-500">
+          {pagination
+            ? `${pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1}-${Math.min(
+                pagination.page * pagination.pageSize,
+                pagination.total
+              )} de ${pagination.total}`
+            : `${data.length} registro(s)`}
+        </span>
+        <div className="flex gap-2">
         <Button
           variant="outline"
           size="sm"
           className="w-full sm:w-auto"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
+          onClick={() => pagination ? pagination.onPageChange(pagination.page - 1) : table.previousPage()}
+          disabled={pagination ? pagination.page <= 1 : !table.getCanPreviousPage()}
         >
           Anterior
         </Button>
@@ -95,11 +112,12 @@ export function DataTable<TData, TValue>({
           variant="outline"
           size="sm"
           className="w-full sm:w-auto"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
+          onClick={() => pagination ? pagination.onPageChange(pagination.page + 1) : table.nextPage()}
+          disabled={pagination ? pagination.page >= pagination.totalPages : !table.getCanNextPage()}
         >
           Próxima
         </Button>
+        </div>
       </div>
     </div>
   );

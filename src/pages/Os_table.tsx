@@ -17,6 +17,11 @@ export function OsPage1({ search, status, subestacao,esquema_servicos }: Props) 
   const [data, setData] = useState<OrdemServico[]>([]);
   const [loading, setLoading] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const pageSize = 25;
 
   const [openDelete, setOpenDelete] = useState(false);
   const [osSelecionada, setOsSelecionada] = useState<number | null>(null);
@@ -120,6 +125,7 @@ async function baixarOS(os: OrdemServico) {
       setData((prev) =>
         prev.filter((os) => os.id_os !== osSelecionada)
       );
+      setRefreshKey((value) => value + 1);
 
     } catch (error) {
       console.error("Erro ao excluir OS:", error);
@@ -132,68 +138,48 @@ async function baixarOS(os: OrdemServico) {
      BUSCAR OS
   =============================== */
 
-  const fetchOS = async () => {
-
-    try {
-
-      const res = await api.get("/os");
-
-      setData(Array.isArray(res.data) ? res.data : []);
-      setErroCarregamento("");
-
-    } catch (error: any) {
-
-      console.error("Erro ao buscar OS:", error);
-      setErroCarregamento(
-        error?.response?.data?.detail ||
-          error?.message ||
-          "Erro ao carregar ordens de servico."
-      );
-
-    } finally {
-
-      setLoading(false);
-
-    }
-  };
+  useEffect(() => {
+    setPage(1);
+  }, [search, status, subestacao, esquema_servicos]);
 
   useEffect(() => {
-    fetchOS();
-  }, []);
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await api.get("/os/paginado", {
+          params: {
+            page,
+            page_size: pageSize,
+            search: search.trim() || undefined,
+            status: status === "all" ? undefined : status,
+            id_subestacao: subestacao === "all" ? undefined : Number(subestacao),
+            esquema_servicos: esquema_servicos === "all" ? undefined : esquema_servicos,
+          },
+          signal: controller.signal,
+        });
+        setData(Array.isArray(res.data?.items) ? res.data.items : []);
+        setTotal(Number(res.data?.total ?? 0));
+        setTotalPages(Number(res.data?.total_pages ?? 1));
+        setErroCarregamento("");
+      } catch (error: any) {
+        if (error?.code === "ERR_CANCELED") return;
+        console.error("Erro ao buscar OS:", error);
+        setErroCarregamento(error?.response?.data?.detail || error?.message || "Erro ao carregar ordens de servico.");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [page, search, status, subestacao, esquema_servicos, refreshKey]);
 
   /* ===============================
      FILTROS
   =============================== */
-
-  const filteredData = data.filter((os) => {
-
-    const matchSearch =
-      !search ||
-      os.numero_os?.toLowerCase().includes(search.toLowerCase()) ||
-      (os.codigo_ativo ?? os.ativo?.codigo_ativo ?? "")
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
-      (os.descricao_servicos ?? "")
-        .toLowerCase()
-        .includes(search.toLowerCase());
-
-    const matchStatus =
-      status === "all" || os.status === status;
-
-   const matchEsquema =
-  esquema_servicos === "all" ||
-  (os.esquema_servicos ?? "")
-    .trim()
-    .toLowerCase()
-    .includes(esquema_servicos.trim().toLowerCase());
-    
-    const matchSubestacao =
-      subestacao === "all" || os.id_subestacao === Number(subestacao);
-
-    return matchSearch && matchStatus && matchSubestacao && matchEsquema;
-  });
-
-  const semResultadoPorFiltro = data.length > 0 && filteredData.length === 0;
 
   /* ===============================
      LOADING
@@ -222,15 +208,10 @@ async function baixarOS(os: OrdemServico) {
         </div>
       )}
 
-      {semResultadoPorFiltro && (
-        <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          Existem {data.length} OS carregadas, mas os filtros atuais nao retornaram registros.
-        </div>
-      )}
-
       <DataTable
         columns={columns(abrirModalDelete, baixarOS, baixarAPR)}
-        data={filteredData}
+        data={data}
+        pagination={{ page, pageSize, total, totalPages, onPageChange: setPage }}
       />
 
       <DeleteModal

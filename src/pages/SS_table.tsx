@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../api/api";
 import { DataTable } from "../components/ui/data-table";
 import { columns } from "../components/ss/columns";
 import { toast } from "sonner";
 import type { SS } from "../types/SS";
-import type { Ativo } from "../types/Ativo";
 
 interface Props {
   search: string;
@@ -12,26 +11,21 @@ interface Props {
   subestacao: string;
 }
 
-function extrairSequenciaSS(numero?: string | null) {
-  const match = (numero ?? "").match(/SS-[^-]+-(\d+)-\d{4}/i);
-  return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
-}
-
-function extrairAnoSS(numero?: string | null) {
-  const match = (numero ?? "").match(/SS-[^-]+-\d+-(\d{4})/i);
-  return match ? Number(match[1]) : 0;
-}
-
 export function SSPage1({ search, status, subestacao }: Props) {
   const [data, setData] = useState<SS[]>([]);
-  const [ativos, setAtivos] = useState<Ativo[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const pageSize = 25;
 
   async function deletarSS(ss: SS) {
     if (!confirm(`Deseja excluir a SS ${ss.numero_ss}?`)) return;
 
     try {
       await api.delete(`/ss/${ss.id_ss}`);
-      setData((prev) => prev.filter((item) => item.id_ss !== ss.id_ss));
+      setRefreshKey((value) => value + 1);
       toast.success("SS excluida com sucesso");
     } catch {
       toast.error("Erro ao excluir SS");
@@ -60,75 +54,49 @@ export function SSPage1({ search, status, subestacao }: Props) {
     }
   }
 
-  async function fetch() {
-    try {
-      const res = await api.get("/ss");
-      setData(res.data);
-    } catch {
-      toast.error("Erro ao carregar SS");
-    }
-  }
+  useEffect(() => {
+    setPage(1);
+  }, [search, status, subestacao]);
 
   useEffect(() => {
-    fetch();
-  }, []);
-
-  useEffect(() => {
-    api
-      .get("/ativo")
-      .then((res) => setAtivos(res.data))
-      .catch(() => toast.error("Erro ao carregar ativos para filtro de subestacao"));
-  }, []);
-
-  const subestacaoPorAtivo = useMemo(() => {
-    return ativos.reduce<Record<number, number>>((acc, ativo) => {
-      if (ativo.id_ativo) {
-        acc[ativo.id_ativo] = ativo.id_subestacao;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await api.get("/ss/paginado", {
+          params: {
+            page,
+            page_size: pageSize,
+            search: search.trim() || undefined,
+            status: status === "all" ? undefined : status,
+            id_subestacao: subestacao === "all" ? undefined : Number(subestacao),
+          },
+          signal: controller.signal,
+        });
+        setData(Array.isArray(res.data?.items) ? res.data.items : []);
+        setTotal(Number(res.data?.total ?? 0));
+        setTotalPages(Number(res.data?.total_pages ?? 1));
+      } catch (error: any) {
+        if (error?.code !== "ERR_CANCELED") toast.error("Erro ao carregar SS");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
       }
+    }, 350);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [page, search, status, subestacao, refreshKey]);
 
-      return acc;
-    }, {});
-  }, [ativos]);
-
-
-    
-  /*==============FILTROS================= */
-
-  const filteredData = data.filter((ss) => {
-
-    const matchSearch =
-      !search ||
-      (ss.numero_ss ?? "").toLowerCase().includes(search.toLowerCase()) ||
-      (ss.codigo_ativo ?? "").toLowerCase().includes(search.toLowerCase()) ||
-      (ss.descricao_problema ?? "")
-        .toLowerCase()
-        .includes(search.toLowerCase());
-
-    const matchStatus =
-      status === "all" || ss.status === status;
-
-    const matchSubestacao =
-      subestacao === "all" ||
-      (ss.id_ativo != null && subestacaoPorAtivo[ss.id_ativo] === Number(subestacao));
-
-    return matchSearch && matchStatus && matchSubestacao;
-  }).sort((a, b) => {
-    const anoA = extrairAnoSS(a.numero_ss);
-    const anoB = extrairAnoSS(b.numero_ss);
-
-    if (anoA !== anoB) {
-      return anoB - anoA;
-    }
-
-    const sequenciaA = extrairSequenciaSS(a.numero_ss);
-    const sequenciaB = extrairSequenciaSS(b.numero_ss);
-
-    return sequenciaB - sequenciaA;
-  });
+  if (loading) return <div className="p-6 text-gray-500">Carregando SS...</div>;
 
   return (
     <div className="container mx-auto py-6">
-      <DataTable columns={columns(deletarSS, atenderSS)} data={filteredData} />
+      <DataTable
+        columns={columns(deletarSS, atenderSS)}
+        data={data}
+        pagination={{ page, pageSize, total, totalPages, onPageChange: setPage }}
+      />
     </div>
   );
 }

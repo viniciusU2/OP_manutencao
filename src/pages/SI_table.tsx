@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../api/api";
 import { DataTable } from "../components/ui/data-table";
 import { columns } from "../components/si/columns";
 import { toast } from "sonner";
 import type { SI } from "../types/SI";
-import type { Ativo } from "../types/Ativo";
 
 interface Props {
   search: string;
@@ -14,7 +13,12 @@ interface Props {
 
 export function SIPage1({ search, status, subestacao }: Props) {
   const [data, setData] = useState<SI[]>([]);
-  const [ativos, setAtivos] = useState<Ativo[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const pageSize = 25;
 
 async function baixarSI(si: SI) {
   try {
@@ -52,7 +56,7 @@ async function baixarSI(si: SI) {
 
     try {
       await api.delete(`/si/${si.id_si}`);
-      setData((prev) => prev.filter((item) => item.id_si !== si.id_si));
+      setRefreshKey((value) => value + 1);
       toast.success("SI excluida com sucesso");
     } catch (error) {
       console.error("Erro ao excluir SI:", error);
@@ -60,64 +64,49 @@ async function baixarSI(si: SI) {
     }
   }
 
-  async function fetch() {
-    try {
-      const res = await api.get("/si");
-      setData(res.data);
-    } catch {
-      toast.error("Erro ao carregar SI");
-    }
-  }
+  useEffect(() => {
+    setPage(1);
+  }, [search, status, subestacao]);
 
   useEffect(() => {
-    fetch();
-  }, []);
-
-  useEffect(() => {
-    api
-      .get("/ativo")
-      .then((res) => setAtivos(res.data))
-      .catch(() => toast.error("Erro ao carregar ativos para filtro de subestacao"));
-  }, []);
-
-  const subestacaoPorAtivo = useMemo(() => {
-    return ativos.reduce<Record<number, number>>((acc, ativo) => {
-      if (ativo.id_ativo) {
-        acc[ativo.id_ativo] = ativo.id_subestacao;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await api.get("/si/paginado", {
+          params: {
+            page,
+            page_size: pageSize,
+            search: search.trim() || undefined,
+            status: status === "all" ? undefined : status,
+            id_subestacao: subestacao === "all" ? undefined : Number(subestacao),
+          },
+          signal: controller.signal,
+        });
+        setData(Array.isArray(res.data?.items) ? res.data.items : []);
+        setTotal(Number(res.data?.total ?? 0));
+        setTotalPages(Number(res.data?.total_pages ?? 1));
+      } catch (error: any) {
+        if (error?.code !== "ERR_CANCELED") toast.error("Erro ao carregar SI");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
       }
+    }, 350);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [page, search, status, subestacao, refreshKey]);
 
-      return acc;
-    }, {});
-  }, [ativos]);
-
-
-    
-  /*==============FILTROS================= */
-
-  const filteredData = data.filter((si) => {
-
-    const matchSearch =
-      !search ||
-      si.numero_si.toLowerCase().includes(search.toLowerCase()) ||
-      (si.codigo_ativo ?? "").toLowerCase().includes(search.toLowerCase()) ||
-      (si.descricao_servicos ?? "")
-        .toLowerCase()
-        .includes(search.toLowerCase());
-
-    const matchStatus =
-      status === "all" || si.status_manutencao === status;
-    
-    const matchSubestacao =
-      subestacao === "all" ||
-      si.id_subestacao === Number(subestacao) ||
-      (si.id_ativo != null && subestacaoPorAtivo[si.id_ativo] === Number(subestacao));
-
-    return matchSearch && matchStatus && matchSubestacao;
-  }).sort((a, b) => b.id_si - a.id_si);
+  if (loading) return <div className="p-6 text-gray-500">Carregando SI...</div>;
 
   return (
     <div className="container mx-auto py-6">
-      <DataTable columns={columns(baixarSI, deletarSI)} data={filteredData} />
+      <DataTable
+        columns={columns(baixarSI, deletarSI)}
+        data={data}
+        pagination={{ page, pageSize, total, totalPages, onPageChange: setPage }}
+      />
     </div>
   );
 }
