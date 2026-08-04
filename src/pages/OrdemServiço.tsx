@@ -6,8 +6,10 @@ import type { OrdemServico } from "../types/OrdemServico";
 import { useParams } from "react-router-dom";
 import type {Ativo} from "../types/Ativo"
 import { SelecaoHierarquicaAtivo } from "../components/SelecaoHierarquicaAtivo";
+import { listarFuncoesOperacao } from "../services/funcaoOperacaoService";
 import type {Subestacao} from "../types/Subestacao"
 import type { TipoAtivo } from "../types/TipoAtivo";
+import type { FuncaoOperacao } from "../types/FuncaoOperacao";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
 import UsuarioSelect from "../components/UsuarioSelect";
@@ -156,6 +158,7 @@ export  function OrdemServicoPage() {
   const [ativos, setAtivos] = useState<Ativo[]>([]);
   const [ativoSelecionadoDetalhes, setAtivoSelecionadoDetalhes] = useState<Ativo | null>(null);
   const [tiposAtivo, setTiposAtivo] = useState<TipoAtivo[]>([]);
+  const [funcoesOperacao, setFuncoesOperacao] = useState<FuncaoOperacao[]>([]);
   const { usuario } = useAuth();
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
@@ -246,6 +249,17 @@ export  function OrdemServicoPage() {
       setAtivos([]);
     }
   }, [form.id_subestacao]);
+
+  useEffect(() => {
+    if (!isEdicao || !form.id_subestacao) {
+      setFuncoesOperacao([]);
+      return;
+    }
+
+    listarFuncoesOperacao(form.id_subestacao)
+      .then(setFuncoesOperacao)
+      .catch(() => setFuncoesOperacao([]));
+  }, [form.id_subestacao, isEdicao]);
 
 
    /* ===============================
@@ -541,6 +555,7 @@ export  function OrdemServicoPage() {
               name="id_subestacao"
               value={form.id_subestacao?.toString() ?? ""}
               onChange={handleChange}
+              disabled={isEdicao}
             >
               <option value="">Selecione</option>
               {subestacoes.map((s) => (
@@ -556,11 +571,31 @@ export  function OrdemServicoPage() {
           </FormGroup>
 
           <FormGroup>
-            <SelecaoHierarquicaAtivo
-              idSubestacao={form.id_subestacao}
-              value={form}
-              onChange={(selecionado) => setForm((atual) => ({ ...atual, ...selecionado }))}
-            />
+            {isEdicao ? (
+              <>
+                <label>Função de Transmissão</label>
+                <ReadOnlyValue>
+                  {(() => {
+                    const funcao = funcoesOperacao.find(
+                      (item) => item.id_funcao_operacao === form.id_funcao_operacao
+                    );
+                    if (funcao) return `${funcao.codigo}${funcao.descricao ? ` — ${funcao.descricao}` : ""}`;
+                    return form.id_funcao_operacao ? "Função de Transmissão vinculada" : "Não vinculada";
+                  })()}
+                </ReadOnlyValue>
+                <label>Ativo</label>
+                <ReadOnlyValue>
+                  {form.codigo_ativo || ativoSelecionadoDetalhes?.codigo_ativo || "Ativo não vinculado"}
+                  {form.fase ? ` — Fase ${form.fase}` : ""}
+                </ReadOnlyValue>
+              </>
+            ) : (
+              <SelecaoHierarquicaAtivo
+                idSubestacao={form.id_subestacao}
+                value={form}
+                onChange={(selecionado) => setForm((atual) => ({ ...atual, ...selecionado }))}
+              />
+            )}
           </FormGroup>
 
           <FormGroup $invalid={!!errors.id_ativo} style={{ display: "none" }} aria-hidden="true">
