@@ -40,6 +40,7 @@ const SIDEBAR_COLLAPSED = 80
 const Container = styled.div`
   display: flex;
   min-height: 100vh;
+  background: #f1f5f9;
 `
 
 const Sidebar = styled.aside<{ $open: boolean; $collapsed: boolean }>`
@@ -57,6 +58,7 @@ const Sidebar = styled.aside<{ $open: boolean; $collapsed: boolean }>`
   z-index: 50;
 
   transition: all 0.25s ease;
+  box-shadow: 4px 0 18px rgba(15, 23, 42, 0.12);
 
   @media (max-width: 768px) {
     transform: ${({ $open }) =>
@@ -87,6 +89,10 @@ const Logo = styled.div<{ $collapsed: boolean }>`
   padding: 0 22px;
   border-bottom: 1px solid #1e293b;
   font-weight: bold;
+
+  @media (max-width: 768px) {
+    justify-content: flex-start;
+  }
 `
 
 const LogoIcon = styled.svg`
@@ -95,6 +101,14 @@ const LogoIcon = styled.svg`
   flex: 0 0 26px;
   border-radius: 7px;
   object-fit: contain;
+`
+
+const LogoText = styled.span<{ $collapsed: boolean }>`
+  display: ${({ $collapsed }) => ($collapsed ? "none" : "inline")};
+
+  @media (max-width: 768px) {
+    display: inline;
+  }
 `
 
 const Nav = styled.nav`
@@ -162,6 +176,18 @@ const NavItem = styled(Link)<{ $active?: boolean; $collapsed?: boolean }>`
     border-radius: 2px;
     background: ${(p) => (p.$active ? "#3b82f6" : "transparent")};
   }
+
+  svg {
+    flex: 0 0 auto;
+  }
+
+  @media (max-width: 768px) {
+    justify-content: flex-start;
+
+    span {
+      display: inline;
+    }
+  }
 `
 
 const Footer = styled.div`
@@ -177,6 +203,10 @@ const UserBox = styled.div<{ $collapsed: boolean }>`
   margin-bottom: 12px;
   justify-content: ${({ $collapsed }) =>
     $collapsed ? "center" : "flex-start"};
+
+  @media (max-width: 768px) {
+    justify-content: flex-start;
+  }
 `
 
 const UserInfo = styled.div<{ $collapsed: boolean }>`
@@ -191,6 +221,10 @@ const UserInfo = styled.div<{ $collapsed: boolean }>`
     color: #94a3b8;
     font-size: 11px;
     text-transform: capitalize;
+  }
+
+  @media (max-width: 768px) {
+    display: grid;
   }
 `
 
@@ -212,6 +246,12 @@ const LogoutButton = styled.button<{ $collapsed: boolean }>`
   span {
     display: ${({ $collapsed }) => ($collapsed ? "none" : "inline")};
   }
+
+  @media (max-width: 768px) {
+    span {
+      display: inline;
+    }
+  }
 `
 
 const Content = styled.main<{ $collapsed: boolean }>`
@@ -221,7 +261,7 @@ const Content = styled.main<{ $collapsed: boolean }>`
     $collapsed ? `${SIDEBAR_COLLAPSED}px` : `${SIDEBAR_EXPANDED}px`};
 
   background: #f1f5f9;
-  padding: 40px;
+  padding: clamp(20px, 3vw, 40px);
   transition: all 0.25s ease;
 
   @media (max-width: 768px) {
@@ -285,18 +325,21 @@ const MobileMenuButton = styled.button`
   color: #0f172a;
 `
 
-const CollapseButton = styled.div`
+const CollapseButton = styled.button`
   position: absolute;
-  top: 20px;
-  right: -12px;
+  top: 22px;
+  right: 10px;
   background: #1e293b;
   width: 24px;
   height: 24px;
+  padding: 0;
+  border: 1px solid #334155;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  color: #ffffff;
 
   @media (max-width: 768px) {
     display: none;
@@ -339,6 +382,13 @@ export default function Layout() {
     if (item.adminOnly) return canDelete(usuario?.role)
     return !item.restricted || canManage(usuario?.role) || canAccessOperational(usuario?.role)
   })
+  const activePath = visibleMenu
+    .filter((item) =>
+      item.path === "/"
+        ? location.pathname === "/"
+        : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
+    )
+    .sort((a, b) => b.path.length - a.path.length)[0]?.path
 
   // Persistência
   function toggleCollapse() {
@@ -361,17 +411,17 @@ export default function Layout() {
             <polygon points="580,116 656,116 603,450 684,450 568,916 520,916 565,504 486,504" fill="#FFFFFF" opacity="0.38" />
             <polygon points="593,138 636,138 588,462 652,462 561,892 540,892 582,490 518,490" fill="#FFFFFF" />
           </LogoIcon>
-          {!collapsed && "O&M"}
+          <LogoText $collapsed={collapsed}>O&amp;M</LogoText>
         </Logo>
 
-        <CollapseButton onClick={toggleCollapse}>
+        <CollapseButton type="button" onClick={toggleCollapse} aria-label={collapsed ? "Expandir menu" : "Recolher menu"}>
           <Menu size={14} />
         </CollapseButton>
 
         <Nav>
           {visibleMenu.map((item) => {
             const Icon = item.icon
-            const active = location.pathname === item.path
+            const active = activePath === item.path
 
             return (
               <NavItem
