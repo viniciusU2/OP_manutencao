@@ -44,7 +44,7 @@ export function SelecaoHierarquicaAtivo({ idSubestacao, value, onChange }: {
       <select value={value.escopo_ativo ?? ""} onChange={(e) => onChange({ ...value, escopo_ativo: (e.target.value || null) as EscopoAtivo | null, id_ativo: null })}>
         <option value="">Selecione</option><option value="GRUPO">Grupo completo — todas as fases</option>{exigeFase && <option value="FASE">Fase específica</option>}
       </select>
-      {value.escopo_ativo === "FASE" && <><label>Fase</label><select value={value.id_ativo ?? ""} onChange={(e) => onChange({ ...value, id_ativo: Number(e.target.value) || null })}><option value="">Selecione</option>{grupo.fases.map((item) => <option key={item.id_ativo} value={item.id_ativo}>{item.fase ? `Fase ${item.fase}` : `Componente ${item.id_ativo}`}</option>)}</select></>}
+      {value.escopo_ativo === "FASE" && <><label>Fase</label><select value={value.id_ativo ?? ""} onChange={(e) => onChange({ ...value, id_ativo: Number(e.target.value) || null })}><option value="">Selecione</option>{grupo.fases.map((item) => <option key={item.id_ativo} value={item.id_ativo}>{item.fase ? `${item.fase}` : `Componente ${item.id_ativo}`}</option>)}</select></>}
     </>}
   </>;
 }
