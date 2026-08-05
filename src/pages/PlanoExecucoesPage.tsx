@@ -46,8 +46,9 @@ import type {
   PlanoExecucaoPlanilha,
   PlanoExecucaoUpdate,
   PlanoManutencaoRead,
-  TipoAtivoPlano,
 } from "../types/planoManutencao";
+
+const ITENS_POR_PAGINA = 50;
 
 function formatDateTime(value?: string | null) {
   if (!value) return "-";
@@ -137,8 +138,10 @@ export default function PlanoExecucoesPage() {
   const [saving, setSaving] = useState(false);
   const [savingPlano, setSavingPlano] = useState(false);
   const [planos, setPlanos] = useState<PlanoManutencaoRead[]>([]);
-  const [tiposAtivo, setTiposAtivo] = useState<TipoAtivoPlano[]>([]);
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
+  const [auxiliaresCarregados, setAuxiliaresCarregados] = useState(false);
+  const [loadingAuxiliares, setLoadingAuxiliares] = useState(false);
+  const [pagina, setPagina] = useState(1);
   const [busca, setBusca] = useState("");
   const [filtros, setFiltros] = useState({
     status: "todos",
@@ -181,36 +184,32 @@ export default function PlanoExecucoesPage() {
   }
 
   async function carregarDadosAuxiliares() {
+    if (auxiliaresCarregados || loadingAuxiliares) return;
+
+    setLoadingAuxiliares(true);
     try {
-      const [planosRes, tiposRes, subestacoesRes] = await Promise.all([
+      const [planosRes, subestacoesRes] = await Promise.all([
         api.get<PlanoManutencaoRead[]>("/planos-manutencao/"),
-        api.get<TipoAtivoPlano[]>("/tipo-ativo"),
         api.get<Subestacao[]>("/subestacao/ativas"),
       ]);
       setPlanos(planosRes.data);
-      setTiposAtivo(tiposRes.data);
       setSubestacoes(subestacoesRes.data);
+      setAuxiliaresCarregados(true);
     } catch {
       toast.error("Erro ao carregar filtros de plano");
+    } finally {
+      setLoadingAuxiliares(false);
     }
   }
 
   useEffect(() => {
     carregarExecucoes();
-    carregarDadosAuxiliares();
   }, []);
 
   const opcoes = useMemo(
     () => ({
       instalacoes: uniqueOptions(execucoes, (execucao) => execucao.instalacao),
-      tiposAtivo: Array.from(
-        new Set([
-          ...tiposAtivo
-            .map((tipo) => normalizeFilterValue(tipo.nome))
-            .filter(Boolean),
-          ...uniqueOptions(execucoes, (execucao) => execucao.tipo_ativo),
-        ])
-      ).sort((a, b) => a.localeCompare(b, "pt-BR")),
+      tiposAtivo: uniqueOptions(execucoes, (execucao) => execucao.tipo_ativo),
       periodicidades: uniqueOptions(
         execucoes,
         (execucao) => execucao.periodicidade
@@ -218,7 +217,7 @@ export default function PlanoExecucoesPage() {
       fases: uniqueOptions(execucoes, (execucao) => execucao.fase),
       bays: uniqueOptions(execucoes, (execucao) => execucao.bay),
     }),
-    [execucoes, tiposAtivo]
+    [execucoes]
   );
 
   const indicadores = useMemo(() => {
@@ -307,11 +306,27 @@ export default function PlanoExecucoesPage() {
     });
   }, [busca, execucoes, filtros]);
 
+  const totalPaginas = Math.max(
+    1,
+    Math.ceil(filtradas.length / ITENS_POR_PAGINA)
+  );
+
+  const execucoesDaPagina = useMemo(() => {
+    const inicio = (pagina - 1) * ITENS_POR_PAGINA;
+    return filtradas.slice(inicio, inicio + ITENS_POR_PAGINA);
+  }, [filtradas, pagina]);
+
+  useEffect(() => {
+    setPagina((atual) => Math.min(atual, totalPaginas));
+  }, [totalPaginas]);
+
   function updateFiltro(name: keyof typeof filtros, value: string) {
+    setPagina(1);
     setFiltros((current) => ({ ...current, [name]: value }));
   }
 
   function limparFiltros() {
+    setPagina(1);
     setBusca("");
     setFiltros({
       status: "todos",
@@ -359,6 +374,7 @@ export default function PlanoExecucoesPage() {
       ultima_execucao: "",
     });
     setReagendarOpen(true);
+    void carregarDadosAuxiliares();
   }
 
   async function salvarReagendamentoPlano() {
@@ -540,7 +556,10 @@ export default function PlanoExecucoesPage() {
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                   <Input
                     value={busca}
-                    onChange={(event) => setBusca(event.target.value)}
+                    onChange={(event) => {
+                      setPagina(1);
+                      setBusca(event.target.value);
+                    }}
                     className="pl-9"
                     placeholder="Ativo, item, plano, instalacao..."
                   />
@@ -723,7 +742,7 @@ export default function PlanoExecucoesPage() {
                     </TableCell>
                   </TableRow>
                 ) : filtradas.length ? (
-                  filtradas.map((execucao) => (
+                  execucoesDaPagina.map((execucao) => (
                     <TableRow key={execucao.id_execucao}>
                       <TableCell>
                         {isVencida(execucao) ? (
@@ -779,6 +798,36 @@ export default function PlanoExecucoesPage() {
               </TableBody>
             </Table>
           </div>
+
+          {!loading && filtradas.length > ITENS_POR_PAGINA && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <span className="text-sm text-slate-500">
+                Pagina {pagina} de {totalPaginas}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={pagina === 1}
+                  onClick={() => setPagina((atual) => Math.max(1, atual - 1))}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={pagina === totalPaginas}
+                  onClick={() =>
+                    setPagina((atual) => Math.min(totalPaginas, atual + 1))
+                  }
+                >
+                  Proxima
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -855,6 +904,7 @@ export default function PlanoExecucoesPage() {
               Plano
               <select
                 value={reagendarForm.id_plano_manutencao}
+                disabled={loadingAuxiliares}
                 onChange={(event) =>
                   setReagendarForm((current) => ({
                     ...current,
@@ -863,7 +913,9 @@ export default function PlanoExecucoesPage() {
                 }
                 className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
-                <option value="">Selecione o plano</option>
+                <option value="">
+                  {loadingAuxiliares ? "Carregando planos..." : "Selecione o plano"}
+                </option>
                 {planos.map((plano) => (
                   <option
                     key={plano.id_plano_manutencao}
@@ -893,6 +945,7 @@ export default function PlanoExecucoesPage() {
               Subestacao
               <select
                 value={reagendarForm.id_subestacao}
+                disabled={loadingAuxiliares}
                 onChange={(event) =>
                   setReagendarForm((current) => ({
                     ...current,
