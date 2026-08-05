@@ -9,7 +9,6 @@ import {
   Mail,
   ShieldCheck,
   Wrench,
-  Zap,
 } from "lucide-react";
 
 import api from "../api/api";
