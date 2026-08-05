@@ -261,6 +261,7 @@ export default function InspecoesPage() {
           <option value="BIMESTRAL">Bimestral</option>
           <option value="TRIMESTRAL">Trimestral</option>
           <option value="SEMESTRAL">Semestral</option>
+          <option value="ANUAL">Anual</option>
           <option value="3_ANOS">3 anos</option>
           <option value="5_ANOS">5 anos</option>
           <option value="6_ANOS">6 anos</option>

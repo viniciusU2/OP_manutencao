@@ -21,6 +21,7 @@ const periodicidades: Array<{ label: string; value: PeriodicidadePlano }> = [
   { label: "Bimestral", value: "BIMESTRAL" },
   { label: "Trimestral", value: "TRIMESTRAL" },
   { label: "Semestral", value: "SEMESTRAL" },
+  { label: "Anual", value: "ANUAL" },
   { label: "3 anos", value: "3_ANOS" },
   { label: "5 anos", value: "5_ANOS" },
   { label: "6 anos", value: "6_ANOS" },

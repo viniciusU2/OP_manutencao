@@ -191,6 +191,7 @@ export default function ItemTemplateForm() {
               <SelectItem value="BIMESTRAL">Bimestral</SelectItem>
               <SelectItem value="TRIMESTRAL">Trimestral</SelectItem>
               <SelectItem value="SEMESTRAL">Semestral</SelectItem>
+              <SelectItem value="ANUAL">Anual</SelectItem>
               <SelectItem value="3_ANOS">3 anos</SelectItem>
               <SelectItem value="5_ANOS">5 anos</SelectItem>
               <SelectItem value="6_ANOS">6 anos</SelectItem>

@@ -4,6 +4,7 @@ export type PeriodicidadePlano =
   | "BIMESTRAL"
   | "TRIMESTRAL"
   | "SEMESTRAL"
+  | "ANUAL"
   | "3_ANOS"
   | "5_ANOS"
   | "6_ANOS";
