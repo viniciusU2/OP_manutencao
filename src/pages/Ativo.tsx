@@ -457,18 +457,11 @@ export default function AtivoPage() {
 
           <FormGroup>
             <label>Especie</label>
-            <select
+            <input
               name="especie"
               value={form.especie ?? ""}
               onChange={handleChange}
-            >
-              <option value="">Selecione</option>
-              <option value="EAT">EAT</option>
-              <option value="SPCS">SPCS</option>
-              <option value="TELECON">TELECON</option>
-              <option value="SERVICO AUXILIAR">SERVICO AUXILIAR</option>
-              <option value="GERAL">GERAL</option>
-            </select>
+            />
           </FormGroup>
 
           <FormGroup>
