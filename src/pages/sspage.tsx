@@ -56,6 +56,32 @@ const Select = styled.select`
   }
 `;
 
+const ClearButton = styled.button`
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) { background: #f1f5f9; }
+  &:disabled { cursor: not-allowed; opacity: 0.5; }
+
+  @media (max-width: 720px) { width: 100%; }
+`;
+
+const ActiveFilters = styled.span`
+  align-self: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+`;
+
 
 export function SSPage() {
   const navigate = useNavigate();
@@ -64,8 +90,23 @@ export function SSPage() {
   const [subestacao, setSubestacao] = useState<Subestacao[]>([]);
   const [subestacaoSelecionada, setSubestacaoSelecionada] = useState("all");
   const [status, setStatus] = useState("all");
+  const [prazo, setPrazo] = useState("all");
   const [importando, setImportando] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const totalFiltrosAtivos = [
+    search.trim(),
+    status !== "all",
+    subestacaoSelecionada !== "all",
+    prazo !== "all",
+  ].filter(Boolean).length;
+
+  function limparFiltros() {
+    setSearch("");
+    setStatus("all");
+    setSubestacaoSelecionada("all");
+    setPrazo("all");
+  }
 
   async function importarSS(event: ChangeEvent<HTMLInputElement>) {
     const arquivo = event.target.files?.[0];
@@ -180,6 +221,31 @@ export function SSPage() {
   ))}
 </Select>
 
+        <Select
+          value={prazo}
+          aria-label="Prazo da SS"
+          onChange={(e) => setPrazo(e.target.value)}
+        >
+          <option value="all">Todos os prazos</option>
+          <option value="vencidas">Vencidas</option>
+          <option value="hoje">Vencem hoje</option>
+          <option value="proximos_7_dias">Próximos 7 dias</option>
+          <option value="proximos_30_dias">Próximos 30 dias</option>
+          <option value="proximos_60_dias">Próximos 60 dias</option>
+          <option value="proximos_180_dias">Próximos 180 dias</option>
+          <option value="sem_prazo">Sem data limite</option>
+        </Select>
+
+        {totalFiltrosAtivos > 0 && (
+          <ActiveFilters>
+            {totalFiltrosAtivos} filtro{totalFiltrosAtivos > 1 ? "s" : ""} ativo{totalFiltrosAtivos > 1 ? "s" : ""}
+          </ActiveFilters>
+        )}
+
+        <ClearButton type="button" onClick={limparFiltros} disabled={totalFiltrosAtivos === 0}>
+          Limpar filtros
+        </ClearButton>
+
 
       </FilterCard>
 
@@ -188,6 +254,7 @@ export function SSPage() {
        search={search}
         status={status}
         subestacao={subestacaoSelecionada}
+        prazo={prazo}
         refreshToken={refreshKey} />
     </Container>
   );

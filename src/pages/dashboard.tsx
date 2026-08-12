@@ -43,6 +43,7 @@ interface SS {
   id_subestacao?: number | null;
   instalacao?: string;
   data_hora_solicitacao?: string | null;
+  data_hora_limite?: string | null;
 }
 
 interface SI {
@@ -275,6 +276,58 @@ const Empty = styled.div`
   font-size: 14px;
 `;
 
+const DeadlineChart = styled.div`
+  display: grid;
+  grid-template-columns: repeat(6, minmax(72px, 1fr));
+  align-items: end;
+  gap: 14px;
+  min-height: 260px;
+  padding: 24px 20px 18px;
+  overflow-x: auto;
+
+  @media (max-width: 720px) {
+    grid-template-columns: repeat(6, minmax(82px, 1fr));
+  }
+`;
+
+const DeadlineColumn = styled.div`
+  display: grid;
+  grid-template-rows: 24px 170px auto;
+  gap: 8px;
+  min-width: 72px;
+  text-align: center;
+`;
+
+const DeadlineValue = styled.strong`
+  color: #0f172a;
+  font-size: 15px;
+`;
+
+const DeadlineTrack = styled.div`
+  display: flex;
+  align-items: flex-end;
+  height: 170px;
+  border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(to top, #f1f5f9, #f8fafc);
+  overflow: hidden;
+`;
+
+const DeadlineBar = styled.div<{ $height: number; $color: string }>`
+  width: 100%;
+  min-height: ${({ $height }) => ($height > 0 ? 6 : 0)}px;
+  height: ${({ $height }) => $height}%;
+  border-radius: 8px 8px 0 0;
+  background: ${({ $color }) => $color};
+  transition: height 220ms ease;
+`;
+
+const DeadlineLabel = styled.span`
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+`;
+
 function normalizedStatus(status?: string) {
   return (status || "SEM_STATUS").toUpperCase();
 }
@@ -316,6 +369,18 @@ function asArray<T>(value: unknown): T[] {
   }
 
   return [];
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function daysUntil(value?: string | null) {
+  if (!value) return null;
+  const deadline = new Date(value);
+  if (Number.isNaN(deadline.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  deadline.setHours(0, 0, 0, 0);
+  return Math.round((deadline.getTime() - today.getTime()) / DAY_MS);
 }
 
 export function Dashboard() {
@@ -404,6 +469,32 @@ export function Dashboard() {
   const maxOsStatus = Math.max(1, ...Object.values(osStatus));
   const ssStatus = useMemo(() => statusCounts(filtered.ss), [filtered.ss]);
   const maxSsStatus = Math.max(1, ...Object.values(ssStatus));
+
+  const ssDeadlines = useMemo(() => {
+    const buckets = [
+      { label: "Vencidas", count: 0, color: "#dc2626" },
+      { label: "Hoje", count: 0, color: "#f59e0b" },
+      { label: "1–7 dias", count: 0, color: "#f97316" },
+      { label: "8–30 dias", count: 0, color: "#eab308" },
+      { label: "31–60 dias", count: 0, color: "#3b82f6" },
+      { label: "61–180 dias", count: 0, color: "#10b981" },
+    ];
+
+    filtered.ss.filter((item) => isOpenStatus(item.status)).forEach((item) => {
+      const days = daysUntil(item.data_hora_limite);
+      if (days === null || days > 180) return;
+      if (days < 0) buckets[0].count += 1;
+      else if (days === 0) buckets[1].count += 1;
+      else if (days <= 7) buckets[2].count += 1;
+      else if (days <= 30) buckets[3].count += 1;
+      else if (days <= 60) buckets[4].count += 1;
+      else buckets[5].count += 1;
+    });
+
+    return buckets;
+  }, [filtered.ss]);
+
+  const maxSsDeadline = Math.max(1, ...ssDeadlines.map((item) => item.count));
 
   if (loading) {
     return (
@@ -573,6 +664,31 @@ export function Dashboard() {
         <StatsCard title="SS em aberto" value={totals.ssAbertas} icon={AlertTriangle} color="amber" subtitle={`${filtered.ss.length} SS cadastradas`} />
         <StatsCard title="SI pendentes" value={totals.siPendentes} icon={CalendarDays} color="emerald" subtitle={`${filtered.si.length} SI cadastradas`} />
       </StatsGrid>
+
+      <Panel>
+        <PanelHeader>
+          <h2>
+            <CalendarDays size={18} />
+            Vencimentos das SS
+          </h2>
+          <span>SS em aberto por faixa de vencimento</span>
+        </PanelHeader>
+
+        <DeadlineChart>
+          {ssDeadlines.map((item) => (
+            <DeadlineColumn key={item.label} title={`${item.label}: ${item.count} SS`}>
+              <DeadlineValue>{item.count}</DeadlineValue>
+              <DeadlineTrack>
+                <DeadlineBar
+                  $height={(item.count / maxSsDeadline) * 100}
+                  $color={item.color}
+                />
+              </DeadlineTrack>
+              <DeadlineLabel>{item.label}</DeadlineLabel>
+            </DeadlineColumn>
+          ))}
+        </DeadlineChart>
+      </Panel>
 
       <ContentGrid>
         <Panel>

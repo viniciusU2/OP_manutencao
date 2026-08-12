@@ -44,6 +44,20 @@ function getPrioridadeLabel(prioridade?: string) {
   return prioridade || "-";
 }
 
+function getPrazo(dataLimite?: string | null) {
+  if (!dataLimite) return { label: "Sem prazo", className: "text-gray-500" };
+
+  const limite = new Date(dataLimite);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const fimHoje = new Date(hoje);
+  fimHoje.setDate(fimHoje.getDate() + 1);
+
+  if (limite < hoje) return { label: limite.toLocaleDateString("pt-BR"), className: "font-semibold text-red-600" };
+  if (limite < fimHoje) return { label: "Hoje", className: "font-semibold text-amber-600" };
+  return { label: limite.toLocaleDateString("pt-BR"), className: "text-gray-700" };
+}
+
 export const columns = (
   onDelete: (ss: SS) => void,
   onAtender: (ss: SS) => void
@@ -119,6 +133,14 @@ export const columns = (
       const data = row.original.data_hora_solicitacao;
       if (!data) return "-";
       return new Date(data).toLocaleDateString("pt-BR");
+    },
+  },
+  {
+    accessorKey: "data_hora_limite",
+    header: "Data limite",
+    cell: ({ row }) => {
+      const prazo = getPrazo(row.original.data_hora_limite);
+      return <span className={prazo.className}>{prazo.label}</span>;
     },
   },
   {

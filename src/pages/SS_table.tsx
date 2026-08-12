@@ -9,10 +9,17 @@ interface Props {
   search: string;
   status: string;
   subestacao: string;
+  prazo: string;
   refreshToken?: number;
 }
 
-export function SSPage1({ search, status, subestacao, refreshToken = 0 }: Props) {
+export function SSPage1({
+  search,
+  status,
+  subestacao,
+  prazo,
+  refreshToken = 0,
+}: Props) {
   const [data, setData] = useState<SS[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -57,7 +64,7 @@ export function SSPage1({ search, status, subestacao, refreshToken = 0 }: Props)
 
   useEffect(() => {
     setPage(1);
-  }, [search, status, subestacao]);
+  }, [search, status, subestacao, prazo]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -71,6 +78,7 @@ export function SSPage1({ search, status, subestacao, refreshToken = 0 }: Props)
             search: search.trim() || undefined,
             status: status === "all" ? undefined : status,
             id_subestacao: subestacao === "all" ? undefined : Number(subestacao),
+            prazo: prazo === "all" ? undefined : prazo,
           },
           signal: controller.signal,
         });
@@ -87,7 +95,7 @@ export function SSPage1({ search, status, subestacao, refreshToken = 0 }: Props)
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [page, search, status, subestacao, refreshKey, refreshToken]);
+  }, [page, search, status, subestacao, prazo, refreshKey, refreshToken]);
 
   if (loading) return <div className="p-6 text-gray-500">Carregando SS...</div>;
 
