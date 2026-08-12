@@ -7,6 +7,9 @@ import { useEffect, useState } from "react";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import { filtroInicialInstalacao } from "../lib/instalacaoPreferida";
+import { usePersistentSearch } from "../lib/usePersistentSearch";
+import type { TipoAtivo } from "../types/TipoAtivo";
+import { FilterPageFrame, FilterSidebar } from "../components/FilterSidebar";
 
 
 
@@ -14,40 +17,35 @@ import { filtroInicialInstalacao } from "../lib/instalacaoPreferida";
 
 /* FILTER CARD */
 
-const FilterCard = styled.div`
-  background: white;
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-
-  @media (max-width: 720px) {
-    flex-direction: column;
-  }
-`;
+const FilterField=styled.label`display:flex;flex-direction:column;gap:5px;color:#475569;font-size:12px;font-weight:600;`;
 
 const SearchInput = styled.input`
-  flex: 1;
-  min-width: 220px;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 42px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  &:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); }
 
   @media (max-width: 720px) {
     width: 100%;
     min-width: 0;
   }
 `;
+const SearchArea = styled.div`position:relative; margin-bottom:16px; padding:12px; border-radius:12px; background:#f1f5f9;`;
+const SearchIcon = styled.span`position:absolute; left:27px; top:50%; transform:translateY(-50%); color:#64748b; pointer-events:none;`;
+const ClearSearch = styled.button`position:absolute; right:24px; top:50%; transform:translateY(-50%); border:0; background:transparent; color:#64748b; font-size:20px; cursor:pointer; padding:4px; &:hover{color:#0f172a;}`;
 
 const Select = styled.select`
-  min-width: 180px;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
+  width: 100%;
+  min-width: 0;
+  height:40px; padding:8px 10px;
+  font-size: 14px;
+  border-radius:8px; border:1px solid #cbd5e1; background:#fff; color:#0f172a;
+  &:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1);}
 
   @media (max-width: 720px) {
     width: 100%;
@@ -59,10 +57,13 @@ const Select = styled.select`
 export function SIPage() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = usePersistentSearch("si");
   const [subestacao, setSubestacao] = useState<Subestacao[]>([]);
   const [subestacaoSelecionada, setSubestacaoSelecionada] = useState("all");
   const [status, setStatus] = useState("all");
+  const [tiposAtivo, setTiposAtivo] = useState<TipoAtivo[]>([]);
+  const [tipoEquipamento, setTipoEquipamento] = useState("all");
+  const [filtrosVisiveis, setFiltrosVisiveis] = useState(true);
 
 
     /* ===============================
@@ -81,8 +82,14 @@ export function SIPage() {
     setSubestacaoSelecionada(filtroInicialInstalacao(usuario, subestacao));
   }, [subestacao, usuario]);
 
+  useEffect(() => {
+    api.get("/tipo-ativo").then((res) => setTiposAtivo(res.data)).catch((err) =>
+      console.error("Erro ao carregar tipos de equipamento:", err)
+    );
+  }, []);
+
   return (
-    <Container>
+    <FilterPageFrame $filtersOpen={filtrosVisiveis}><Container>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2>Solicitação de Intervenção</h2>
 
@@ -95,14 +102,19 @@ export function SIPage() {
       </div>
 
       
-      <FilterCard>
-
+      <SearchArea>
+        <SearchIcon aria-hidden="true">⌕</SearchIcon>
         <SearchInput
           placeholder="Buscar solicitacão de intervenção..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        {search && <ClearSearch type="button" aria-label="Limpar busca" title="Limpar busca" onClick={() => setSearch("")}>×</ClearSearch>}
+      </SearchArea>
 
+      <FilterSidebar open={filtrosVisiveis} onOpenChange={setFiltrosVisiveis} filters={<>
+
+        <FilterField>Status
         <Select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
@@ -113,8 +125,18 @@ export function SIPage() {
           <option value="ENCERRADA">Encerrada</option>
           <option value="EM_EXECUCAO">Em execucão</option>
         </Select>
+        </FilterField>
 
-<Select
+        <FilterField>Tipo de equipamento
+        <Select value={tipoEquipamento} onChange={(e) => setTipoEquipamento(e.target.value)}>
+          <option value="all">Todos os tipos de equipamento</option>
+          {tiposAtivo.map((tipo) => (
+            <option key={tipo.id_tipo_ativo} value={String(tipo.id_tipo_ativo)}>{tipo.nome}</option>
+          ))}
+        </Select>
+        </FilterField>
+
+<FilterField>Instalação<Select
   value={subestacaoSelecionada}
   onChange={(e) => setSubestacaoSelecionada(e.target.value)}
 >
@@ -128,16 +150,18 @@ export function SIPage() {
       {s.nome}
     </option>
   ))}
-</Select>
+</Select></FilterField>
 
 
-      </FilterCard>
+      </>}>
 
       <SIPage1 
       
        search={search}
         status={status}
-        subestacao={subestacaoSelecionada} />
-    </Container>
+        subestacao={subestacaoSelecionada}
+        tipoEquipamento={tipoEquipamento} />
+      </FilterSidebar>
+    </Container></FilterPageFrame>
   );
 }

@@ -10,6 +10,7 @@ interface Props {
   status: string;
   subestacao: string;
   prazo: string;
+  tipoEquipamento: string;
   refreshToken?: number;
 }
 
@@ -18,6 +19,7 @@ export function SSPage1({
   status,
   subestacao,
   prazo,
+  tipoEquipamento,
   refreshToken = 0,
 }: Props) {
   const [data, setData] = useState<SS[]>([]);
@@ -64,7 +66,7 @@ export function SSPage1({
 
   useEffect(() => {
     setPage(1);
-  }, [search, status, subestacao, prazo]);
+  }, [search, status, subestacao, prazo, tipoEquipamento]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -79,6 +81,7 @@ export function SSPage1({
             status: status === "all" ? undefined : status,
             id_subestacao: subestacao === "all" ? undefined : Number(subestacao),
             prazo: prazo === "all" ? undefined : prazo,
+            id_tipo_ativo: tipoEquipamento === "all" ? undefined : Number(tipoEquipamento),
           },
           signal: controller.signal,
         });
@@ -95,7 +98,7 @@ export function SSPage1({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [page, search, status, subestacao, prazo, refreshKey, refreshToken]);
+  }, [page, search, status, subestacao, prazo, tipoEquipamento, refreshKey, refreshToken]);
 
   if (loading) return <div className="p-6 text-gray-500">Carregando SS...</div>;
 

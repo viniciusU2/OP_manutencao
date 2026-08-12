@@ -10,9 +10,10 @@ interface Props {
   status: string;
   subestacao: string;
   esquema_servicos:string;
+  tipoEquipamento: string;
 }
 
-export function OsPage1({ search, status, subestacao,esquema_servicos }: Props) {
+export function OsPage1({ search, status, subestacao, esquema_servicos, tipoEquipamento }: Props) {
 
   const [data, setData] = useState<OrdemServico[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,7 +141,7 @@ async function baixarOS(os: OrdemServico) {
 
   useEffect(() => {
     setPage(1);
-  }, [search, status, subestacao, esquema_servicos]);
+  }, [search, status, subestacao, esquema_servicos, tipoEquipamento]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -155,6 +156,7 @@ async function baixarOS(os: OrdemServico) {
             status: status === "all" ? undefined : status,
             id_subestacao: subestacao === "all" ? undefined : Number(subestacao),
             esquema_servicos: esquema_servicos === "all" ? undefined : esquema_servicos,
+            id_tipo_ativo: tipoEquipamento === "all" ? undefined : Number(tipoEquipamento),
           },
           signal: controller.signal,
         });
@@ -175,7 +177,7 @@ async function baixarOS(os: OrdemServico) {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [page, search, status, subestacao, esquema_servicos, refreshKey]);
+  }, [page, search, status, subestacao, esquema_servicos, tipoEquipamento, refreshKey]);
 
   /* ===============================
      FILTROS

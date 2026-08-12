@@ -12,6 +12,7 @@ import Container from "../components/Container";
 import { AtivoPage1 } from "./Ativos-table";
 import { useAuth } from "../context/AuthContext";
 import { filtroInicialInstalacao } from "../lib/instalacaoPreferida";
+import { usePersistentSearch } from "../lib/usePersistentSearch";
 import { listarFuncoesOperacao } from "../services/funcaoOperacaoService";
 
 const PageTitle = styled.div`
@@ -216,7 +217,7 @@ export default function AtivoPage() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = usePersistentSearch("ativos");
   const [status, setStatus] = useState("all");
   const [subestacaoFiltro, setSubestacaoFiltro] = useState("all");
 

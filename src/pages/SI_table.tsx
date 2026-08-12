@@ -9,9 +9,10 @@ interface Props {
   search: string;
   status: string;
   subestacao: string;
+  tipoEquipamento: string;
 }
 
-export function SIPage1({ search, status, subestacao }: Props) {
+export function SIPage1({ search, status, subestacao, tipoEquipamento }: Props) {
   const [data, setData] = useState<SI[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -66,7 +67,7 @@ async function baixarSI(si: SI) {
 
   useEffect(() => {
     setPage(1);
-  }, [search, status, subestacao]);
+  }, [search, status, subestacao, tipoEquipamento]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -80,6 +81,7 @@ async function baixarSI(si: SI) {
             search: search.trim() || undefined,
             status: status === "all" ? undefined : status,
             id_subestacao: subestacao === "all" ? undefined : Number(subestacao),
+            id_tipo_ativo: tipoEquipamento === "all" ? undefined : Number(tipoEquipamento),
           },
           signal: controller.signal,
         });
@@ -96,7 +98,7 @@ async function baixarSI(si: SI) {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [page, search, status, subestacao, refreshKey]);
+  }, [page, search, status, subestacao, tipoEquipamento, refreshKey]);
 
   if (loading) return <div className="p-6 text-gray-500">Carregando SI...</div>;
 

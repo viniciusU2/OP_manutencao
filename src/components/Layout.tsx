@@ -37,10 +37,11 @@ const SIDEBAR_COLLAPSED = 80
 
 /* ================= STYLES ================= */
 
-const Container = styled.div`
+const Container = styled.div<{ $collapsed: boolean }>`
   display: flex;
   min-height: 100vh;
   background: #f1f5f9;
+  --app-sidebar-width: ${({ $collapsed }) => $collapsed ? `${SIDEBAR_COLLAPSED}px` : `${SIDEBAR_EXPANDED}px`};
 `
 
 const Sidebar = styled.aside<{ $open: boolean; $collapsed: boolean }>`
@@ -398,7 +399,7 @@ export default function Layout() {
   }
 
   return (
-    <Container>
+    <Container $collapsed={collapsed}>
 
       <Sidebar $open={open} $collapsed={collapsed}>
         <Logo $collapsed={collapsed}>

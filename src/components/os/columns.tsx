@@ -51,9 +51,9 @@ export const columns = (
     header: " Instalacao",
   },
   {
-    id: "tipo_equipamento",
-    header: "Tipo Equip.",
-    cell: ({ row }) => getTipoEquipamento(row.original),
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => <StatusBadge status={row.original.status} />,
   },
   {
     id: "fase_equipamento",
@@ -82,11 +82,9 @@ export const columns = (
     },
   },
   {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      return <StatusBadge status={row.original.status} />;
-    },
+    id: "tipo_equipamento",
+    header: "Tipo Equip.",
+    cell: ({ row }) => getTipoEquipamento(row.original),
   },
   {
     accessorKey: "responsavel",
