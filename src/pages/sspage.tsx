@@ -3,10 +3,11 @@ import { SSPage1} from "./SS_table";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import type { Subestacao } from "../types/Subestacao";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import { filtroInicialInstalacao } from "../lib/instalacaoPreferida";
+import { toast } from "sonner";
 
 
 
@@ -63,6 +64,42 @@ export function SSPage() {
   const [subestacao, setSubestacao] = useState<Subestacao[]>([]);
   const [subestacaoSelecionada, setSubestacaoSelecionada] = useState("all");
   const [status, setStatus] = useState("all");
+  const [importando, setImportando] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  async function importarSS(event: ChangeEvent<HTMLInputElement>) {
+    const arquivo = event.target.files?.[0];
+    event.target.value = "";
+    if (!arquivo) return;
+
+    const formData = new FormData();
+    formData.append("arquivo", arquivo);
+
+    setImportando(true);
+    try {
+      const { data } = await api.post("/ss/importar-massa", formData, {
+        params: { emissor: usuario?.nome || undefined },
+      });
+      setRefreshKey((valor) => valor + 1);
+
+      if (data.total_erros) {
+        const detalhes = data.erros
+          .slice(0, 3)
+          .map((erro: { linha: number; erro: string }) => `Linha ${erro.linha}: ${erro.erro}`)
+          .join(" | ");
+        toast.warning(
+          `${data.total_criadas} SS criadas e ${data.total_erros} linhas rejeitadas. ${detalhes}`,
+          { duration: 12000 }
+        );
+      } else {
+        toast.success(`${data.total_criadas} SS criadas com sucesso.`);
+      }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.detail ?? "Erro ao importar a planilha de SS.");
+    } finally {
+      setImportando(false);
+    }
+  }
 
 
     /* ===============================
@@ -86,12 +123,25 @@ export function SSPage() {
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2>Solicitação de Intervenção</h2>
 
-        <button
-          onClick={() => navigate("/ss/nova")}
-          className="w-full rounded bg-blue-600 px-4 py-2 text-white sm:w-auto"
-        >
-          + Nova SS
-        </button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <label className={`w-full cursor-pointer rounded bg-emerald-600 px-4 py-2 text-center text-white sm:w-auto ${importando ? "cursor-not-allowed opacity-60" : ""}`}>
+            {importando ? "Importando..." : "Criar SS em massa"}
+            <input
+              type="file"
+              accept=".xlsx,.xlsm"
+              className="hidden"
+              disabled={importando}
+              onChange={importarSS}
+            />
+          </label>
+
+          <button
+            onClick={() => navigate("/ss/nova")}
+            className="w-full rounded bg-blue-600 px-4 py-2 text-white sm:w-auto"
+          >
+            + Nova SS
+          </button>
+        </div>
       </div>
 
       
@@ -137,7 +187,8 @@ export function SSPage() {
       
        search={search}
         status={status}
-        subestacao={subestacaoSelecionada} />
+        subestacao={subestacaoSelecionada}
+        refreshToken={refreshKey} />
     </Container>
   );
 }

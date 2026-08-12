@@ -634,7 +634,25 @@ async function salvarOuEditar() {
             <label>Centro de Custo</label>
             <input
               name="centro_custo"
-              value={form.centro_custo}
+              value={form.centro_custo ?? ""}
+              onChange={handleChange}
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <label>Causa</label>
+            <input
+              name="causa"
+              value={form.causa ?? ""}
+              onChange={handleChange}
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <label>Causa Secundária</label>
+            <input
+              name="causa_secundaria"
+              value={form.causa_secundaria ?? ""}
               onChange={handleChange}
             />
           </FormGroup>

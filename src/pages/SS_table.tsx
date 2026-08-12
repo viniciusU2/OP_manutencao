@@ -9,9 +9,10 @@ interface Props {
   search: string;
   status: string;
   subestacao: string;
+  refreshToken?: number;
 }
 
-export function SSPage1({ search, status, subestacao }: Props) {
+export function SSPage1({ search, status, subestacao, refreshToken = 0 }: Props) {
   const [data, setData] = useState<SS[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -86,7 +87,7 @@ export function SSPage1({ search, status, subestacao }: Props) {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [page, search, status, subestacao, refreshKey]);
+  }, [page, search, status, subestacao, refreshKey, refreshToken]);
 
   if (loading) return <div className="p-6 text-gray-500">Carregando SS...</div>;
 
