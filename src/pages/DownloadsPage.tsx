@@ -8,7 +8,7 @@ import Container from "../components/Container";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 
-type Documento = "operacionais" | "os" | "si" | "ss" | "ativos";
+type Documento = "operacionais" | "os" | "si" | "ss" | "ativos" | "inspecoes";
 
 interface Subestacao {
   id_subestacao: number;
@@ -30,6 +30,7 @@ const documentos = [
   { id: "si" as Documento, titulo: "SI", descricao: "Solicitações de intervenção." },
   { id: "ss" as Documento, titulo: "SS", descricao: "Solicitações de serviço." },
   { id: "ativos" as Documento, titulo: "Ativos", descricao: "Cadastro de ativos." },
+  { id: "inspecoes" as Documento, titulo: "Inspeções", descricao: "Inspeções e resultados detalhados por item." },
 ];
 
 const Header = styled.div`
@@ -60,7 +61,7 @@ const Subtitle = styled.p`
 
 const DocumentGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 18px;
 
@@ -154,6 +155,7 @@ const Summary = styled.div`
 
 const statusOperacional = ["ABERTA", "PROGRAMADA", "EM_EXECUCAO", "ENCERRADA"];
 const statusAtivo = ["OPERANTE", "ATIVO", "INATIVO", "MANUTENCAO", "DESATIVADO"];
+const statusInspecao = ["OK", "NOK", "NA"];
 
 function nomeArquivo(documento: Documento) {
   const data = new Date().toISOString().slice(0, 10);
@@ -191,7 +193,9 @@ export default function DownloadsPage() {
   }, []);
 
   const opcoesStatus = useMemo(() => {
-    return documento === "ativos" ? statusAtivo : statusOperacional;
+    if (documento === "ativos") return statusAtivo;
+    if (documento === "inspecoes") return statusInspecao;
+    return statusOperacional;
   }, [documento]);
 
   function atualizarFiltro(campo: keyof typeof filtros, valor: string) {
@@ -216,7 +220,7 @@ export default function DownloadsPage() {
     if (filtros.data_inicio) params.data_inicio = `${filtros.data_inicio}T00:00:00`;
     if (filtros.data_fim) params.data_fim = `${filtros.data_fim}T23:59:59`;
 
-    if (documento === "ativos") {
+    if (documento === "ativos" || documento === "inspecoes") {
       if (filtros.id_tipo_ativo !== "all") {
         params.id_tipo_ativo = filtros.id_tipo_ativo;
       }
@@ -228,7 +232,11 @@ export default function DownloadsPage() {
   }
 
   async function baixarArquivo() {
-    const endpoint = documento === "ativos" ? "/downloads/ativos" : "/downloads/operacionais";
+    const endpoint = documento === "ativos"
+      ? "/downloads/ativos"
+      : documento === "inspecoes"
+        ? "/downloads/inspecoes"
+        : "/downloads/operacionais";
 
     setLoading(true);
     try {
@@ -322,7 +330,7 @@ export default function DownloadsPage() {
               </Select>
             </Field>
 
-            {documento === "ativos" && (
+            {(documento === "ativos" || documento === "inspecoes") && (
               <Field>
                 Tipo de ativo
                 <Select
@@ -370,6 +378,7 @@ export default function DownloadsPage() {
           </Actions>
         </CardContent>
       </Card>
+
     </Container>
   );
 }

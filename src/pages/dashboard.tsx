@@ -32,6 +32,9 @@ interface OS {
   id_subestacao?: number;
   data_inicio_programado?: string | null;
   data_fim_programado?: string | null;
+  criado_em?: string | null;
+  emissor?: string | null;
+  editado_por?: string | null;
 }
 
 interface SS {
@@ -53,6 +56,15 @@ interface SI {
   status_manutencao?: string;
   id_subestacao?: number | null;
   data_inicio_preriodo_total?: string | null;
+}
+
+interface Inspecao {
+  id_inspecao: number;
+  id_ativo: number;
+  id_subestacao?: number | null;
+  instalacao?: string;
+  data_inspecao: string;
+  status_geral?: string;
 }
 
 interface Subestacao {
@@ -328,6 +340,203 @@ const DeadlineLabel = styled.span`
   line-height: 1.25;
 `;
 
+const InspectionContent = styled.div`
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(260px, 1.2fr);
+  align-items: center;
+  gap: 28px;
+  padding: 22px;
+
+  @media (max-width: 720px) { grid-template-columns: 1fr; }
+`;
+
+const PieArea = styled.div`
+  display: grid;
+  place-items: center;
+  gap: 14px;
+`;
+
+const Pie = styled.div<{ $gradient: string }>`
+  position: relative;
+  width: 190px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: ${({ $gradient }) => $gradient};
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 31%;
+    border-radius: 50%;
+    background: #fff;
+  }
+`;
+
+const Legend = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+`;
+
+const LegendItem = styled.span<{ $color: string }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+
+  &::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: ${({ $color }) => $color}; }
+`;
+
+const DateSlider = styled.div`
+  display: grid;
+  gap: 14px;
+
+  label { color: #0f172a; font-size: 15px; font-weight: 700; }
+  p { margin: 0; color: #64748b; font-size: 13px; }
+  input { width: 100%; accent-color: #2563eb; cursor: pointer; }
+`;
+
+const SliderMarks = styled.div`
+  display: flex;
+  justify-content: space-between;
+  color: #64748b;
+  font-size: 11px;
+`;
+
+const ChartSelect = styled.select`
+  min-height: 34px;
+  min-width: 150px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #fff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+`;
+
+const LineChartWrap = styled.div`
+  padding: 20px 18px 12px;
+  overflow-x: auto;
+`;
+
+const LineChartSvg = styled.svg`
+  display: block;
+  width: 100%;
+  min-width: 620px;
+  height: auto;
+
+  .grid { stroke: #e2e8f0; stroke-width: 1; }
+  .axis-label { fill: #64748b; font-size: 11px; }
+  .value-label { fill: #0f172a; font-size: 11px; font-weight: 700; }
+  .line { fill: none; stroke: #2563eb; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .area { fill: url(#lineAreaGradient); }
+  .point { fill: #fff; stroke: #2563eb; stroke-width: 3; cursor: pointer; }
+  .point:hover { fill: #2563eb; }
+`;
+
+const AnnualIndicatorGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  padding: 16px;
+`;
+
+const AnnualIndicatorCard = styled.div`
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+
+  h3 { margin: 0; color: #0f172a; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+`;
+
+const AnnualRate = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  color: #1d4ed8;
+
+  strong { font-size: 27px; line-height: 1; }
+  span { font-size: 12px; font-weight: 600; }
+`;
+
+const AnnualDetails = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: #64748b;
+  font-size: 12px;
+`;
+
+const InspectionKpis = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+
+  @media (max-width: 520px) { grid-template-columns: 1fr; }
+`;
+
+const InspectionKpi = styled.div`
+  padding: 9px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+
+  strong { display: block; color: #0f172a; font-size: 17px; }
+  span { display: block; margin-top: 2px; color: #64748b; font-size: 10px; line-height: 1.2; }
+`;
+
+const IssuerChartContent = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.5fr);
+  gap: 26px;
+  padding: 18px;
+
+  @media (max-width: 850px) { grid-template-columns: 1fr; }
+`;
+
+const IssuerBars = styled.div`
+  display: grid;
+  gap: 11px;
+  max-height: 390px;
+  padding-right: 4px;
+  overflow-y: auto;
+`;
+
+const IssuerRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(100px, 180px) minmax(100px, 1fr) 36px;
+  align-items: center;
+  gap: 10px;
+  color: #475569;
+  font-size: 12px;
+
+  > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+`;
+
+const IssuerTrack = styled.div`
+  height: 18px;
+  border-radius: 5px;
+  background: #e2e8f0;
+  overflow: hidden;
+`;
+
+const IssuerFill = styled.div<{ $width: number }>`
+  width: ${({ $width }) => $width}%;
+  min-width: ${({ $width }) => ($width > 0 ? 4 : 0)}px;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  transition: width 220ms ease;
+`;
+
 function normalizedStatus(status?: string) {
   return (status || "SEM_STATUS").toUpperCase();
 }
@@ -372,6 +581,8 @@ function asArray<T>(value: unknown): T[] {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const INSPECTION_PERIODS = [30, 60, 90, 180, 365];
+const EXIBIR_INDICADORES_ANUAIS_INSPECAO = false;
 
 function daysUntil(value?: string | null) {
   if (!value) return null;
@@ -391,22 +602,28 @@ export function Dashboard() {
   const [os, setOS] = useState<OS[]>([]);
   const [ss, setSS] = useState<SS[]>([]);
   const [si, setSI] = useState<SI[]>([]);
+  const [inspecoes, setInspecoes] = useState<Inspecao[]>([]);
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
   const [filtroSubestacao, setFiltroSubestacao] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [periodoInspecoes, setPeriodoInspecoes] = useState(3);
+  const [periodoEmissores, setPeriodoEmissores] = useState(3);
+  const [responsavelGraficoOS, setResponsavelGraficoOS] = useState<"emissor" | "editor">("emissor");
+  const [documentoGrafico, setDocumentoGrafico] = useState<"ss" | "os" | "si">("ss");
 
   async function fetchData() {
     setLoading(true);
     setError("");
 
     try {
-      const [ativosRes, osRes, ssRes, siRes, subRes] = await Promise.all([
+      const [ativosRes, osRes, ssRes, siRes, subRes, inspecoesRes] = await Promise.all([
         api.get("/ativo"),
         api.get("/os"),
         api.get("/ss"),
         api.get("/si"),
         api.get("/subestacao"),
+        api.get("/inspecoes", { params: { limit: 5000 } }),
       ]);
 
       setAtivos(asArray<Ativo>(ativosRes.data));
@@ -414,6 +631,7 @@ export function Dashboard() {
       setSS(asArray<SS>(ssRes.data));
       setSI(asArray<SI>(siRes.data));
       setSubestacoes(asArray<Subestacao>(subRes.data));
+      setInspecoes(asArray<Inspecao>(inspecoesRes.data));
 
     } catch {
       setError("Nao foi possivel carregar todos os indicadores.");
@@ -453,8 +671,9 @@ export function Dashboard() {
       os: os.filter(bySub),
       ss: ss.filter(bySub),
       si: si.filter(bySub),
+      inspecoes: inspecoes.filter(bySub),
     };
-  }, [ativos, os, ss, si, filtroSubestacao, subestacaoById]);
+  }, [ativos, os, ss, si, inspecoes, filtroSubestacao, subestacaoById]);
 
   const totals = useMemo(() => {
     const osAbertas = filtered.os.filter((item) => isOpenStatus(item.status)).length;
@@ -495,6 +714,144 @@ export function Dashboard() {
   }, [filtered.ss]);
 
   const maxSsDeadline = Math.max(1, ...ssDeadlines.map((item) => item.count));
+
+  const inspectionStatus = useMemo(() => {
+    const limite = new Date();
+    limite.setHours(0, 0, 0, 0);
+    limite.setDate(limite.getDate() - INSPECTION_PERIODS[periodoInspecoes]);
+    const contagens = { OK: 0, NOK: 0, NA: 0 };
+
+    filtered.inspecoes.forEach((item) => {
+      const data = new Date(item.data_inspecao);
+      if (Number.isNaN(data.getTime()) || data < limite) return;
+      const status = normalizedStatus(item.status_geral);
+      if (status in contagens) contagens[status as keyof typeof contagens] += 1;
+    });
+    return contagens;
+  }, [filtered.inspecoes, periodoInspecoes]);
+
+  const totalInspecoesPeriodo = inspectionStatus.OK + inspectionStatus.NOK + inspectionStatus.NA;
+  const okAngle = totalInspecoesPeriodo ? (inspectionStatus.OK / totalInspecoesPeriodo) * 360 : 0;
+  const nokAngle = totalInspecoesPeriodo ? okAngle + (inspectionStatus.NOK / totalInspecoesPeriodo) * 360 : 0;
+  const inspectionGradient = totalInspecoesPeriodo
+    ? `conic-gradient(#10b981 0deg ${okAngle}deg, #ef4444 ${okAngle}deg ${nokAngle}deg, #94a3b8 ${nokAngle}deg 360deg)`
+    : "#e2e8f0";
+
+  const documentosPorSubestacao = useMemo(() => {
+    const documentos = documentoGrafico === "ss" ? ss : documentoGrafico === "os" ? os : si;
+    return subestacoes.map((subestacao) => ({
+      id: subestacao.id_subestacao,
+      nome: subestacao.nome,
+      quantidade: documentos.filter((item) => Number(item.id_subestacao) === subestacao.id_subestacao).length,
+    }));
+  }, [documentoGrafico, ss, os, si, subestacoes]);
+
+  const lineChart = useMemo(() => {
+    const width = 900;
+    const height = 300;
+    const left = 55;
+    const right = 28;
+    const top = 28;
+    const bottom = 62;
+    const plotWidth = width - left - right;
+    const plotHeight = height - top - bottom;
+    const maxValue = Math.max(1, ...documentosPorSubestacao.map((item) => item.quantidade));
+    const scaleMax = Math.max(5, Math.ceil(maxValue / 5) * 5);
+    const points = documentosPorSubestacao.map((item, index) => ({
+      ...item,
+      x: left + (documentosPorSubestacao.length <= 1 ? plotWidth / 2 : (index * plotWidth) / (documentosPorSubestacao.length - 1)),
+      y: top + plotHeight - (item.quantidade / scaleMax) * plotHeight,
+    }));
+    const line = points.map((point) => `${point.x},${point.y}`).join(" ");
+    const area = points.length
+      ? `M ${points[0].x} ${top + plotHeight} L ${points.map((point) => `${point.x} ${point.y}`).join(" L ")} L ${points[points.length - 1].x} ${top + plotHeight} Z`
+      : "";
+    const ticks = Array.from({ length: 6 }, (_, index) => ({
+      value: (scaleMax / 5) * index,
+      y: top + plotHeight - (plotHeight / 5) * index,
+    }));
+    return { width, height, left, right, top, bottom, plotWidth, plotHeight, points, line, area, ticks };
+  }, [documentosPorSubestacao]);
+
+  const anoIndicador = new Date().getFullYear();
+  const osPorAtivoAnual = useMemo(() => {
+    return subestacoes.map((subestacao) => {
+      const quantidadeAtivos = ativos.filter(
+        (ativo) => ativo.id_subestacao === subestacao.id_subestacao
+      ).length;
+      const quantidadeOS = os.filter((ordem) => {
+        if (ordem.id_subestacao !== subestacao.id_subestacao) return false;
+        const data = ordem.criado_em || ordem.data_inicio_programado;
+        if (!data) return false;
+        const dataOrdem = new Date(data);
+        return !Number.isNaN(dataOrdem.getTime()) && dataOrdem.getFullYear() === anoIndicador;
+      }).length;
+
+      return {
+        id: subestacao.id_subestacao,
+        nome: subestacao.nome,
+        quantidadeAtivos,
+        quantidadeOS,
+        indice: quantidadeAtivos ? quantidadeOS / quantidadeAtivos : 0,
+      };
+    });
+  }, [subestacoes, ativos, os, anoIndicador]);
+
+  const indicadoresInspecaoAnual = useMemo(() => {
+    return subestacoes.map((subestacao) => {
+      const ativosDaSubestacao = ativos.filter(
+        (ativo) => ativo.id_subestacao === subestacao.id_subestacao
+      );
+      const idsAtivos = new Set(ativosDaSubestacao.map((ativo) => ativo.id_ativo));
+      const inspecoesDoAno = inspecoes.filter((inspecao) => {
+        if (!idsAtivos.has(inspecao.id_ativo)) return false;
+        const data = new Date(inspecao.data_inspecao);
+        return !Number.isNaN(data.getTime()) && data.getFullYear() === anoIndicador;
+      });
+      const inspecoesNok = inspecoesDoAno.filter(
+        (inspecao) => normalizedStatus(inspecao.status_geral) === "NOK"
+      );
+      const ativosInspecionados = new Set(inspecoesDoAno.map((inspecao) => inspecao.id_ativo)).size;
+      const ativosComNok = new Set(inspecoesNok.map((inspecao) => inspecao.id_ativo)).size;
+      const totalAtivos = ativosDaSubestacao.length;
+
+      return {
+        id: subestacao.id_subestacao,
+        nome: subestacao.nome,
+        totalAtivos,
+        inspecoesNok: inspecoesNok.length,
+        totalInspecoes: inspecoesDoAno.length,
+        percentualInspecoesNok: inspecoesDoAno.length
+          ? (inspecoesNok.length / inspecoesDoAno.length) * 100
+          : 0,
+        percentualAtivosNok: totalAtivos ? (ativosComNok / totalAtivos) * 100 : 0,
+        cobertura: totalAtivos ? (ativosInspecionados / totalAtivos) * 100 : 0,
+      };
+    });
+  }, [subestacoes, ativos, inspecoes, anoIndicador]);
+
+  const osPorEmissor = useMemo(() => {
+    const limite = new Date();
+    limite.setHours(0, 0, 0, 0);
+    limite.setDate(limite.getDate() - INSPECTION_PERIODS[periodoEmissores]);
+    const contagens = new Map<string, number>();
+
+    filtered.os.forEach((ordem) => {
+      const dataTexto = ordem.criado_em || ordem.data_inicio_programado;
+      if (!dataTexto) return;
+      const data = new Date(dataTexto);
+      if (Number.isNaN(data.getTime()) || data < limite) return;
+      const responsavel = responsavelGraficoOS === "emissor"
+        ? ordem.emissor?.trim() || "Não informado"
+        : ordem.editado_por?.trim() || "Não editada";
+      contagens.set(responsavel, (contagens.get(responsavel) || 0) + 1);
+    });
+
+    return Array.from(contagens, ([emissor, quantidade]) => ({ emissor, quantidade }))
+      .sort((a, b) => b.quantidade - a.quantidade);
+  }, [filtered.os, periodoEmissores, responsavelGraficoOS]);
+
+  const maxOsPorEmissor = Math.max(1, ...osPorEmissor.map((item) => item.quantidade));
 
   if (loading) {
     return (
@@ -688,6 +1045,229 @@ export function Dashboard() {
             </DeadlineColumn>
           ))}
         </DeadlineChart>
+      </Panel>
+
+      <Panel>
+        <PanelHeader>
+          <h2>
+            <ClipboardList size={18} />
+            Resultados das inspeções
+          </h2>
+          <span>{totalInspecoesPeriodo} inspeções no período</span>
+        </PanelHeader>
+
+        <InspectionContent>
+          <PieArea>
+            <Pie
+              $gradient={inspectionGradient}
+              title={`OK: ${inspectionStatus.OK} | NOK: ${inspectionStatus.NOK} | NA: ${inspectionStatus.NA}`}
+            />
+            <Legend>
+              <LegendItem $color="#10b981">OK: {inspectionStatus.OK}</LegendItem>
+              <LegendItem $color="#ef4444">NOK: {inspectionStatus.NOK}</LegendItem>
+              <LegendItem $color="#94a3b8">NA: {inspectionStatus.NA}</LegendItem>
+            </Legend>
+          </PieArea>
+
+          <DateSlider>
+            <label htmlFor="periodo-inspecoes">
+              Últimos {INSPECTION_PERIODS[periodoInspecoes]} dias
+            </label>
+            <p>Deslize para ampliar ou reduzir o período analisado no gráfico.</p>
+            <input
+              id="periodo-inspecoes"
+              type="range"
+              min="0"
+              max={INSPECTION_PERIODS.length - 1}
+              step="1"
+              value={periodoInspecoes}
+              onChange={(event) => setPeriodoInspecoes(Number(event.target.value))}
+              aria-label="Período das inspeções"
+            />
+            <SliderMarks>
+              {INSPECTION_PERIODS.map((dias) => <span key={dias}>{dias}d</span>)}
+            </SliderMarks>
+          </DateSlider>
+        </InspectionContent>
+      </Panel>
+
+      <Panel>
+        <PanelHeader>
+          <h2>
+            <FileText size={18} />
+            Documentos por subestação
+          </h2>
+          <ChartSelect
+            value={documentoGrafico}
+            onChange={(event) => setDocumentoGrafico(event.target.value as "ss" | "os" | "si")}
+            aria-label="Documento do gráfico"
+          >
+            <option value="ss">SS</option>
+            <option value="os">OS</option>
+            <option value="si">SI</option>
+          </ChartSelect>
+        </PanelHeader>
+
+        {lineChart.points.length === 0 ? (
+          <Empty>Nenhuma subestação encontrada.</Empty>
+        ) : (
+          <LineChartWrap>
+            <LineChartSvg viewBox={`0 0 ${lineChart.width} ${lineChart.height}`} role="img" aria-label={`Quantidade de ${documentoGrafico.toUpperCase()} por subestação`}>
+              <defs>
+                <linearGradient id="lineAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.28" />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.02" />
+                </linearGradient>
+              </defs>
+
+              {lineChart.ticks.map((tick) => (
+                <g key={tick.value}>
+                  <line className="grid" x1={lineChart.left} x2={lineChart.width - lineChart.right} y1={tick.y} y2={tick.y} />
+                  <text className="axis-label" x={lineChart.left - 10} y={tick.y + 4} textAnchor="end">{Math.round(tick.value)}</text>
+                </g>
+              ))}
+
+              <path className="area" d={lineChart.area} />
+              <polyline className="line" points={lineChart.line} />
+
+              {lineChart.points.map((point) => (
+                <g key={point.id}>
+                  <circle className="point" cx={point.x} cy={point.y} r="6">
+                    <title>{`${point.nome}: ${point.quantidade} ${documentoGrafico.toUpperCase()}`}</title>
+                  </circle>
+                  <text className="value-label" x={point.x} y={point.y - 13} textAnchor="middle">{point.quantidade}</text>
+                  <text className="axis-label" x={point.x} y={lineChart.height - 28} textAnchor="middle">
+                    {point.nome.length > 18 ? `${point.nome.slice(0, 16)}…` : point.nome}
+                  </text>
+                </g>
+              ))}
+            </LineChartSvg>
+          </LineChartWrap>
+        )}
+      </Panel>
+
+      <Panel>
+        <PanelHeader>
+          <h2>
+            <Wrench size={18} />
+            Índice anual de OS por ativo
+          </h2>
+          <span>{anoIndicador}</span>
+        </PanelHeader>
+
+        <AnnualIndicatorGrid>
+          {osPorAtivoAnual.map((item) => (
+            <AnnualIndicatorCard key={item.id} title={item.nome}>
+              <h3>{item.nome}</h3>
+              <AnnualRate>
+                <strong>{item.indice.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                <span>OS/ativo</span>
+              </AnnualRate>
+              <AnnualDetails>
+                <span>{item.quantidadeOS} OS no ano</span>
+                <span>{item.quantidadeAtivos} ativos</span>
+              </AnnualDetails>
+            </AnnualIndicatorCard>
+          ))}
+        </AnnualIndicatorGrid>
+      </Panel>
+
+      {EXIBIR_INDICADORES_ANUAIS_INSPECAO && (
+      <Panel>
+        <PanelHeader>
+          <h2>
+            <ClipboardList size={18} />
+            Indicadores anuais de inspeção
+          </h2>
+          <span>{anoIndicador}</span>
+        </PanelHeader>
+
+        <AnnualIndicatorGrid>
+          {indicadoresInspecaoAnual.map((item) => (
+            <AnnualIndicatorCard key={item.id} title={item.nome}>
+              <h3>{item.nome}</h3>
+              <InspectionKpis>
+                <InspectionKpi>
+                  <strong>{item.percentualInspecoesNok.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</strong>
+                  <span>inspeções com resultado NOK</span>
+                </InspectionKpi>
+                <InspectionKpi>
+                  <strong>{item.percentualAtivosNok.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</strong>
+                  <span>ativos com NOK</span>
+                </InspectionKpi>
+                <InspectionKpi>
+                  <strong>{item.cobertura.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</strong>
+                  <span>cobertura de inspeção</span>
+                </InspectionKpi>
+              </InspectionKpis>
+              <AnnualDetails>
+                <span>{item.inspecoesNok} NOK de {item.totalInspecoes} inspeções</span>
+                <span>{item.totalAtivos} ativos</span>
+              </AnnualDetails>
+            </AnnualIndicatorCard>
+          ))}
+        </AnnualIndicatorGrid>
+      </Panel>
+      )}
+
+      <Panel>
+        <PanelHeader>
+          <h2>
+            <FileText size={18} />
+            {responsavelGraficoOS === "emissor" ? "Emissores das OS" : "Editores das OS"}
+          </h2>
+          <HeaderActions>
+            <span>{osPorEmissor.reduce((total, item) => total + item.quantidade, 0)} OS no período</span>
+            <ChartSelect
+              value={responsavelGraficoOS}
+              onChange={(event) => setResponsavelGraficoOS(event.target.value as "emissor" | "editor")}
+              aria-label="Responsável considerado no gráfico de OS"
+            >
+              <option value="emissor">Emissores</option>
+              <option value="editor">Editores</option>
+            </ChartSelect>
+          </HeaderActions>
+        </PanelHeader>
+
+        <IssuerChartContent>
+          {osPorEmissor.length === 0 ? (
+            <Empty>Nenhuma OS encontrada no período.</Empty>
+          ) : (
+            <IssuerBars>
+              {osPorEmissor.map((item) => (
+                <IssuerRow key={item.emissor} title={`${item.emissor}: ${item.quantidade} OS`}>
+                  <span>{item.emissor}</span>
+                  <IssuerTrack>
+                    <IssuerFill $width={(item.quantidade / maxOsPorEmissor) * 100} />
+                  </IssuerTrack>
+                  <strong>{item.quantidade}</strong>
+                </IssuerRow>
+              ))}
+            </IssuerBars>
+          )}
+
+          <DateSlider>
+            <label htmlFor="periodo-emissores">
+              Últimos {INSPECTION_PERIODS[periodoEmissores]} dias
+            </label>
+            <p>
+              Deslize para alterar o período considerado na quantidade de OS por {responsavelGraficoOS === "emissor" ? "emissor" : "editor"}.
+            </p>
+            <input
+              id="periodo-emissores"
+              type="range"
+              min="0"
+              max={INSPECTION_PERIODS.length - 1}
+              step="1"
+              value={periodoEmissores}
+              onChange={(event) => setPeriodoEmissores(Number(event.target.value))}
+              aria-label={`Período das OS por ${responsavelGraficoOS === "emissor" ? "emissor" : "editor"}`}
+            />
+            <SliderMarks>
+              {INSPECTION_PERIODS.map((dias) => <span key={dias}>{dias}d</span>)}
+            </SliderMarks>
+          </DateSlider>
+        </IssuerChartContent>
       </Panel>
 
       <ContentGrid>
