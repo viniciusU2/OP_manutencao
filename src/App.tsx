@@ -11,11 +11,14 @@ import ControleOrdemServico from "./pages/dashboard-os";
 import { OrdemServicoLotePage } from "./pages/OrdemServicoLotePage"
 
 import { Dashboard } from "./pages/dashboard";
+import { DashboardAnalitico } from "./pages/dashboard-analitico";
 import { SubestacoesPage } from "./pages/subestacaoPage";
 import { LivroRegistro } from "./pages/livro_de_registro"
 
 import { LoginPage } from "./pages/loginPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 
 import Layout from "./components/Layout";
 
@@ -106,6 +109,8 @@ function AppContent() {
       {/* ROTAS PÚBLICAS */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
+      <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
 
       {/* ROTAS PROTEGIDAS (QUALQUER USUÁRIO LOGADO) */}
       <Route
@@ -117,6 +122,7 @@ function AppContent() {
       >
         {/* 🔓 LIVRE */}
         <Route path="/" element={<Dashboard />} />
+        <Route path="/dashboard-analitico" element={<DashboardAnalitico />} />
 
         {/* 🔒 ADMIN */}
         <Route

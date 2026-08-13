@@ -48,7 +48,7 @@ const FormGroup = styled.div`
     font-weight: 500;
   }
 
-  input {
+  input, select {
     padding: 10px;
     border-radius: 6px;
     border: 1px solid #d1d5db;
@@ -86,12 +86,13 @@ const Button = styled.button`
 export default function SubestacaoPage() {
   const [form, setForm] = useState<Subestacao>({
     nome: "",
+    tipo_instalacao: "SUBESTACAO",
     tensao_kv: 0,
     localizacao: "",
     concessionaria: "",
   });
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
   }
@@ -101,20 +102,27 @@ export default function SubestacaoPage() {
       ...form,
       tensao_kv: Number(form.tensao_kv),
     });
-    alert("Subestação cadastrada!");
+    alert("Instalação cadastrada!");
   }
 
   return (
     <Container>
       <PageTitle>
-        <h2>Cadastro de Subestação</h2>
-        <p>Informações elétricas e administrativas da subestação</p>
+        <h2>Cadastro de Instalação</h2>
+        <p>Informações elétricas e administrativas da instalação</p>
       </PageTitle>
 
       <Card>
         <FormGrid>
           <FormGroup>
-            <label>Nome da Subestação</label>
+            <label>Tipo de instalação</label>
+            <select name="tipo_instalacao" value={form.tipo_instalacao} onChange={handleChange}>
+              <option value="SUBESTACAO">Subestação</option>
+              <option value="LINHA_TRANSMISSAO">Linha de transmissão</option>
+            </select>
+          </FormGroup>
+          <FormGroup>
+            <label>Nome da instalação</label>
             <input
               name="nome"
               placeholder="Ex: SE Central"
@@ -152,7 +160,7 @@ export default function SubestacaoPage() {
         </FormGrid>
 
         <Actions>
-          <Button onClick={salvar}>Salvar Subestação</Button>
+          <Button onClick={salvar}>Salvar Instalação</Button>
         </Actions>
       </Card>
       <SubestacaoPage1/>

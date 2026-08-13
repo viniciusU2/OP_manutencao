@@ -1,4 +1,4 @@
-export type EscopoAtivo = "GRUPO" | "FASE";
+export type EscopoAtivo = "FUNCAO" | "GRUPO" | "FASE";
 
 export interface ComponenteGrupoAtivo {
   id_ativo: number;

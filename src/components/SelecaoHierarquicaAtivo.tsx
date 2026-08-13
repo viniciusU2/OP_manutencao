@@ -10,8 +10,9 @@ type Valor = {
   id_ativo?: number | null;
 };
 
-export function SelecaoHierarquicaAtivo({ idSubestacao, value, onChange }: {
+export function SelecaoHierarquicaAtivo({ idSubestacao, permiteFuncaoCompleta = false, value, onChange }: {
   idSubestacao?: number | null;
+  permiteFuncaoCompleta?: boolean;
   value: Valor;
   onChange: (value: Valor) => void;
 }) {
@@ -35,9 +36,22 @@ export function SelecaoHierarquicaAtivo({ idSubestacao, value, onChange }: {
       <option value="">Selecione</option>{funcoes.map((fo) => <option key={fo.id_funcao_operacao} value={fo.id_funcao_operacao}>{fo.codigo}{fo.descricao ? ` — ${fo.descricao}` : ""}</option>)}
     </select>
     <label>Ativo</label>
-    <select value={value.id_grupo_ativo ?? ""} disabled={!value.id_funcao_operacao} onChange={(e) => onChange({ ...value, id_grupo_ativo: Number(e.target.value) || null, escopo_ativo: null, id_ativo: null })}>
-      <option value="">Selecione</option>{grupos.map((item) => <option key={item.id_grupo_ativo} value={item.id_grupo_ativo}>{item.codigo_ativo} — {item.tipo_ativo || "Ativo"}{item.bay ? ` (${item.bay})` : ""}</option>)}
+    <select
+      value={value.escopo_ativo === "FUNCAO" ? "FUNCAO" : value.id_grupo_ativo ?? ""}
+      disabled={!value.id_funcao_operacao}
+      onChange={(e) => {
+        if (e.target.value === "FUNCAO") {
+          onChange({ ...value, id_grupo_ativo: null, escopo_ativo: "FUNCAO", id_ativo: null });
+          return;
+        }
+        onChange({ ...value, id_grupo_ativo: Number(e.target.value) || null, escopo_ativo: null, id_ativo: null });
+      }}
+    >
+      <option value="">Selecione</option>
+      {permiteFuncaoCompleta && <option value="FUNCAO">Toda a linha de transmissão</option>}
+      {grupos.map((item) => <option key={item.id_grupo_ativo} value={item.id_grupo_ativo}>{item.codigo_ativo} — {item.tipo_ativo || "Ativo"}{item.bay ? ` (${item.bay})` : ""}</option>)}
     </select>
+    {value.escopo_ativo === "FUNCAO" && <small style={{ color: "#0f766e" }}>A OS será vinculada à linha inteira, sem ativo individual.</small>}
     {grupo?.inconsistencia_sem_fase && <small style={{ color: "#b45309" }}>Inconsistência: há componentes sem fase. Corrija o cadastro antes de selecionar.</small>}
     {grupo && !grupo.inconsistencia_sem_fase && <>
       <label>Escopo</label>

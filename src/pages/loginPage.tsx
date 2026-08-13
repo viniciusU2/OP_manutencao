@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import {
   BarChart3,
@@ -663,6 +663,8 @@ export function LoginPage() {
                   />
                 </InputShell>
               </Field>
+
+              <Link to="/esqueci-senha" style={{ justifySelf: "end", color: "#1d4ed8", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Esqueci minha senha</Link>
             </FormGrid>
 
             {erro && (

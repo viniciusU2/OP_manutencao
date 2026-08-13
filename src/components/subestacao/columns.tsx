@@ -6,9 +6,13 @@ import type { Subestacao } from "../../types/Subestacao";
 export const columns: ColumnDef<Subestacao>[] = [
   {
     accessorKey: "nome",
-    header: "Subestação",
+    header: "Instalação",
   },
   {
+    accessorKey: "tipo_instalacao",
+    header: "Tipo",
+    cell: ({ row }) => row.original.tipo_instalacao === "LINHA_TRANSMISSAO" ? "Linha de transmissão" : "Subestação",
+  },  {
     accessorKey: "tensao_kv",
     header: "Tensão (kV)",
   },

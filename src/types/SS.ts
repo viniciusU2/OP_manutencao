@@ -18,7 +18,7 @@ export interface SS {
   id_ativo?: number | null;
   id_grupo_ativo?: number | null;
   id_funcao_operacao?: number | null;
-  escopo_ativo?: "GRUPO" | "FASE" | null;
+  escopo_ativo?: "FUNCAO" | "GRUPO" | "FASE" | null;
   codigo_ativo?: string | null;
   esquema_servico?: string;
   centro_custo?: string;

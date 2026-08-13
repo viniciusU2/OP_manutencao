@@ -23,7 +23,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const requestUrl = error.config?.url ?? "";
-    const skipAuthRedirect = requestUrl.startsWith("/rdo");
+    const skipAuthRedirect = requestUrl.startsWith("/rdo") || requestUrl.startsWith("/forgot-password") || requestUrl.startsWith("/reset-password");
 
     if (error.response?.status === 401 && !skipAuthRedirect) {
       localStorage.removeItem("token");

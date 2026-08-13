@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 import api from "../api/api";
 import Container from "../components/Container";
@@ -342,6 +342,9 @@ export  function OrdemServicoPage() {
           ...prev,
           id_subestacao: value ? Number(value) : null,
           id_ativo: null,
+          id_funcao_operacao: null,
+          id_grupo_ativo: null,
+          escopo_ativo: null,
         };
       }
 
@@ -361,6 +364,10 @@ export  function OrdemServicoPage() {
     return new Date(end).getTime() >= new Date(start).getTime();
   }
 
+  const instalacaoSelecionada = subestacoes.find(
+    (item) => Number(item.id_subestacao) === Number(form.id_subestacao)
+  );
+  const permiteOSLinhaInteira = instalacaoSelecionada?.tipo_instalacao === "LINHA_TRANSMISSAO";
   function validateForm() {
     const nextErrors: FieldErrors = {};
     const temInstalacao = !!form.id_subestacao || !!form.instalacao?.trim();
@@ -369,7 +376,9 @@ export  function OrdemServicoPage() {
       nextErrors.id_subestacao = "Selecione a instalacao.";
     }
 
-    if (!form.id_ativo && !form.id_grupo_ativo && !isEdicao) {
+    const linhaInteiraSelecionada = permiteOSLinhaInteira && form.escopo_ativo === "FUNCAO" && !!form.id_funcao_operacao;
+
+    if (!form.id_ativo && !form.id_grupo_ativo && !linhaInteiraSelecionada && !isEdicao) {
       nextErrors.id_ativo = "Selecione o ativo.";
     }
 
@@ -594,6 +603,7 @@ export  function OrdemServicoPage() {
             ) : (
               <SelecaoHierarquicaAtivo
                 idSubestacao={form.id_subestacao}
+                permiteFuncaoCompleta={permiteOSLinhaInteira}
                 value={form}
                 onChange={(selecionado) => setForm((atual) => ({ ...atual, ...selecionado }))}
               />
