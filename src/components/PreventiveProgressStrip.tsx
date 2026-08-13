@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import api from "../api/api";
 
 interface OSProgress {
@@ -10,9 +10,11 @@ interface OSProgress {
 }
 
 const PERIODS = [
-  { key: "PREVENTIVA SEMANAL", label: "Semanal", hint: "semana atual" },
-  { key: "PREVENTIVA BIMESTRAL", label: "Bimestral", hint: "último ciclo" },
-  { key: "PREVENTIVA SEMESTRAL", label: "Semestral", hint: "último ciclo" },
+  { key: "PREVENTIVA SEMANAL", label: "Semanal", hint: "semana atual", months: 0 },
+  { key: "PREVENTIVA MENSAL", label: "Mensal", hint: "último ciclo", months: 1 },
+  { key: "PREVENTIVA BIMESTRAL", label: "Bimestral", hint: "último ciclo", months: 2 },
+  { key: "PREVENTIVA SEMESTRAL", label: "Semestral", hint: "último ciclo", months: 6 },
+  { key: "PREVENTIVA ANUAL", label: "Anual", hint: "último ciclo", months: 12 },
 ];
 
 const getDate = (ordem: OSProgress) => {
@@ -53,6 +55,8 @@ const progressColor = (value: number) =>
 
 export function PreventiveProgressStrip({ subestacao }: { subestacao?: string }) {
   const [ordens, setOrdens] = useState<OSProgress[]>([]);
+  const sliderRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     api.get("/os")
@@ -69,7 +73,7 @@ export function PreventiveProgressStrip({ subestacao }: { subestacao?: string })
     });
     const items = periodo.key === "PREVENTIVA SEMANAL"
       ? currentWeek(matching)
-      : latestCycle(matching, periodo.key === "PREVENTIVA BIMESTRAL" ? 2 : 6);
+      : latestCycle(matching, periodo.months);
     const concluidas = items.filter((ordem) =>
       ["ENCERRADA", "CONCLUIDA", "CONCLUÍDA"].includes(
         (ordem.status || "").toLocaleUpperCase("pt-BR")
@@ -84,23 +88,25 @@ export function PreventiveProgressStrip({ subestacao }: { subestacao?: string })
   }), [ordens, subestacao]);
 
   return (
-    <section aria-label="Progresso das preventivas" className="mb-3 flex flex-col overflow-hidden rounded-md border border-slate-200/80 bg-white/70 sm:-mt-10 sm:flex-row">
-      {data.map((item, index) => (
-        <div key={item.key} className={`flex min-w-0 flex-1 items-center gap-3 px-3 py-2 ${index ? "border-t border-slate-100 sm:border-l sm:border-t-0" : ""}`}>
-          <div className="min-w-[74px]">
-            <span className="block text-[11px] font-semibold leading-tight text-slate-700">{item.label}</span>
-            <span className="block text-[9px] leading-tight text-slate-400">{item.hint}</span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="h-1 overflow-hidden rounded-full bg-slate-100">
-              <div className={`h-full rounded-full transition-all duration-300 ${progressColor(item.percentual)}`} style={{ width: `${item.percentual}%` }} />
+    <section aria-label="Progresso das preventivas" className="relative mb-3 sm:-mt-10">
+      <div ref={sliderRef} className="flex cursor-grab snap-x snap-mandatory touch-pan-x overflow-x-auto active:cursor-grabbing rounded-md border border-slate-200/80 bg-white/70 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {data.map((item, index) => (
+          <div key={item.key} className={`flex min-w-full snap-start items-center gap-3 px-4 py-2 sm:min-w-[33.333333%] ${index ? "border-l border-slate-100" : ""}`}>
+            <div className="min-w-[74px]">
+              <span className="block text-[11px] font-semibold leading-tight text-slate-700">{item.label}</span>
+              <span className="block text-[9px] leading-tight text-slate-400">{item.hint}</span>
             </div>
+            <div className="min-w-0 flex-1">
+              <div className="h-1 overflow-hidden rounded-full bg-slate-100">
+                <div className={`h-full rounded-full transition-all duration-300 ${progressColor(item.percentual)}`} style={{ width: `${item.percentual}%` }} />
+              </div>
+            </div>
+            <span className="whitespace-nowrap text-[10px] tabular-nums text-slate-500">
+              <strong className="text-xs text-slate-700">{item.percentual}%</strong>{` · ${item.concluidas}/${item.total}`}
+            </span>
           </div>
-          <span className="whitespace-nowrap text-[10px] tabular-nums text-slate-500">
-            <strong className="text-xs text-slate-700">{item.percentual}%</strong>{` · ${item.concluidas}/${item.total}`}
-          </span>
-        </div>
-      ))}
+        ))}
+      </div>
     </section>
   );
 }

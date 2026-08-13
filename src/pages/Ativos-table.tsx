@@ -5,6 +5,14 @@ import { DataTable } from "../components/ui/data-table";
 import { columns } from "../components/ativos/columns";
 import Container from "../components/Container";
 
+const normalizarBusca = (value: unknown) =>
+  String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
 type Props = {
   tipoId?: number;
   search?: string;
@@ -43,23 +51,9 @@ export function AtivoPage1({
       const matchTipo =
         !tipoId || ativo.id_tipo_ativo === tipoId;
 
-      const matchSearch =
-        !search ||
-        (ativo.codigo_ativo ?? "")
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        (ativo.modelo ?? "")
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        (ativo.numero_serie ?? "")
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        (ativo.fase ?? "")
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        (ativo.bay ?? "")
-          .toLowerCase()
-          .includes(search.toLowerCase());
+      const termos = normalizarBusca(search).split(" ").filter(Boolean);
+      const conteudoPesquisavel = normalizarBusca(JSON.stringify(ativo));
+      const matchSearch = termos.every((termo) => conteudoPesquisavel.includes(termo));
 
       const matchStatus =
         status === "all" || ativo.status === status;

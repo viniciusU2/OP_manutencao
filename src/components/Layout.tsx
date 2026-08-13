@@ -428,6 +428,13 @@ export default function Layout() {
         : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
     )
     .sort((a, b) => b.path.length - a.path.length)[0]?.path
+  const activeDocument = location.pathname === "/controle" || location.pathname.startsWith("/os")
+    ? "OS"
+    : location.pathname.startsWith("/ss")
+      ? "SS"
+      : location.pathname.startsWith("/si")
+        ? "SI"
+        : null
 
   // Persistência
   function toggleCollapse() {
@@ -468,8 +475,17 @@ export default function Layout() {
               const groupActive=items.some(item=>item.path===activePath);
               return <DropdownMenu key={group.name}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className={`h-9 gap-1.5 px-3 text-sm hover:bg-white/80 hover:text-slate-950 ${groupActive ? "bg-white text-blue-700 shadow-sm" : "text-slate-700"}`}>
-                    {group.name}<ChevronDown className="size-3.5 opacity-70" />
+                  <Button variant="ghost" className={`h-9 gap-1.5 px-3 text-sm hover:bg-white/80 hover:text-slate-950 ${groupActive ? "bg-white shadow-sm" : ""} ${group.name !== "OS-SS-SI" && groupActive ? "text-blue-700" : "text-slate-700"}`}>
+                    {group.name === "OS-SS-SI" ? (
+                      <span aria-label="OS, SS e SI">
+                        <span className={activeDocument === "OS" ? "font-semibold text-blue-600" : ""}>OS</span>
+                        <span className="text-slate-400">–</span>
+                        <span className={activeDocument === "SS" ? "font-semibold text-blue-600" : ""}>SS</span>
+                        <span className="text-slate-400">–</span>
+                        <span className={activeDocument === "SI" ? "font-semibold text-blue-600" : ""}>SI</span>
+                      </span>
+                    ) : group.name}
+                    <ChevronDown className="size-3.5 opacity-70" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
