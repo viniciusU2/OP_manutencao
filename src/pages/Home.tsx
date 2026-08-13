@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import api from "../api/api";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
@@ -11,7 +11,7 @@ import ParaRaio from "../assets/tipos/ParaRaio.jpeg";
 import reator from "../assets/tipos/reator.jpeg";
 import GMG from "../assets/tipos/grupoMotorGerador.jpeg";
 import tp from "../assets/tipos/TP.webp";
-import background from "../assets/fundo.jpeg"; // caminho da sua imagem
+import background from "../assets/fundo-tratado.png"; // caminho da sua imagem
 
 
 
@@ -41,7 +41,7 @@ const PageContainer = styled.div`
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    opacity: 0.25;  /* 👈 controla transparência */
+    opacity: 0.25;  /* ðŸ‘ˆ controla transparÃªncia */
     z-index: -1;
   }
   
@@ -115,7 +115,7 @@ export default function Home() {
     
     Disjuntor: disjuntor,
     Seccionadora: chaveSeccionadora,
-    "Relé de Proteção":rele,
+    "RelÃ© de ProteÃ§Ã£o":rele,
     "TC - Transformador de Corrente":TC,
     "Para-raios":ParaRaio,
     "Reator":reator,

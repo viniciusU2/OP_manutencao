@@ -553,6 +553,9 @@ export default function SIForm() {
         ...prev,
         id_subestacao: value === "" ? null : Number(value),
         id_ativo: null,
+        id_funcao_operacao: null,
+        id_grupo_ativo: null,
+        escopo_ativo: null,
       }));
       return;
     }
@@ -573,6 +576,12 @@ export default function SIForm() {
     return new Date(end).getTime() >= new Date(start).getTime();
   }
 
+  const instalacaoSelecionada = subestacoes.find(
+    (item) => Number(item.id_subestacao) === Number(form.id_subestacao)
+  );
+  const permiteSILinhaInteira =
+    instalacaoSelecionada?.tipo_instalacao === "LINHA_TRANSMISSAO";
+
   function validarFormulario() {
     if (!form.numero_os?.trim()) {
       toast.error("Informe o número da OS.");
@@ -584,8 +593,13 @@ export default function SIForm() {
       return false;
     }
 
-    if (!form.id_ativo && !form.id_grupo_ativo) {
-      toast.error("Selecione o ativo.");
+    const linhaInteiraSelecionada =
+      permiteSILinhaInteira &&
+      form.escopo_ativo === "FUNCAO" &&
+      !!form.id_funcao_operacao;
+
+    if (!form.id_ativo && !form.id_grupo_ativo && !linhaInteiraSelecionada) {
+      toast.error("Selecione o ativo ou a linha de transmissão.");
       return false;
     }
 
@@ -942,6 +956,8 @@ export default function SIForm() {
           <FormGroup>
             <SelecaoHierarquicaAtivo
               idSubestacao={form.id_subestacao}
+              nomeInstalacao={instalacaoSelecionada?.nome}
+              permiteFuncaoCompleta={permiteSILinhaInteira}
               value={form}
               onChange={(selecionado) => setForm((atual) => ({ ...atual, ...selecionado }))}
             />

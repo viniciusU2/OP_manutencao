@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import {
@@ -14,11 +14,11 @@ import {
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import type { Usuario } from "../context/AuthContext";
-import background from "../assets/fundo.jpeg";
+import background from "../assets/fundo-tratado.png";
 import ElectricianMascot from "../components/ElectricianMascot";
 
 /* =========================================================
-   ANIMAÇÃO DO HERO
+   ANIMAÃ‡ÃƒO DO HERO
 ========================================================= */
 
 const heroRotate = keyframes`
@@ -527,12 +527,12 @@ export function LoginPage() {
 
       if (!error?.response) {
         setErro(
-          "Não foi possível conectar ao backend. Verifique a API e o CORS.",
+          "NÃ£o foi possÃ­vel conectar ao backend. Verifique a API e o CORS.",
         );
         return;
       }
 
-      setErro("E-mail ou senha inválidos.");
+      setErro("E-mail ou senha invÃ¡lidos.");
     }
   }
 
@@ -549,7 +549,7 @@ export function LoginPage() {
             <strong>ENGVI</strong>
 
             <span>
-              Gestão da Vida e Integridade dos Ativos
+              GestÃ£o da Vida e Integridade dos Ativos
             </span>
           </BrandText>
         </Brand>
@@ -560,8 +560,8 @@ export function LoginPage() {
             <HeroFace>
        
               <p>
-                Centralize informações, acompanhe atividades e
-                mantenha a rastreabilidade da manutenção dos ativos.
+                Centralize informaÃ§Ãµes, acompanhe atividades e
+                mantenha a rastreabilidade da manutenÃ§Ã£o dos ativos.
               </p>
 
               <Signals>
@@ -572,7 +572,7 @@ export function LoginPage() {
 
                 <Signal>
                   <BarChart3 size={16} />
-                  Indicadores de manutenção
+                  Indicadores de manutenÃ§Ã£o
                 </Signal>
               </Signals>
             </HeroFace>
@@ -581,7 +581,7 @@ export function LoginPage() {
             <HeroFace $back>
               <HeroEyebrow>
                 <Wrench size={15} />
-                Gestão inteligente
+                GestÃ£o inteligente
               </HeroEyebrow>
 
         
@@ -590,22 +590,22 @@ export function LoginPage() {
               <ModuleGrid>
                 <ModuleCard>
                   <ClipboardCheck size={18} />
-                  Ordens de serviço
+                  Ordens de serviÃ§o
                 </ModuleCard>
 
                 <ModuleCard>
                   <History size={18} />
-                  Histórico dos ativos
+                  HistÃ³rico dos ativos
                 </ModuleCard>
 
                 <ModuleCard>
                   <Wrench size={18} />
-                  Planos de manutenção
+                  Planos de manutenÃ§Ã£o
                 </ModuleCard>
 
                 <ModuleCard>
                   <ShieldCheck size={18} />
-                  Segurança operacional
+                  SeguranÃ§a operacional
                 </ModuleCard>
               </ModuleGrid>
             </HeroFace>
@@ -621,7 +621,7 @@ export function LoginPage() {
         <FormWrap>
           <Title>
             <h2>Entrar</h2>
-            <p>Acesse sua área de trabalho.</p>
+            <p>Acesse sua Ã¡rea de trabalho.</p>
           </Title>
 
           <form onSubmit={handleLogin}>
@@ -679,7 +679,7 @@ export function LoginPage() {
           </form>
 
           <RegisterText>
-            Não tem uma conta?{" "}
+            NÃ£o tem uma conta?{" "}
             <button
               type="button"
               onClick={() => navigate("/register")}
@@ -692,3 +692,4 @@ export function LoginPage() {
     </Page>
   );
 }
+

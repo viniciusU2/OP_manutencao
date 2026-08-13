@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import styled from "styled-components";
-import background from "../assets/fundo.jpeg";
+import background from "../assets/fundo-tratado.png";
 
 const Page = styled.main`
   min-height:100vh; display:grid; place-items:center; padding:24px; position:relative;
@@ -20,7 +20,8 @@ const Brand = styled.div`
 
 export function PasswordRecoveryLayout({ children }: { children: ReactNode }) {
   return <Page><Card>
-    <Brand><img src="/icone-v.svg" alt="ENGVI"/><div><strong>ENGVI</strong><span>Gestão da Vida e Integridade dos Ativos</span></div></Brand>
+    <Brand><img src="/icone-v.svg" alt="ENGVI"/><div><strong>ENGVI</strong><span>GestÃ£o da Vida e Integridade dos Ativos</span></div></Brand>
     {children}
   </Card></Page>;
 }
+
