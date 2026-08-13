@@ -10,6 +10,10 @@ import { filtroInicialInstalacao } from "../lib/instalacaoPreferida";
 import { usePersistentSearch } from "../lib/usePersistentSearch";
 import type { TipoAtivo } from "../types/TipoAtivo";
 import { FilterPageFrame, FilterSidebar } from "../components/FilterSidebar";
+import { AdvancedDocumentFilters, type AdvancedFilter } from "../components/AdvancedDocumentFilters";
+import { PreventiveProgressStrip } from "../components/PreventiveProgressStrip";
+
+const osFilterFields = ["numero_os","numero_si","numero_ss","numero_apr","id_ativo","id_grupo_ativo","id_subestacao","origem","especie","instalacao","localizacao","complemento","origens","defeito","esquema_servicos","prioridade","responsavel","responsavel_manutencao","responsavel_operacao","substituto","descricao_servicos","observacoes","causa_primaria","causa_secundaria","emissor","editado_por","data_abertura_ss","data_inicio_programado","data_fim_programado","data_inicio_execucao","data_fim_execucao","centro_custos","status","criado_em"].map(value=>({value,label:value.replaceAll("_"," ")}));
 
 
 
@@ -118,6 +122,7 @@ export default function ControleOrdemServicoPage() {
   const [tiposAtivo, setTiposAtivo] = useState<TipoAtivo[]>([]);
   const [tipoEquipamento, setTipoEquipamento] = useState("all");
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(true);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilter[]>([]);
   const navigate = useNavigate();
 
   
@@ -147,6 +152,7 @@ export default function ControleOrdemServicoPage() {
 
   return (
     <FilterPageFrame $filtersOpen={filtrosVisiveis}><Container>
+      <PreventiveProgressStrip subestacao={subestacaoSelecionada} />
 
       <PageHeader>
         <TitleBlock>
@@ -243,6 +249,7 @@ export default function ControleOrdemServicoPage() {
     </option>
   ))}
 </Select></FilterField>
+        <AdvancedDocumentFilters fields={osFilterFields} value={advancedFilters} onChange={setAdvancedFilters}/>
 
 
       </>}>
@@ -252,6 +259,7 @@ export default function ControleOrdemServicoPage() {
         subestacao={subestacaoSelecionada}
         esquema_servicos={esquema_servicos}
         tipoEquipamento={tipoEquipamento}
+        advancedFilters={advancedFilters}
       />
       </FilterSidebar>
 

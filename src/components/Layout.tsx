@@ -18,6 +18,7 @@ import {
   Wrench,
   ListChecks,
   Workflow
+  ,ChevronDown
 } from "lucide-react"
 
 import { useAuth } from "../context/AuthContext"
@@ -29,42 +30,47 @@ import {
   isOperator,
 } from "../lib/permissions"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
+import { Button } from "./ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "./ui/dropdown-menu"
 
 /* ================= CONFIG ================= */
 
 const SIDEBAR_EXPANDED = 260
-const SIDEBAR_COLLAPSED = 80
-
 /* ================= STYLES ================= */
 
 const Container = styled.div<{ $collapsed: boolean }>`
   display: flex;
   min-height: 100vh;
   background: #f1f5f9;
-  --app-sidebar-width: ${({ $collapsed }) => $collapsed ? `${SIDEBAR_COLLAPSED}px` : `${SIDEBAR_EXPANDED}px`};
+  --app-sidebar-width: 0px;
 `
 
 const Sidebar = styled.aside<{ $open: boolean; $collapsed: boolean }>`
-  width: ${({ $collapsed }) =>
-    $collapsed ? `${SIDEBAR_COLLAPSED}px` : `${SIDEBAR_EXPANDED}px`};
+  width: 100%;
 
-  background: #0f172a;
-  color: white;
+  background: #e8eef6;
+  color: #0f172a;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   position: fixed;
-  height: 100vh;
-  max-width: min(${SIDEBAR_EXPANDED}px, 86vw);
+  height: 64px;
+  max-width: none;
   overflow: hidden;
   z-index: 50;
 
   transition: all 0.25s ease;
-  box-shadow: 4px 0 18px rgba(15, 23, 42, 0.12);
+  border-bottom: 1px solid #cbd5e1;
+  box-shadow: 0 3px 14px rgba(15, 23, 42, 0.07);
 
   @media (max-width: 768px) {
     transform: ${({ $open }) =>
       $open ? "translateX(0)" : "translateX(-100%)"};
     width: ${SIDEBAR_EXPANDED}px;
+    height: 100vh;
+    max-width: min(${SIDEBAR_EXPANDED}px, 86vw);
+    flex-direction: column;
+    align-items: stretch;
   }
 `
 
@@ -81,15 +87,16 @@ const Overlay = styled.div<{ $open: boolean }>`
 `
 
 const Logo = styled.div<{ $collapsed: boolean }>`
-  height: 70px;
+  height: 64px;
   display: flex;
   align-items: center;
-  justify-content: ${({ $collapsed }) =>
-    $collapsed ? "center" : "flex-start"};
+  justify-content: flex-start;
   gap: 12px;
-  padding: 0 22px;
-  border-bottom: 1px solid #1e293b;
-  font-weight: bold;
+  min-width: 142px;
+  padding: 0 20px;
+  border-right: 1px solid #cbd5e1;
+  font-weight: 700;
+  letter-spacing: .02em;
 
   @media (max-width: 768px) {
     justify-content: flex-start;
@@ -102,10 +109,13 @@ const LogoIcon = styled.svg`
   flex: 0 0 26px;
   border-radius: 7px;
   object-fit: contain;
+  padding: 4px;
+  border-radius: 8px;
+  background: #0f172a;
 `
 
 const LogoText = styled.span<{ $collapsed: boolean }>`
-  display: ${({ $collapsed }) => ($collapsed ? "none" : "inline")};
+  display: inline;
 
   @media (max-width: 768px) {
     display: inline;
@@ -113,14 +123,14 @@ const LogoText = styled.span<{ $collapsed: boolean }>`
 `
 
 const Nav = styled.nav`
-  padding: 20px 12px;
+  padding: 8px 16px;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  gap: 8px;
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  scrollbar-color: #475569 #0f172a;
+  overflow-x: auto;
+  scrollbar-color: #cbd5e1 #ffffff;
   scrollbar-width: thin;
 
   &::-webkit-scrollbar {
@@ -128,17 +138,24 @@ const Nav = styled.nav`
   }
 
   &::-webkit-scrollbar-track {
-    background: #0f172a;
+    background: #e8eef6;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #475569;
-    border: 2px solid #0f172a;
+    background: #cbd5e1;
+    border: 2px solid #e8eef6;
     border-radius: 999px;
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    background: #64748b;
+    background: #94a3b8;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding: 20px 12px;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 `
 
@@ -146,26 +163,26 @@ const NavItem = styled(Link)<{ $active?: boolean; $collapsed?: boolean }>`
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 14px;
-  border-radius: 8px;
+  padding: 9px 11px;
+  border-radius: 9px;
   text-decoration: none;
   font-size: 14px;
   position: relative;
 
-  justify-content: ${({ $collapsed }) =>
-    $collapsed ? "center" : "flex-start"};
+  justify-content: center;
+  white-space: nowrap;
 
-  color: ${(p) => (p.$active ? "#60a5fa" : "#94a3b8")};
+  color: ${(p) => (p.$active ? "#2563eb" : "#64748b")};
   background: ${(p) =>
-    p.$active ? "rgba(59,130,246,0.08)" : "transparent"};
+    p.$active ? "#eff6ff" : "transparent"};
 
   &:hover {
-    background: #1e293b;
-    color: white;
+    background: #ffffff;
+    color: #0f172a;
   }
 
   span {
-    display: ${({ $collapsed }) => ($collapsed ? "none" : "inline")};
+    display: inline;
   }
 
   &::before {
@@ -191,19 +208,33 @@ const NavItem = styled(Link)<{ $active?: boolean; $collapsed?: boolean }>`
   }
 `
 
+const DesktopNav = styled.div`display:flex;align-items:center;gap:6px;@media(max-width:768px){display:none;}`
+const MobileNav = styled.div`display:none;@media(max-width:768px){display:contents;}`
+
 const Footer = styled.div`
   flex-shrink: 0;
-  border-top: 1px solid #1e293b;
-  padding: 16px;
+  border-left: 1px solid #cbd5e1;
+  min-width: 190px;
+  padding: 7px 14px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+
+  @media (max-width: 768px) {
+    display: block;
+    padding: 16px;
+    border-left: 0;
+    border-top: 1px solid #e2e8f0;
+  }
 `
 
 const UserBox = styled.div<{ $collapsed: boolean }>`
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
-  justify-content: ${({ $collapsed }) =>
-    $collapsed ? "center" : "flex-start"};
+  margin-bottom: 0;
+  justify-content: flex-start;
+  padding: 3px 5px;
 
   @media (max-width: 768px) {
     justify-content: flex-start;
@@ -211,7 +242,7 @@ const UserBox = styled.div<{ $collapsed: boolean }>`
 `
 
 const UserInfo = styled.div<{ $collapsed: boolean }>`
-  display: ${({ $collapsed }) => ($collapsed ? "none" : "grid")};
+  display: grid;
   gap: 2px;
 
   span {
@@ -219,7 +250,7 @@ const UserInfo = styled.div<{ $collapsed: boolean }>`
   }
 
   small {
-    color: #94a3b8;
+    color: #64748b;
     font-size: 11px;
     text-transform: capitalize;
   }
@@ -230,12 +261,12 @@ const UserInfo = styled.div<{ $collapsed: boolean }>`
 `
 
 const LogoutButton = styled.button<{ $collapsed: boolean }>`
-  width: 100%;
-  background: #ef4444;
-  border: none;
-  color: white;
-  padding: 8px;
-  border-radius: 6px;
+  width: auto;
+  background: transparent;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 7px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
 
@@ -243,9 +274,10 @@ const LogoutButton = styled.button<{ $collapsed: boolean }>`
   align-items: center;
   justify-content: center;
   gap: 6px;
+  &:hover { background: #fef2f2; color:#b91c1c; }
 
   span {
-    display: ${({ $collapsed }) => ($collapsed ? "none" : "inline")};
+    display: none;
   }
 
   @media (max-width: 768px) {
@@ -258,8 +290,8 @@ const LogoutButton = styled.button<{ $collapsed: boolean }>`
 const Content = styled.main<{ $collapsed: boolean }>`
   flex: 1;
   min-width: 0;
-  margin-left: ${({ $collapsed }) =>
-    $collapsed ? `${SIDEBAR_COLLAPSED}px` : `${SIDEBAR_EXPANDED}px`};
+  margin-left: 0;
+  margin-top: 64px;
 
   background: #f1f5f9;
   padding: clamp(20px, 3vw, 40px);
@@ -267,6 +299,7 @@ const Content = styled.main<{ $collapsed: boolean }>`
 
   @media (max-width: 768px) {
     margin-left: 0;
+    margin-top: 0;
     padding: 74px 14px 20px;
   }
 
@@ -342,9 +375,7 @@ const CollapseButton = styled.button`
   cursor: pointer;
   color: #ffffff;
 
-  @media (max-width: 768px) {
-    display: none;
-  }
+  display:none;
 `
 
 /* ================= MENU ================= */
@@ -366,6 +397,13 @@ const menu = [
   { name: "Perfis", path: "/perfis", icon: UserCog, restricted: true, adminOnly: true },
 
 
+]
+
+const menuGroups = [
+  { name: "Cadastros", paths: ["/subestacaoPage", "/ativo", "/funcoes-operacao"] },
+  { name: "OS-SS-SI", paths: ["/controle", "/ss", "/si", "/rdo", "/sobreaviso"] },
+  { name: "Plano manutenção", paths: ["/planos-manutencao", "/planos-manutencao/execucoes", "/inspecoes"] },
+  { name: "Administração", paths: ["/downloads", "/perfis"] },
 ]
 
 /* ================= COMPONENT ================= */
@@ -412,7 +450,7 @@ export default function Layout() {
             <polygon points="580,116 656,116 603,450 684,450 568,916 520,916 565,504 486,504" fill="#FFFFFF" opacity="0.38" />
             <polygon points="593,138 636,138 588,462 652,462 561,892 540,892 582,490 518,490" fill="#FFFFFF" />
           </LogoIcon>
-          <LogoText $collapsed={collapsed}>O&amp;M</LogoText>
+          <LogoText $collapsed={collapsed}>ENGVI</LogoText>
         </Logo>
 
         <CollapseButton type="button" onClick={toggleCollapse} aria-label={collapsed ? "Expandir menu" : "Recolher menu"}>
@@ -420,7 +458,28 @@ export default function Layout() {
         </CollapseButton>
 
         <Nav>
-          {visibleMenu.map((item) => {
+          <DesktopNav>
+            {visibleMenu.filter(item => item.path === "/").map((item) => {
+              const Icon=item.icon; return <NavItem key={item.path} to={item.path} $active={activePath===item.path} $collapsed={false}><Icon size={18}/><span>{item.name}</span></NavItem>
+            })}
+            {menuGroups.map(group => {
+              const items=visibleMenu.filter(item=>group.paths.includes(item.path));
+              if(!items.length)return null;
+              const groupActive=items.some(item=>item.path===activePath);
+              return <DropdownMenu key={group.name}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className={`h-9 gap-1.5 px-3 text-sm hover:bg-white/80 hover:text-slate-950 ${groupActive ? "bg-white text-blue-700 shadow-sm" : "text-slate-700"}`}>
+                    {group.name}<ChevronDown className="size-3.5 opacity-70" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuLabel>{group.name}</DropdownMenuLabel>
+                  {items.map(item=>{const Icon=item.icon;return <DropdownMenuItem key={item.path} asChild className={activePath===item.path?"bg-blue-50 text-blue-600":""}><Link to={item.path}><Icon size={17}/><span>{item.name}</span></Link></DropdownMenuItem>})}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            })}
+          </DesktopNav>
+          <MobileNav>{visibleMenu.map((item) => {
             const Icon = item.icon
             const active = activePath === item.path
 
@@ -436,7 +495,7 @@ export default function Layout() {
                 <span>{item.name}</span>
               </NavItem>
             )
-          })}
+          })}</MobileNav>
         </Nav>
 
         <Footer>

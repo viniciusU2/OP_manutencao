@@ -4,6 +4,7 @@ import type { OrdemServico } from "../types/OrdemServico";
 import { DataTable } from "../components/ui/data-table";
 import { columns } from "../components/os/columns";
 import { DeleteModal } from "../components/DeleteModal";
+import type { AdvancedFilter } from "../components/AdvancedDocumentFilters";
 
 interface Props {
   search: string;
@@ -11,9 +12,10 @@ interface Props {
   subestacao: string;
   esquema_servicos:string;
   tipoEquipamento: string;
+  advancedFilters: AdvancedFilter[];
 }
 
-export function OsPage1({ search, status, subestacao, esquema_servicos, tipoEquipamento }: Props) {
+export function OsPage1({ search, status, subestacao, esquema_servicos, tipoEquipamento, advancedFilters }: Props) {
 
   const [data, setData] = useState<OrdemServico[]>([]);
   const [loading, setLoading] = useState(true);
@@ -141,7 +143,7 @@ async function baixarOS(os: OrdemServico) {
 
   useEffect(() => {
     setPage(1);
-  }, [search, status, subestacao, esquema_servicos, tipoEquipamento]);
+  }, [search, status, subestacao, esquema_servicos, tipoEquipamento, advancedFilters]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -157,6 +159,8 @@ async function baixarOS(os: OrdemServico) {
             id_subestacao: subestacao === "all" ? undefined : Number(subestacao),
             esquema_servicos: esquema_servicos === "all" ? undefined : esquema_servicos,
             id_tipo_ativo: tipoEquipamento === "all" ? undefined : Number(tipoEquipamento),
+            filter_field: advancedFilters.filter(f=>f.value.trim()).map(f=>f.field),
+            filter_value: advancedFilters.filter(f=>f.value.trim()).map(f=>f.value),
           },
           signal: controller.signal,
         });
@@ -177,7 +181,7 @@ async function baixarOS(os: OrdemServico) {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [page, search, status, subestacao, esquema_servicos, tipoEquipamento, refreshKey]);
+  }, [page, search, status, subestacao, esquema_servicos, tipoEquipamento, advancedFilters, refreshKey]);
 
   /* ===============================
      FILTROS

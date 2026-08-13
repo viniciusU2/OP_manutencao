@@ -4,15 +4,17 @@ import { DataTable } from "../components/ui/data-table";
 import { columns } from "../components/si/columns";
 import { toast } from "sonner";
 import type { SI } from "../types/SI";
+import type { AdvancedFilter } from "../components/AdvancedDocumentFilters";
 
 interface Props {
   search: string;
   status: string;
   subestacao: string;
   tipoEquipamento: string;
+  advancedFilters: AdvancedFilter[];
 }
 
-export function SIPage1({ search, status, subestacao, tipoEquipamento }: Props) {
+export function SIPage1({ search, status, subestacao, tipoEquipamento, advancedFilters }: Props) {
   const [data, setData] = useState<SI[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -67,7 +69,7 @@ async function baixarSI(si: SI) {
 
   useEffect(() => {
     setPage(1);
-  }, [search, status, subestacao, tipoEquipamento]);
+  }, [search, status, subestacao, tipoEquipamento, advancedFilters]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -82,6 +84,8 @@ async function baixarSI(si: SI) {
             status: status === "all" ? undefined : status,
             id_subestacao: subestacao === "all" ? undefined : Number(subestacao),
             id_tipo_ativo: tipoEquipamento === "all" ? undefined : Number(tipoEquipamento),
+            filter_field: advancedFilters.filter(f=>f.value.trim()).map(f=>f.field),
+            filter_value: advancedFilters.filter(f=>f.value.trim()).map(f=>f.value),
           },
           signal: controller.signal,
         });
@@ -98,7 +102,7 @@ async function baixarSI(si: SI) {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [page, search, status, subestacao, tipoEquipamento, refreshKey]);
+  }, [page, search, status, subestacao, tipoEquipamento, advancedFilters, refreshKey]);
 
   if (loading) return <div className="p-6 text-gray-500">Carregando SI...</div>;
 

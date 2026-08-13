@@ -281,6 +281,12 @@ const Fill = styled.div<{ $width: number }>`
   background: #2563eb;
 `;
 
+const PreventiveChart = styled.div`display:grid;grid-template-columns:repeat(2,minmax(120px,220px));justify-content:center;align-items:end;gap:clamp(24px,8vw,90px);min-height:260px;padding:28px 20px 20px;`;
+const PreventiveColumn = styled.div`display:grid;grid-template-rows:28px 190px auto;gap:8px;text-align:center;strong{color:#0f172a;font-size:22px;}span{color:#475569;font-size:13px;font-weight:600;}`;
+const PreventiveTrack = styled.div`display:flex;align-items:flex-end;height:190px;border-radius:10px 10px 4px 4px;background:#f1f5f9;overflow:hidden;`;
+const PreventiveBar = styled.div<{ $height:number; $variant:"done"|"pending" }>`width:100%;height:${({$height})=>$height}%;min-height:${({$height})=>$height>0?"8px":"0"};border-radius:10px 10px 0 0;background:${({$variant})=>$variant==="done"?"linear-gradient(180deg,#22c55e,#15803d)":"linear-gradient(180deg,#f59e0b,#d97706)"};transition:height .3s ease;`;
+const PreventiveLegend = styled.div`display:flex;justify-content:center;gap:18px;padding:0 16px 18px;color:#64748b;font-size:12px;span{display:flex;align-items:center;gap:6px;}i{width:9px;height:9px;border-radius:999px;}`;
+
 const Empty = styled.div`
   padding: 26px 16px;
   color: #64748b;
@@ -611,6 +617,7 @@ export function Dashboard() {
   const [periodoEmissores, setPeriodoEmissores] = useState(3);
   const [responsavelGraficoOS, setResponsavelGraficoOS] = useState<"emissor" | "editor">("emissor");
   const [documentoGrafico, setDocumentoGrafico] = useState<"ss" | "os" | "si">("ss");
+  const [esquemaPreventiva, setEsquemaPreventiva] = useState("PREVENTIVA SEMANAL");
 
   async function fetchData() {
     setLoading(true);
@@ -683,6 +690,14 @@ export function Dashboard() {
 
     return { osAbertas, ssAbertas, siPendentes, ativosAtivos };
   }, [filtered]);
+
+  const comparativoPreventivas = useMemo(() => {
+    const ordens = filtered.os.filter(item => (item.esquema_servicos || "").trim().toLocaleUpperCase("pt-BR") === esquemaPreventiva);
+    const encerradas = ordens.filter(item => ["ENCERRADA", "CONCLUIDA", "CONCLUÍDA"].includes((item.status || "").toLocaleUpperCase("pt-BR"))).length;
+    const pendentes = ordens.filter(item => ["ABERTA", "PROGRAMADA", "EM_EXECUCAO", "EM EXECUÇÃO", "EM_EXECUÇÃO"].includes((item.status || "").toLocaleUpperCase("pt-BR"))).length;
+    const maximo = Math.max(encerradas, pendentes, 1);
+    return { encerradas, pendentes, maximo, total: encerradas + pendentes };
+  }, [filtered.os, esquemaPreventiva]);
 
   const osStatus = useMemo(() => statusCounts(filtered.os), [filtered.os]);
   const maxOsStatus = Math.max(1, ...Object.values(osStatus));
@@ -1268,6 +1283,30 @@ export function Dashboard() {
             </SliderMarks>
           </DateSlider>
         </IssuerChartContent>
+      </Panel>
+
+      <Panel>
+        <PanelHeader>
+          <h2><Wrench size={18} />Execução das preventivas</h2>
+          <HeaderActions>
+            <span>{comparativoPreventivas.total} OS no comparativo</span>
+            <ChartSelect value={esquemaPreventiva} onChange={event => setEsquemaPreventiva(event.target.value)} aria-label="Periodicidade da preventiva">
+              <option value="PREVENTIVA SEMANAL">Semanal</option>
+              <option value="PREVENTIVA MENSAL">Mensal</option>
+              <option value="PREVENTIVA BIMESTRAL">Bimestral</option>
+              <option value="PREVENTIVA TRIMESTRAL">Trimestral</option>
+              <option value="PREVENTIVA SEMESTRAL">Semestral</option>
+              <option value="PREVENTIVA ANUAL">Anual</option>
+            </ChartSelect>
+          </HeaderActions>
+        </PanelHeader>
+        {comparativoPreventivas.total === 0 ? <Empty>Nenhuma OS encontrada para essa periodicidade.</Empty> : <>
+          <PreventiveChart>
+            <PreventiveColumn><strong>{comparativoPreventivas.encerradas}</strong><PreventiveTrack><PreventiveBar $variant="done" $height={(comparativoPreventivas.encerradas/comparativoPreventivas.maximo)*100}/></PreventiveTrack><span>Encerradas</span></PreventiveColumn>
+            <PreventiveColumn><strong>{comparativoPreventivas.pendentes}</strong><PreventiveTrack><PreventiveBar $variant="pending" $height={(comparativoPreventivas.pendentes/comparativoPreventivas.maximo)*100}/></PreventiveTrack><span>Abertas / programadas / em execução</span></PreventiveColumn>
+          </PreventiveChart>
+          <PreventiveLegend><span><i style={{background:"#16a34a"}}/>Concluídas</span><span><i style={{background:"#d97706"}}/>Pendentes</span></PreventiveLegend>
+        </>}
       </Panel>
 
       <ContentGrid>

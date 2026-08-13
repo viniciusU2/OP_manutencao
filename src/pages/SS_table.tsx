@@ -4,6 +4,7 @@ import { DataTable } from "../components/ui/data-table";
 import { columns } from "../components/ss/columns";
 import { toast } from "sonner";
 import type { SS } from "../types/SS";
+import type { AdvancedFilter } from "../components/AdvancedDocumentFilters";
 
 interface Props {
   search: string;
@@ -11,6 +12,7 @@ interface Props {
   subestacao: string;
   prazo: string;
   tipoEquipamento: string;
+  advancedFilters: AdvancedFilter[];
   refreshToken?: number;
 }
 
@@ -20,6 +22,7 @@ export function SSPage1({
   subestacao,
   prazo,
   tipoEquipamento,
+  advancedFilters,
   refreshToken = 0,
 }: Props) {
   const [data, setData] = useState<SS[]>([]);
@@ -66,7 +69,7 @@ export function SSPage1({
 
   useEffect(() => {
     setPage(1);
-  }, [search, status, subestacao, prazo, tipoEquipamento]);
+  }, [search, status, subestacao, prazo, tipoEquipamento, advancedFilters]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -82,6 +85,8 @@ export function SSPage1({
             id_subestacao: subestacao === "all" ? undefined : Number(subestacao),
             prazo: prazo === "all" ? undefined : prazo,
             id_tipo_ativo: tipoEquipamento === "all" ? undefined : Number(tipoEquipamento),
+            filter_field: advancedFilters.filter(f=>f.value.trim()).map(f=>f.field),
+            filter_value: advancedFilters.filter(f=>f.value.trim()).map(f=>f.value),
           },
           signal: controller.signal,
         });
@@ -98,7 +103,7 @@ export function SSPage1({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [page, search, status, subestacao, prazo, tipoEquipamento, refreshKey, refreshToken]);
+  }, [page, search, status, subestacao, prazo, tipoEquipamento, advancedFilters, refreshKey, refreshToken]);
 
   if (loading) return <div className="p-6 text-gray-500">Carregando SS...</div>;
 
