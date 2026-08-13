@@ -13,6 +13,7 @@ import type { TipoAtivo } from "../types/TipoAtivo";
 import { FilterPageFrame, FilterSidebar } from "../components/FilterSidebar";
 import { AdvancedDocumentFilters, type AdvancedFilter } from "../components/AdvancedDocumentFilters";
 import { PreventiveProgressStrip } from "../components/PreventiveProgressStrip";
+import { hasPersistentFilter, usePersistentFilter } from "../lib/usePersistentFilter";
 
 const ssFilterFields=["numero_ss","numero_os","data_hora_solicitacao","data_hora_abertura","data_hora_limite","solicitante","matricula","funcao","telefone","email","orgao","instalacao","localizacao","complemento","id_ativo","id_grupo_ativo","esquema_servico","centro_custo","causa","causa_secundaria","equipe","descricao_problema","prioridade","status","emissor","editado_por"].map(value=>({value,label:value.replaceAll("_"," ")}));
 
@@ -94,15 +95,15 @@ export function SSPage() {
   const { usuario } = useAuth();
   const [search, setSearch] = usePersistentSearch("ss");
   const [subestacao, setSubestacao] = useState<Subestacao[]>([]);
-  const [subestacaoSelecionada, setSubestacaoSelecionada] = useState("all");
-  const [status, setStatus] = useState("all");
-  const [prazo, setPrazo] = useState("all");
+  const [subestacaoSelecionada, setSubestacaoSelecionada] = usePersistentFilter("ss", "instalacao", "all");
+  const [status, setStatus] = usePersistentFilter("ss", "status", "all");
+  const [prazo, setPrazo] = usePersistentFilter("ss", "prazo", "all");
   const [importando, setImportando] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [tiposAtivo, setTiposAtivo] = useState<TipoAtivo[]>([]);
-  const [tipoEquipamento, setTipoEquipamento] = useState("all");
-  const [filtrosVisiveis, setFiltrosVisiveis] = useState(true);
-  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilter[]>([]);
+  const [tipoEquipamento, setTipoEquipamento] = usePersistentFilter("ss", "tipo-equipamento", "all");
+  const [filtrosVisiveis, setFiltrosVisiveis] = usePersistentFilter("ss", "painel-aberto", true);
+  const [advancedFilters, setAdvancedFilters] = usePersistentFilter<AdvancedFilter[]>("ss", "avancados", []);
 
   const totalFiltrosAtivos = [
     search.trim(),
@@ -168,7 +169,7 @@ export function SSPage() {
     }, []);
 
     useEffect(() => {
-      setSubestacaoSelecionada(filtroInicialInstalacao(usuario, subestacao));
+      if (!hasPersistentFilter("ss", "instalacao")) setSubestacaoSelecionada(filtroInicialInstalacao(usuario, subestacao));
     }, [subestacao, usuario]);
 
     useEffect(() => {

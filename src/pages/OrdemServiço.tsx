@@ -12,6 +12,7 @@ import type { TipoAtivo } from "../types/TipoAtivo";
 import type { FuncaoOperacao } from "../types/FuncaoOperacao";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
+import { DocumentBackButton } from "../components/DocumentBackButton";
 import UsuarioSelect from "../components/UsuarioSelect";
 import {
   PRIORIDADES_OPERACAO,
@@ -507,6 +508,7 @@ export  function OrdemServicoPage() {
 
   return (
     <Container>
+      <DocumentBackButton to="/controle" label="Voltar para Ordens de Serviço" />
      <PageTitle>
   <h2>
     {isEdicao ? "Editar Ordem de Serviço" : "Nova Ordem de Serviço"}

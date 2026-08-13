@@ -12,6 +12,7 @@ import type { Subestacao } from "../types/Subestacao";
 import type { TipoAtivo } from "../types/TipoAtivo";
 import { especiePorAtivo } from "../lib/documentosOperacao";
 import { useAuth } from "../context/AuthContext";
+import { DocumentBackButton } from "../components/DocumentBackButton";
 
 const PRIORIDADES_SS = [
   { value: "NIVEL_1", label: "Nivel 1 - Emergencial: 0 a 24h" },
@@ -369,6 +370,7 @@ async function salvarOuEditar() {
 }
   return (
     <Container>
+      <DocumentBackButton to="/ss" label="Voltar para Solicitações de Serviço" />
 
       <PageTitle>
         <h2>

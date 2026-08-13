@@ -12,6 +12,7 @@ import { SelecaoHierarquicaAtivo } from "../components/SelecaoHierarquicaAtivo";
 import type { TipoAtivo } from "../types/TipoAtivo";
 import { useAuth } from "../context/AuthContext";
 import UsuarioSelect from "../components/UsuarioSelect";
+import { DocumentBackButton } from "../components/DocumentBackButton";
 import {
   PRIORIDADES_OPERACAO,
   especiePorAtivo,
@@ -777,6 +778,7 @@ export default function SIForm() {
 
   return (
     <Container>
+      <DocumentBackButton to="/si" label="Voltar para Solicitações de Intervenção" />
       <PageTitle>
         <h2>{isEdit ? "Editar SI" : "Nova SI"}</h2>
         <p>Cadastro e controle de solicitação de intervenção</p>
