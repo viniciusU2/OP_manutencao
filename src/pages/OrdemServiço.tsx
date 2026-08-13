@@ -603,6 +603,7 @@ export  function OrdemServicoPage() {
             ) : (
               <SelecaoHierarquicaAtivo
                 idSubestacao={form.id_subestacao}
+                nomeInstalacao={instalacaoSelecionada?.nome}
                 permiteFuncaoCompleta={permiteOSLinhaInteira}
                 value={form}
                 onChange={(selecionado) => setForm((atual) => ({ ...atual, ...selecionado }))}
@@ -635,6 +636,7 @@ export  function OrdemServicoPage() {
             
               <select name="localizacao" onChange={handleChange} value={form.localizacao ?? ""}>
               <option value="">Selecione</option>
+              <option value="LT">LT</option>
               {form.localizacao &&
                 !LOCALIZACOES_FISICAS.some((local) => local.value === form.localizacao) && (
                   <option value={form.localizacao}>{form.localizacao}</option>

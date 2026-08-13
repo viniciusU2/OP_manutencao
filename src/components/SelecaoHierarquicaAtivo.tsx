@@ -10,8 +10,9 @@ type Valor = {
   id_ativo?: number | null;
 };
 
-export function SelecaoHierarquicaAtivo({ idSubestacao, permiteFuncaoCompleta = false, value, onChange }: {
+export function SelecaoHierarquicaAtivo({ idSubestacao, nomeInstalacao, permiteFuncaoCompleta = false, value, onChange }: {
   idSubestacao?: number | null;
+  nomeInstalacao?: string | null;
   permiteFuncaoCompleta?: boolean;
   value: Valor;
   onChange: (value: Valor) => void;
@@ -48,10 +49,10 @@ export function SelecaoHierarquicaAtivo({ idSubestacao, permiteFuncaoCompleta = 
       }}
     >
       <option value="">Selecione</option>
-      {permiteFuncaoCompleta && <option value="FUNCAO">Toda a linha de transmissão</option>}
+      {permiteFuncaoCompleta && <option value="FUNCAO">{nomeInstalacao || "Linha de transmissão"}</option>}
       {grupos.map((item) => <option key={item.id_grupo_ativo} value={item.id_grupo_ativo}>{item.codigo_ativo} — {item.tipo_ativo || "Ativo"}{item.bay ? ` (${item.bay})` : ""}</option>)}
     </select>
-    {value.escopo_ativo === "FUNCAO" && <small style={{ color: "#0f766e" }}>A OS será vinculada à linha inteira, sem ativo individual.</small>}
+    {value.escopo_ativo === "FUNCAO" && <small style={{ color: "#0f766e" }}>A OS será vinculada diretamente à linha, sem ativo individual.</small>}
     {grupo?.inconsistencia_sem_fase && <small style={{ color: "#b45309" }}>Inconsistência: há componentes sem fase. Corrija o cadastro antes de selecionar.</small>}
     {grupo && !grupo.inconsistencia_sem_fase && <>
       <label>Escopo</label>
