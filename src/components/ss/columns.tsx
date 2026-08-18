@@ -1,6 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
-import { ClipboardCheck, Trash2 } from "lucide-react";
+import { ClipboardCheck, Download, Trash2 } from "lucide-react";
 
 import type { SS } from "../../types/SS";
 import { Badge } from "../../components/ui/badge";
@@ -60,7 +60,8 @@ function getPrazo(dataLimite?: string | null) {
 
 export const columns = (
   onDelete: (ss: SS) => void,
-  onAtender: (ss: SS) => void
+  onAtender: (ss: SS) => void,
+  onDownload: (ss: SS) => void
 ): ColumnDef<SS>[] => [
   {
     accessorKey: "numero_ss",
@@ -118,6 +119,16 @@ export const columns = (
     cell: ({ row }) => row.original.editado_por || "-",
   },
   {
+    id: "problemas",
+    header: "Problemas",
+    cell: ({ row }) => {
+      const problemas = row.original.problemas ?? [];
+      if (!problemas.length) return "-";
+      const titulos = problemas.map((item) => item.problema?.titulo).filter(Boolean) as string[];
+      return <span className="block max-w-[240px] truncate" title={titulos.join(", ")}>{titulos.join(", ")}</span>;
+    },
+  },
+  {
     accessorKey: "descricao_problema",
     header: "Descricao",
     cell: ({ row }) => (
@@ -151,6 +162,10 @@ export const columns = (
 
       return (
         <div className="flex gap-2">
+          <Button size="icon" variant="ghost" onClick={() => onDownload(ss)} title="Baixar SS">
+            <Download size={16} />
+          </Button>
+
           <Button
             size="icon"
             variant="ghost"

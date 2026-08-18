@@ -8,6 +8,7 @@ type Valor = {
   id_grupo_ativo?: number | null;
   escopo_ativo?: EscopoAtivo | null;
   id_ativo?: number | null;
+  id_tipo_ativo?: number | null;
 };
 
 export function SelecaoHierarquicaAtivo({ idSubestacao, nomeInstalacao, permiteFuncaoCompleta = false, value, onChange }: {
@@ -45,7 +46,9 @@ export function SelecaoHierarquicaAtivo({ idSubestacao, nomeInstalacao, permiteF
           onChange({ ...value, id_grupo_ativo: null, escopo_ativo: "FUNCAO", id_ativo: null });
           return;
         }
-        onChange({ ...value, id_grupo_ativo: Number(e.target.value) || null, escopo_ativo: null, id_ativo: null });
+        const idGrupo = Number(e.target.value) || null;
+        const selecionado = grupos.find((item) => item.id_grupo_ativo === idGrupo);
+        onChange({ ...value, id_grupo_ativo: idGrupo, id_tipo_ativo: selecionado?.id_tipo_ativo ?? null, escopo_ativo: null, id_ativo: null });
       }}
     >
       <option value="">Selecione</option>

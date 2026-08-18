@@ -45,6 +45,21 @@ export function SSPage1({
     }
   }
 
+  async function baixarSS(ss: SS) {
+    try {
+      const resposta = await api.get(`/ss/${ss.id_ss}/download`, { responseType: "blob" });
+      const url = URL.createObjectURL(resposta.data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${ss.numero_ss || "SS"}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Erro ao baixar a planilha da SS");
+    }
+  }
   async function atenderSS(ss: SS) {
     if (!confirm(`Deseja atender a SS ${ss.numero_ss} e criar uma OS?`)) return;
 
@@ -110,7 +125,7 @@ export function SSPage1({
   return (
     <div className="container mx-auto py-6">
       <DataTable
-        columns={columns(deletarSS, atenderSS)}
+        columns={columns(deletarSS, atenderSS, baixarSS)}
         data={data}
         pagination={{ page, pageSize, total, totalPages, onPageChange: setPage }}
       />

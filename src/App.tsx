@@ -46,6 +46,7 @@ import PerfisPage from "./pages/PerfisPage";
 import RdoPage from "./pages/RdoPage";
 import SobreavisoPage from "./pages/SobreavisoPage";
 import FuncoesOperacaoPage from "./pages/FuncoesOperacaoPage";
+import ProblemasTipicosPage from "./pages/ProblemasTipicosPage";
 import { useGerarOsPlanosManutencao } from "./hooks/useGerarOsPlanosManutencao";
 
 /* ================= STYLES ================= */
@@ -169,6 +170,7 @@ function AppContent() {
           <Route path="/ativo/:id/editar" element={<Ativo />} />
           <Route path="/ativo/:id" element={<AtivoDetalhe />} />
           <Route path="/funcoes-operacao" element={<FuncoesOperacaoPage />} />
+          <Route path="/problemas-tipicos" element={<ProblemasTipicosPage />} />
           <Route path="/importar-ativos" element={<ImportarAtivos />} />
           <Route path="/planos-manutencao" element={<PlanosManutencaoPage />} />
           <Route path="/planos-manutencao/execucoes" element={<PlanoExecucoesPage />} />

@@ -1,3 +1,5 @@
+import type { SSProblema } from "./problemaTipico";
+
 export interface SS {
   id?: number;
   id_ss: number;
@@ -30,4 +32,5 @@ export interface SS {
   emissor?: string | null;
   editado_por?: string | null;
   status: string;
+  problemas?: SSProblema[];
 }

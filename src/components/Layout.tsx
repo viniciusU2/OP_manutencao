@@ -19,6 +19,7 @@ import {
   ListChecks,
   Workflow
   ,ChevronDown
+  ,BrainCircuit
 } from "lucide-react"
 
 import { useAuth } from "../context/AuthContext"
@@ -385,6 +386,7 @@ const menu = [
   { name: "Instalações", path: "/subestacaoPage", icon: Building2, restricted: true },
   { name: "Ativos", path: "/ativo", icon: Zap, restricted: true, adminOnly: true },
   { name: "FT", path: "/funcoes-operacao", icon: Workflow, restricted: true, adminOnly: true },
+  { name: "Problemas", path: "/problemas-tipicos", icon: BrainCircuit, restricted: true, adminOnly: true },
   { name: "OS", path: "/controle", icon: ClipboardList, restricted: true },
   { name: "SS", path: "/ss", icon: FileText, restricted: true },
   { name: "SI", path: "/si", icon: Calendar, restricted: true },
@@ -400,7 +402,7 @@ const menu = [
 ]
 
 const menuGroups = [
-  { name: "Cadastros", paths: ["/subestacaoPage", "/ativo", "/funcoes-operacao"] },
+  { name: "Cadastros", paths: ["/subestacaoPage", "/ativo", "/funcoes-operacao", "/problemas-tipicos"] },
   { name: "OS-SS-SI", paths: ["/controle", "/ss", "/si", "/rdo", "/sobreaviso"] },
   { name: "Plano manutenção", paths: ["/planos-manutencao", "/planos-manutencao/execucoes", "/inspecoes"] },
   { name: "Administração", paths: ["/downloads", "/perfis"] },

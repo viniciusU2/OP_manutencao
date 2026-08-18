@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 import api from "../api/api";
 import Container from "../components/Container";
@@ -13,6 +13,8 @@ import type { TipoAtivo } from "../types/TipoAtivo";
 import { especiePorAtivo } from "../lib/documentosOperacao";
 import { useAuth } from "../context/AuthContext";
 import { DocumentBackButton } from "../components/DocumentBackButton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import ProblemasSS from "../components/ProblemasSS";
 
 const PRIORIDADES_SS = [
   { value: "NIVEL_1", label: "Nivel 1 - Emergencial: 0 a 24h" },
@@ -24,6 +26,7 @@ const PRIORIDADES_SS = [
 ];
 
 const LOCALIZACOES_FISICAS = [
+  { value: "LT", label: "Linha de Transmissão (LT)" },
   { value: "Bom Jesus da Lapa-BA", label: "Bom Jesus da Lapa" },
   { value: "Gentio do Ouro-BA", label: "Gentio do Ouro" },
   { value: "Jaiba-MG", label: "Jaiba" },
@@ -192,6 +195,7 @@ export function SSForm() {
     status: "ABERTA",
     emissor: "",
     editado_por: "",
+    problemas: [],
   });
 
   const ativoSelecionadoLista = ativos.find(
@@ -343,8 +347,9 @@ async function salvarOuEditar() {
 
     if (!validarFormulario()) return;
 
-    const { numero_ss: _numeroSs, ...dadosEnvio } = form;
+    const { numero_ss: _numeroSs, id_tipo_ativo: _idTipoAtivo, ...dadosEnvio } = form;
     void _numeroSs;
+    void _idTipoAtivo;
 
     const payload = {
       ...dadosEnvio,
@@ -497,24 +502,31 @@ async function salvarOuEditar() {
 
           <FormGroup>
             <label>Localização Física</label>
-            <select
-              name="localizacao"
-              value={form.localizacao ?? ""}
-              onChange={handleChange}
+            <Select
+              value={form.localizacao || undefined}
+              onValueChange={(localizacao) =>
+                setForm((atual) => ({ ...atual, localizacao }))
+              }
             >
-              <option value="">Selecione</option>
-
-              {form.localizacao &&
-                !LOCALIZACOES_FISICAS.some((local) => local.value === form.localizacao) && (
-                  <option value={form.localizacao}>{form.localizacao}</option>
-                )}
-
-              {LOCALIZACOES_FISICAS.map((local) => (
-                <option key={local.value} value={local.value}>
-                  {local.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full bg-white">
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent position="popper" align="start">
+                {form.localizacao &&
+                  !LOCALIZACOES_FISICAS.some(
+                    (local) => local.value === form.localizacao
+                  ) && (
+                    <SelectItem value={form.localizacao}>
+                      {form.localizacao}
+                    </SelectItem>
+                  )}
+                {LOCALIZACOES_FISICAS.map((local) => (
+                  <SelectItem key={local.value} value={local.value}>
+                    {local.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </FormGroup>
 
 
@@ -531,6 +543,7 @@ async function salvarOuEditar() {
 
 
         {/* DESCRIÇÃO */}
+        <ProblemasSS idTipoAtivo={form.id_tipo_ativo ?? ativoSelecionado?.id_tipo_ativo} value={form.problemas ?? []} onChange={(problemas) => setForm((atual) => ({ ...atual, problemas }))} />
         <SectionTitle>Problema</SectionTitle>
 
         <FormGrid>

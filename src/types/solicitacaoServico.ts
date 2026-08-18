@@ -1,3 +1,5 @@
+import type { SSProblema } from "./problemaTipico"
+
 export interface SolicitacaoServico {
 
 numero_ss: string
@@ -5,6 +7,7 @@ numero_os?: string | null
 
 id_subestacao: number | null
 id_ativo: number | null
+id_tipo_ativo?: number | null
 id_grupo_ativo?: number | null
 id_funcao_operacao?: number | null
 escopo_ativo?: "FUNCAO" | "GRUPO" | "FASE" | null
@@ -39,5 +42,6 @@ data_hora_limite: string
 status: string
 emissor?: string
 editado_por?: string
+problemas?: SSProblema[]
 
 }
