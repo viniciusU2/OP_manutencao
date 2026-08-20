@@ -45,6 +45,7 @@ import DownloadsPage from "./pages/DownloadsPage";
 import PerfisPage from "./pages/PerfisPage";
 import RdoPage from "./pages/RdoPage";
 import SobreavisoPage from "./pages/SobreavisoPage";
+import RelatoriosManutencaoPage from "./pages/RelatoriosManutencaoPage";
 import FuncoesOperacaoPage from "./pages/FuncoesOperacaoPage";
 import ProblemasTipicosPage from "./pages/ProblemasTipicosPage";
 import { useGerarOsPlanosManutencao } from "./hooks/useGerarOsPlanosManutencao";
@@ -144,6 +145,7 @@ function AppContent() {
         <Route element={<RoleRoute allowedRoles={OPERATIONAL_ACCESS_ROLES} />}>
           <Route path="/rdo" element={<RdoPage />} />
           <Route path="/sobreaviso" element={<SobreavisoPage />} />
+          <Route path="/relatorios-manutencao" element={<RelatoriosManutencaoPage />} />
         </Route>
 
         <Route

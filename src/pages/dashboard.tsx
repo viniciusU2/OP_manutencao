@@ -67,6 +67,13 @@ interface Inspecao {
   status_geral?: string;
 }
 
+interface RelatorioManutencao {
+  id_relatorio_manutencao: number;
+  id_subestacao: number;
+  criado_em: string;
+  emissor?: string | null;
+  editado_por?: string | null;
+}
 interface Subestacao {
   id_subestacao: number;
   nome: string;
@@ -609,6 +616,7 @@ export function Dashboard() {
   const [ss, setSS] = useState<SS[]>([]);
   const [si, setSI] = useState<SI[]>([]);
   const [inspecoes, setInspecoes] = useState<Inspecao[]>([]);
+  const [relatorios, setRelatorios] = useState<RelatorioManutencao[]>([]);
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
   const [filtroSubestacao, setFiltroSubestacao] = useState("");
   const [loading, setLoading] = useState(true);
@@ -616,6 +624,7 @@ export function Dashboard() {
   const [periodoInspecoes, setPeriodoInspecoes] = useState(3);
   const [periodoEmissores, setPeriodoEmissores] = useState(3);
   const [responsavelGraficoOS, setResponsavelGraficoOS] = useState<"emissor" | "editor">("emissor");
+  const [responsavelGraficoRelatorio, setResponsavelGraficoRelatorio] = useState<"emissor" | "editor">("emissor");
   const [documentoGrafico, setDocumentoGrafico] = useState<"ss" | "os" | "si">("ss");
   const [esquemaPreventiva, setEsquemaPreventiva] = useState("PREVENTIVA SEMANAL");
 
@@ -624,13 +633,14 @@ export function Dashboard() {
     setError("");
 
     try {
-      const [ativosRes, osRes, ssRes, siRes, subRes, inspecoesRes] = await Promise.all([
+      const [ativosRes, osRes, ssRes, siRes, subRes, inspecoesRes, relatoriosRes] = await Promise.all([
         api.get("/ativo"),
         api.get("/os"),
         api.get("/ss"),
         api.get("/si"),
         api.get("/subestacao"),
         api.get("/inspecoes", { params: { limit: 5000 } }),
+        api.get("/relatorios-manutencao", { params: { page: 1, page_size: 5000 } }),
       ]);
 
       setAtivos(asArray<Ativo>(ativosRes.data));
@@ -639,6 +649,7 @@ export function Dashboard() {
       setSI(asArray<SI>(siRes.data));
       setSubestacoes(asArray<Subestacao>(subRes.data));
       setInspecoes(asArray<Inspecao>(inspecoesRes.data));
+      setRelatorios(asArray<RelatorioManutencao>(relatoriosRes.data));
 
     } catch {
       setError("Nao foi possivel carregar todos os indicadores.");
@@ -679,8 +690,9 @@ export function Dashboard() {
       ss: ss.filter(bySub),
       si: si.filter(bySub),
       inspecoes: inspecoes.filter(bySub),
+      relatorios: relatorios.filter(bySub),
     };
-  }, [ativos, os, ss, si, inspecoes, filtroSubestacao, subestacaoById]);
+  }, [ativos, os, ss, si, inspecoes, relatorios, filtroSubestacao, subestacaoById]);
 
   const totals = useMemo(() => {
     const osAbertas = filtered.os.filter((item) => isOpenStatus(item.status)).length;
@@ -867,6 +879,19 @@ export function Dashboard() {
   }, [filtered.os, periodoEmissores, responsavelGraficoOS]);
 
   const maxOsPorEmissor = Math.max(1, ...osPorEmissor.map((item) => item.quantidade));
+  const relatoriosPorResponsavel = useMemo(() => {
+    const contagens = new Map<string, number>();
+    filtered.relatorios.forEach((relatorio) => {
+      const responsavel = responsavelGraficoRelatorio === "emissor"
+        ? relatorio.emissor?.trim() || "Não informado"
+        : relatorio.editado_por?.trim() || "Não editado";
+      contagens.set(responsavel, (contagens.get(responsavel) || 0) + 1);
+    });
+    return Array.from(contagens, ([emissor, quantidade]) => ({ emissor, quantidade }))
+      .sort((a, b) => b.quantidade - a.quantidade);
+  }, [filtered.relatorios, responsavelGraficoRelatorio]);
+
+  const maxRelatoriosPorResponsavel = Math.max(1, ...relatoriosPorResponsavel.map((item) => item.quantidade));
 
   if (loading) {
     return (
@@ -1287,6 +1312,36 @@ export function Dashboard() {
 
       <Panel>
         <PanelHeader>
+          <h2>
+            <FileText size={18} />
+            {responsavelGraficoRelatorio === "emissor" ? "Emissores dos relatórios" : "Editores dos relatórios"}
+          </h2>
+          <HeaderActions>
+            <span>{filtered.relatorios.length} relatórios</span>
+            <ChartSelect value={responsavelGraficoRelatorio} onChange={(event) => setResponsavelGraficoRelatorio(event.target.value as "emissor" | "editor")} aria-label="Responsável considerado no gráfico de relatórios">
+              <option value="emissor">Emissores</option>
+              <option value="editor">Editores</option>
+            </ChartSelect>
+          </HeaderActions>
+        </PanelHeader>
+        <IssuerChartContent>
+          {relatoriosPorResponsavel.length === 0 ? (
+            <Empty>Nenhum relatório encontrado para a subestação selecionada.</Empty>
+          ) : (
+            <IssuerBars>
+              {relatoriosPorResponsavel.map((item) => (
+                <IssuerRow key={item.emissor} title={`${item.emissor}: ${item.quantidade} relatórios`}>
+                  <span>{item.emissor}</span>
+                  <IssuerTrack><IssuerFill $width={(item.quantidade / maxRelatoriosPorResponsavel) * 100} /></IssuerTrack>
+                  <strong>{item.quantidade}</strong>
+                </IssuerRow>
+              ))}
+            </IssuerBars>
+          )}
+        </IssuerChartContent>
+      </Panel>
+      <Panel>
+        <PanelHeader>
           <h2><Wrench size={18} />Execução das preventivas</h2>
           <HeaderActions>
             <span>{comparativoPreventivas.total} OS no comparativo</span>
@@ -1427,3 +1482,6 @@ export function Dashboard() {
     </Page>
   );
 }
+
+
+

@@ -20,6 +20,7 @@ import {
   Workflow
   ,ChevronDown
   ,BrainCircuit
+  ,Images
 } from "lucide-react"
 
 import { useAuth } from "../context/AuthContext"
@@ -395,6 +396,7 @@ const menu = [
   { name: "Plano Manut.", path: "/planos-manutencao", icon: Wrench, restricted: true, adminOnly: true },
   { name: "Exec. Planos", path: "/planos-manutencao/execucoes", icon: ListChecks, restricted: true, adminOnly: true },
   { name: "Inspeções", path: "/inspecoes", icon: ListChecks, restricted: true },
+  { name: "Relatórios", path: "/relatorios-manutencao", icon: Images, restricted: true },
   { name: "Downloads", path: "/downloads", icon: Download, restricted: true },
   { name: "Perfis", path: "/perfis", icon: UserCog, restricted: true, adminOnly: true },
 
@@ -404,7 +406,7 @@ const menu = [
 const menuGroups = [
   { name: "Cadastros", paths: ["/subestacaoPage", "/ativo", "/funcoes-operacao", "/problemas-tipicos"] },
   { name: "OS-SS-SI", paths: ["/controle", "/ss", "/si", "/rdo", "/sobreaviso"] },
-  { name: "Plano manutenção", paths: ["/planos-manutencao", "/planos-manutencao/execucoes", "/inspecoes"] },
+  { name: "Plano manutenção", paths: ["/planos-manutencao", "/planos-manutencao/execucoes", "/inspecoes", "/relatorios-manutencao"] },
   { name: "Administração", paths: ["/downloads", "/perfis"] },
 ]
 
