@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Archive, CheckCircle2, Download, Eye, FileArchive, Loader2, Pencil, Plus, RefreshCw, Search, Trash2, UploadCloud, X } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "../context/AuthContext";
 
 import api from "../api/api";
 import ReviewEvidenceGrid, { type RevisaoEvidencia } from "../components/ReviewEvidenceGrid";
+import UsuarioSelect from "../components/UsuarioSelect";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
@@ -53,6 +56,17 @@ type Relatorio = {
 };
 
 type PessoaCorpoTecnico = { nome: string; funcao: string };
+const FUNCOES_CORPO_TECNICO = [
+  "Engenheiro(a) Eletricista",
+  "Engenheiro(a) de Manutenção",
+  "Supervisor(a) de Manutenção",
+  "Técnico(a) Eletrotécnico(a)",
+  "Técnico(a) de Manutenção",
+  "Eletricista",
+  "Mantenedor(a)",
+  "Operador(a)",
+  "Auxiliar Técnico(a)",
+];
 
 type ListaRelatorios = { items: Relatorio[]; total: number; page: number; page_size: number };
 
@@ -79,6 +93,8 @@ function formatarBytes(valor: number) {
 }
 
 export default function RelatoriosManutencaoPage() {
+  const navigate = useNavigate();
+  const { usuario } = useAuth();
   const arquivoRef = useRef<HTMLInputElement>(null);
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
   const [tiposAtivo, setTiposAtivo] = useState<TipoAtivo[]>([]);
@@ -112,6 +128,10 @@ export default function RelatoriosManutencaoPage() {
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState("");
 
+  useEffect(() => {
+    if (!usuario?.nome) return;
+    setCorpoTecnico((atual) => atual.map((pessoa, indice) => indice === 0 && !pessoa.nome ? { ...pessoa, nome: usuario.nome } : pessoa));
+  }, [usuario]);
   const carregarRelatorios = useCallback(async () => {
     const { data } = await api.get<ListaRelatorios>("/relatorios-manutencao", { params: { page: 1, page_size: 100 } });
     setRelatorios(data.items);
@@ -298,15 +318,15 @@ export default function RelatoriosManutencaoPage() {
   return (
     <div className="mx-auto w-full max-w-[1720px] px-2 sm:px-4 xl:px-6">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div><h1 className="m-0 text-2xl font-semibold text-slate-900">Relatórios de manutenção</h1><p className="mt-1 text-sm text-slate-500">Envie, analise e acompanhe as evidências fotográficas das inspeções.</p></div>
-        <Button variant="outline" onClick={() => carregarRelatorios().catch(() => toast.error("Falha ao atualizar."))}><RefreshCw size={16} />Atualizar histórico</Button>
+        <div><h1 className="m-0 text-2xl font-semibold text-slate-900">Novo relatório de manutenção</h1><p className="mt-1 text-sm text-slate-500">Preencha os dados, envie o ZIP e revise cada evidência antes de emitir.</p></div>
+        <Button variant="outline" onClick={() => navigate("/relatorios-manutencao")}><RefreshCw size={16} />Voltar ao controle</Button>
       </div>
 
-      <div className="mb-6 grid items-start gap-5 lg:grid-cols-[minmax(360px,0.72fr)_minmax(0,1.8fr)] xl:gap-6">
+      <div className="mb-6 grid gap-6">
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><UploadCloud size={19} />Novo envio</CardTitle><CardDescription>Preencha o contexto da manutenção antes de anexar as fotografias.</CardDescription></CardHeader>
-          <CardContent className="space-y-5">
-            <div className="grid min-w-0 gap-4">
+          <CardHeader className="border-b bg-slate-50/60"><CardTitle className="flex items-center gap-2"><UploadCloud size={19} />Dados do relatório e envio</CardTitle><CardDescription>Preencha o contexto, o corpo técnico e as condições da inspeção antes de anexar as fotografias.</CardDescription></CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-4">
               <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-700">Subestação<select className="h-10 w-full min-w-0 max-w-full rounded-md border border-slate-300 bg-white px-3" value={idSubestacao} onChange={(e) => { setIdSubestacao(e.target.value); setAnalise(null); }}><option value="">Selecione</option>{subestacoes.map((item) => <option key={item.id_subestacao} value={item.id_subestacao}>{item.nome}</option>)}</select></label>
               <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-700">Tipo do ativo<select className="h-10 w-full min-w-0 max-w-full rounded-md border border-slate-300 bg-white px-3" value={idTipoAtivo} onChange={(e) => { setIdTipoAtivo(e.target.value); setAnalise(null); }}><option value="">Selecione</option>{tiposAtivo.map((item) => <option key={item.id_tipo_ativo} value={item.id_tipo_ativo}>{item.nome}</option>)}</select></label>
               <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-700">Periodicidade<select className="h-10 w-full min-w-0 max-w-full rounded-md border border-slate-300 bg-white px-3" value={periodicidade} onChange={(e) => { setPeriodicidade(e.target.value); setAnalise(null); }}><option value="">Selecione</option>{periodicidades.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}</select></label>
@@ -316,13 +336,20 @@ export default function RelatoriosManutencaoPage() {
               <div><h3 className="text-sm font-semibold text-slate-900">Corpo técnico</h3><p className="text-xs text-slate-500">Informe todas as pessoas participantes.</p></div>
               {corpoTecnico.map((pessoa, indice) => (
                 <div key={indice} className="grid gap-2 rounded-md border bg-white p-3 sm:grid-cols-[1fr_1fr_auto]">
-                  <label className="grid gap-1 text-xs font-medium text-slate-600">Nome<Input value={pessoa.nome} onChange={(e) => setCorpoTecnico((atual) => atual.map((item, i) => i === indice ? { ...item, nome: e.target.value } : item))} placeholder="Nome completo" /></label>
-                  <label className="grid gap-1 text-xs font-medium text-slate-600">Função<Input value={pessoa.funcao} onChange={(e) => setCorpoTecnico((atual) => atual.map((item, i) => i === indice ? { ...item, funcao: e.target.value } : item))} placeholder="Função" /></label>
+                  <label className="grid gap-1 text-xs font-medium text-slate-600">Nome
+                    <UsuarioSelect className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm" value={pessoa.nome} onChange={(e) => setCorpoTecnico((atual) => atual.map((item, i) => i === indice ? { ...item, nome: e.target.value } : item))} />
+                  </label>
+                  <label className="grid gap-1 text-xs font-medium text-slate-600">Função
+                    <select className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm" value={pessoa.funcao} onChange={(e) => setCorpoTecnico((atual) => atual.map((item, i) => i === indice ? { ...item, funcao: e.target.value } : item))}>
+                      <option value="">Selecione a função</option>
+                      {FUNCOES_CORPO_TECNICO.map((funcao) => <option key={funcao} value={funcao}>{funcao}</option>)}
+                    </select>
+                  </label>
                   <Button type="button" size="icon" variant="ghost" className="self-end text-red-600" disabled={corpoTecnico.length === 1} onClick={() => setCorpoTecnico((atual) => atual.filter((_, i) => i !== indice))} aria-label="Remover profissional"><Trash2 size={16} /></Button>
                 </div>
               ))}
               <Button type="button" variant="outline" size="sm" onClick={() => setCorpoTecnico((atual) => [...atual, { nome: "", funcao: "" }])}><Plus size={16} />Adicionar pessoa</Button>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <label className="grid gap-1 text-xs font-medium text-slate-600">OS<Input value={numeroOS} onChange={(e) => setNumeroOS(e.target.value)} placeholder="Número da OS" /></label>
                 <label className="grid gap-1 text-xs font-medium text-slate-600">APR<Input value={numeroAPR} onChange={(e) => setNumeroAPR(e.target.value)} placeholder="Número da APR" /></label>
                 <label className="grid gap-1 text-xs font-medium text-slate-600">Período *<Input value={periodoCapa} onChange={(e) => setPeriodoCapa(e.target.value)} /></label>
@@ -353,7 +380,7 @@ export default function RelatoriosManutencaoPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-xl"><Eye size={21} />Revisão das evidências</CardTitle><CardDescription>Classificações de baixa confiança e duplicatas precisam de confirmação.</CardDescription></CardHeader>
+          <CardHeader className="border-b bg-slate-50/60"><CardTitle className="flex items-center gap-2 text-xl"><Eye size={21} />Revisão das evidências</CardTitle><CardDescription>Classificações de baixa confiança e duplicatas precisam de confirmação.</CardDescription></CardHeader>
           <CardContent>
             {!analise ? <div className="grid min-h-64 place-items-center rounded-lg border border-dashed text-center text-sm text-slate-500"><div><Search className="mx-auto mb-2" /><p>Analise um ZIP para revisar as sugestões.</p></div></div> : <div className="space-y-4">
               <ReviewEvidenceGrid
@@ -372,13 +399,19 @@ export default function RelatoriosManutencaoPage() {
         </Card>
       </div>
 
-      <Card>
+      {false && <Card>
         <CardHeader className="gap-3 md:flex-row md:items-center md:justify-between"><div><CardTitle>Histórico de relatórios</CardTitle><CardDescription>{relatorios.length} lote{relatorios.length === 1 ? "" : "s"} registrado{relatorios.length === 1 ? "" : "s"}</CardDescription></div><div className="relative"><Search className="absolute left-3 top-2.5 text-slate-400" size={16} /><Input className="pl-9 md:w-72" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar no histórico" /></div></CardHeader>
         <CardContent><div className="overflow-x-auto rounded-md border"><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-slate-600"><tr><th className="p-3">Data</th><th className="p-3">Subestação</th><th className="p-3">Tipo de ativo</th><th className="p-3">Periodicidade</th><th className="p-3">Emissor</th><th className="p-3">Editado por</th><th className="p-3">Arquivo</th><th className="p-3">Fotos</th><th className="p-3">Status</th><th className="p-3 text-right">Ação</th></tr></thead><tbody>{relatoriosFiltrados.map((relatorio) => <tr key={relatorio.id_relatorio_manutencao} className="border-t"><td className="p-3 whitespace-nowrap">{formatarData(relatorio.data_referencia)}</td><td className="p-3">{subestacoes.find((item) => item.id_subestacao === relatorio.id_subestacao)?.nome ?? `#${relatorio.id_subestacao}`}</td><td className="p-3">{tiposAtivo.find((item) => item.id_tipo_ativo === relatorio.id_tipo_ativo)?.nome ?? `#${relatorio.id_tipo_ativo}`}</td><td className="p-3">{relatorio.periodicidade.replaceAll("_", " ")}</td><td className="p-3 whitespace-nowrap">{relatorio.emissor ?? "Não informado"}</td><td className="p-3 whitespace-nowrap">{relatorio.editado_por ?? "Não editado"}</td><td className="max-w-52 truncate p-3" title={relatorio.nome_arquivo_original}>{relatorio.nome_arquivo_original}<span className="block text-xs text-slate-400">{formatarBytes(relatorio.tamanho_bytes)}</span></td><td className="p-3">{relatorio.quantidade_fotos}</td><td className="p-3"><Badge variant="secondary">{relatorio.status}</Badge></td><td className="p-3 text-right"><div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => editarRelatorio(relatorio)}><Pencil size={15} />Editar</Button><Button size="sm" onClick={() => baixarWord(relatorio)}><Download size={15} />Word</Button><Button size="sm" variant="outline" onClick={() => baixar(relatorio)}><Archive size={15} />ZIP</Button><Button size="sm" variant="destructive" onClick={() => excluirRelatorio(relatorio)}><Trash2 size={15} />Excluir</Button></div></td></tr>)}{!relatoriosFiltrados.length && <tr><td colSpan={10} className="p-8 text-center text-slate-500">Nenhum relatório encontrado.</td></tr>}</tbody></table></div></CardContent>
-      </Card>
+      </Card>}
     </div>
   );
 }
+
+
+
+
+
+
 
 
 
