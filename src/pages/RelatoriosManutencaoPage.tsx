@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { AlertTriangle, Archive, CheckCircle2, Download, Eye, FileArchive, Loader2, Pencil, Plus, RefreshCw, Search, Trash2, UploadCloud, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
@@ -94,6 +94,8 @@ function formatarBytes(valor: number) {
 
 export default function RelatoriosManutencaoPage() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const modoEdicao = Boolean(id);
   const { usuario } = useAuth();
   const arquivoRef = useRef<HTMLInputElement>(null);
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
@@ -161,6 +163,7 @@ export default function RelatoriosManutencaoPage() {
 
 
   useEffect(() => {
+    if (modoEdicao) return;
     const data = dataReferencia ? new Date(`${dataReferencia}T12:00:00`) : null;
     const subestacao = subestacoes.find((item) => item.id_subestacao === Number(idSubestacao))?.nome ?? "[subestação]";
     const tipoAtivo = tiposAtivo.find((item) => item.id_tipo_ativo === Number(idTipoAtivo))?.nome ?? "[tipo do ativo]";
@@ -174,11 +177,32 @@ export default function RelatoriosManutencaoPage() {
       "As inspeções foram realizadas tendo como referência os itens do plano de manutenção cadastrados no Sistema ENGVI.\n" +
       "São apresentadas imagens dos equipamentos inspecionados. Os equipamentos que apresentarem anormalidades deverão ser destacados e vinculados às respectivas Solicitações de Serviço (SS)."
     );
-  }, [dataReferencia, idSubestacao, idTipoAtivo, subestacoes, tiposAtivo]);
+  }, [dataReferencia, idSubestacao, idTipoAtivo, subestacoes, tiposAtivo, modoEdicao]);
+  useEffect(() => {
+    if (!id) return;
+    async function carregarEdicao() {
+      setCarregando(true);
+      try {
+        const { data } = await api.get(`/relatorios-manutencao/${id}/revisao`);
+        setIdSubestacao(String(data.id_subestacao)); setIdTipoAtivo(String(data.id_tipo_ativo)); setPeriodicidade(data.periodicidade);
+        setDataReferencia(String(data.data_referencia).slice(0, 10)); setObservacao(data.observacao ?? ""); setTextoIntroducao(data.texto_introducao ?? "");
+        setCorpoTecnico(data.corpo_tecnico?.length ? data.corpo_tecnico : [{ nome: "", funcao: "" }]);
+        setNumeroOS(data.numero_os ?? ""); setNumeroAPR(data.numero_apr ?? ""); setPeriodoCapa(data.periodo_capa ?? ""); setConcessao(data.concessao ?? "");
+        setHoraInicio(data.hora_inicio ?? ""); setHoraFim(data.hora_fim ?? ""); setTemperaturaInicio(data.temperatura_inicio ?? ""); setTemperaturaFim(data.temperatura_fim ?? "");
+        setFrequenciaInicio(data.frequencia_inicio ?? ""); setFrequenciaFim(data.frequencia_fim ?? ""); setTensaoInicio(data.tensao_inicio ?? ""); setTensaoFim(data.tensao_fim ?? "");
+        const fotos = data.fotos.map((foto: any) => ({ arquivo: foto.arquivo, miniatura: foto.miniatura, id_ativo_sugerido: foto.id_ativo, codigo_ativo_sugerido: null, id_plano_item_sugerido: foto.id_plano_item, item_sugerido: null, confianca: foto.confianca, possivel_duplicata: false, duplicata_de: null, largura: 0, altura: 0, requer_confirmacao: false }));
+        setAnalise({ periodicidade: data.periodicidade, quantidade_fotos: fotos.length, quantidade_requer_confirmacao: 0, ativos: data.ativos, itens: data.itens, fotos });
+        setConfirmados(new Set(fotos.map((foto: FotoAnalisada) => foto.arquivo)));
+        setRevisoesEnvio(Object.fromEntries(data.fotos.map((foto: any) => [foto.arquivo, { ativoId: foto.id_ativo?.toString() ?? "", itemId: foto.id_plano_item?.toString() ?? "", valor: foto.valor ?? "", status: foto.status ?? "OK", observacao: foto.observacao ?? "", incluir: foto.incluir ?? true }])));
+      } catch (error) { toast.error(mensagemErro(error, "Não foi possível carregar o relatório para edição.")); navigate("/relatorios-manutencao"); }
+      finally { setCarregando(false); }
+    }
+    carregarEdicao();
+  }, [id, navigate]);
   const selecaoCompleta = Boolean(idSubestacao && idTipoAtivo && periodicidade && dataReferencia);
   const pendencias = analise?.fotos.filter((foto) => foto.requer_confirmacao && !confirmados.has(foto.arquivo)) ?? [];
   const dadosRelatorioCompletos = Boolean(textoIntroducao.trim() && periodoCapa.trim() && concessao.trim() && corpoTecnico.length && corpoTecnico.every((pessoa) => pessoa.nome.trim() && pessoa.funcao.trim()) && horaInicio && horaFim && temperaturaInicio.trim() && temperaturaFim.trim() && frequenciaInicio.trim() && frequenciaFim.trim() && tensaoInicio.trim() && tensaoFim.trim());
-  const podeEnviar = Boolean(analise && arquivo && pendencias.length === 0 && dadosRelatorioCompletos && !enviando);
+  const podeEnviar = Boolean(analise && (modoEdicao || arquivo) && pendencias.length === 0 && dadosRelatorioCompletos && !enviando);
 
   const relatoriosFiltrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -233,6 +257,18 @@ export default function RelatoriosManutencaoPage() {
     if (!podeEnviar) return toast.error("Confirme as classificações sinalizadas antes de enviar.");
     setEnviando(true);
     try {
+      if (modoEdicao) {
+        await api.put(`/relatorios-manutencao/${id}/revisao`, {
+          data_referencia: dataReferencia, observacao: observacao.trim(), texto_introducao: textoIntroducao.trim(), corpo_tecnico: corpoTecnico,
+          numero_os: numeroOS.trim(), numero_apr: numeroAPR.trim(), periodo_capa: periodoCapa.trim(), concessao: concessao.trim(),
+          hora_inicio: horaInicio, hora_fim: horaFim, temperatura_inicio: temperaturaInicio.trim(), temperatura_fim: temperaturaFim.trim(),
+          frequencia_inicio: frequenciaInicio.trim(), frequencia_fim: frequenciaFim.trim(), tensao_inicio: tensaoInicio.trim(), tensao_fim: tensaoFim.trim(),
+          fotos: analise!.fotos.map((foto) => { const revisao = revisoesEnvio[foto.arquivo]; return { arquivo: foto.arquivo, id_ativo: revisao?.ativoId ? Number(revisao.ativoId) : null, id_plano_item: revisao?.itemId ? Number(revisao.itemId) : null, valor: revisao?.valor ?? "", status: revisao?.status ?? "OK", observacao: revisao?.observacao ?? "", incluir: revisao?.incluir ?? true }; }),
+        });
+        toast.success("Relatório atualizado com sucesso.");
+        navigate("/relatorios-manutencao");
+        return;
+      }
       const form = montarFormData();
       form.append("data_referencia", dataReferencia);
       if (observacao.trim()) form.append("observacao", observacao.trim());
@@ -318,7 +354,7 @@ export default function RelatoriosManutencaoPage() {
   return (
     <div className="mx-auto w-full max-w-[1720px] px-2 sm:px-4 xl:px-6">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div><h1 className="m-0 text-2xl font-semibold text-slate-900">Novo relatório de manutenção</h1><p className="mt-1 text-sm text-slate-500">Preencha os dados, envie o ZIP e revise cada evidência antes de emitir.</p></div>
+        <div><h1 className="m-0 text-2xl font-semibold text-slate-900">{modoEdicao ? "Editar relatório de manutenção" : "Novo relatório de manutenção"}</h1><p className="mt-1 text-sm text-slate-500">{modoEdicao ? "Atualize os dados e os vínculos das evidências. O ZIP original será preservado." : "Preencha os dados, envie o ZIP e revise cada evidência antes de emitir."}</p></div>
         <Button variant="outline" onClick={() => navigate("/relatorios-manutencao")}><RefreshCw size={16} />Voltar ao controle</Button>
       </div>
 
@@ -327,9 +363,9 @@ export default function RelatoriosManutencaoPage() {
           <CardHeader className="border-b bg-slate-50/60"><CardTitle className="flex items-center gap-2"><UploadCloud size={19} />Dados do relatório e envio</CardTitle><CardDescription>Preencha o contexto, o corpo técnico e as condições da inspeção antes de anexar as fotografias.</CardDescription></CardHeader>
           <CardContent className="space-y-6">
             <div className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-700">Subestação<select className="h-10 w-full min-w-0 max-w-full rounded-md border border-slate-300 bg-white px-3" value={idSubestacao} onChange={(e) => { setIdSubestacao(e.target.value); setAnalise(null); }}><option value="">Selecione</option>{subestacoes.map((item) => <option key={item.id_subestacao} value={item.id_subestacao}>{item.nome}</option>)}</select></label>
-              <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-700">Tipo do ativo<select className="h-10 w-full min-w-0 max-w-full rounded-md border border-slate-300 bg-white px-3" value={idTipoAtivo} onChange={(e) => { setIdTipoAtivo(e.target.value); setAnalise(null); }}><option value="">Selecione</option>{tiposAtivo.map((item) => <option key={item.id_tipo_ativo} value={item.id_tipo_ativo}>{item.nome}</option>)}</select></label>
-              <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-700">Periodicidade<select className="h-10 w-full min-w-0 max-w-full rounded-md border border-slate-300 bg-white px-3" value={periodicidade} onChange={(e) => { setPeriodicidade(e.target.value); setAnalise(null); }}><option value="">Selecione</option>{periodicidades.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}</select></label>
+              <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-700">Subestação<select className="h-10 w-full min-w-0 max-w-full rounded-md border border-slate-300 bg-white px-3" value={idSubestacao} disabled={modoEdicao} onChange={(e) => { setIdSubestacao(e.target.value); setAnalise(null); }}><option value="">Selecione</option>{subestacoes.map((item) => <option key={item.id_subestacao} value={item.id_subestacao}>{item.nome}</option>)}</select></label>
+              <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-700">Tipo do ativo<select className="h-10 w-full min-w-0 max-w-full rounded-md border border-slate-300 bg-white px-3" value={idTipoAtivo} disabled={modoEdicao} onChange={(e) => { setIdTipoAtivo(e.target.value); setAnalise(null); }}><option value="">Selecione</option>{tiposAtivo.map((item) => <option key={item.id_tipo_ativo} value={item.id_tipo_ativo}>{item.nome}</option>)}</select></label>
+              <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-700">Periodicidade<select className="h-10 w-full min-w-0 max-w-full rounded-md border border-slate-300 bg-white px-3" value={periodicidade} disabled={modoEdicao} onChange={(e) => { setPeriodicidade(e.target.value); setAnalise(null); }}><option value="">Selecione</option>{periodicidades.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}</select></label>
               <label className="grid gap-1.5 text-sm font-medium text-slate-700">Data de referência<Input type="date" value={dataReferencia} onChange={(e) => setDataReferencia(e.target.value)} /></label>
             </div>
             <section className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/60 p-4">
@@ -370,12 +406,14 @@ export default function RelatoriosManutencaoPage() {
               </div>
             </section>
             <label className="grid gap-1.5 text-sm font-medium text-slate-700">Observação<Textarea value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Contexto, anormalidades ou observações do lote" /></label>
+            {!modoEdicao && <>
             <div className={`rounded-lg border-2 border-dashed p-6 text-center transition ${selecaoCompleta ? "border-blue-300 bg-blue-50/50" : "border-slate-200 bg-slate-50 opacity-60"}`}>
               <FileArchive className="mx-auto mb-2 text-blue-600" size={34} /><p className="m-0 font-medium text-slate-800">ZIP com as fotografias</p><p className="mb-4 mt-1 text-xs text-slate-500">O campo é liberado após selecionar subestação, tipo, periodicidade e data.</p>
               <Input ref={arquivoRef} type="file" accept=".zip,application/zip" disabled={!selecaoCompleta} onChange={(e) => selecionarArquivo(e.target.files?.[0] ?? null)} />
               {arquivo && <div className="mt-3 flex items-center justify-center gap-2 text-sm"><Archive size={15} /><strong>{arquivo.name}</strong><span className="text-slate-500">({formatarBytes(arquivo.size)})</span><button className="text-red-600" onClick={() => selecionarArquivo(null)} aria-label="Remover arquivo"><X size={16} /></button></div>}
             </div>
             <Button className="w-full" disabled={!arquivo || !selecaoCompleta || analisando} onClick={analisar}>{analisando ? <Loader2 className="animate-spin" size={17} /> : <Search size={17} />}{analisando ? "Analisando fotografias..." : "Analisar fotografias"}</Button>
+            </>}
           </CardContent>
         </Card>
 
@@ -386,6 +424,7 @@ export default function RelatoriosManutencaoPage() {
               <ReviewEvidenceGrid
                 analise={analise}
                 confirmados={confirmados}
+                initialReviews={revisoesEnvio}
                 onReviewsChange={setRevisoesEnvio}
                 onConfirmChange={(arquivo, confirmado) => setConfirmados((atual) => {
                   const proximo = new Set(atual);
@@ -394,7 +433,7 @@ export default function RelatoriosManutencaoPage() {
                 })}
               />
               {pendencias.length > 0 && <p className="flex items-center gap-2 rounded-md bg-amber-50 p-3 text-sm text-amber-800"><AlertTriangle size={17} />Faltam {pendencias.length} confirmações.</p>}
-              <Button className="w-full" disabled={!podeEnviar} onClick={enviar}>{enviando ? <Loader2 className="animate-spin" size={17} /> : <CheckCircle2 size={17} />}{enviando ? "Enviando..." : "Confirmar e enviar relatório"}</Button>
+              <Button className="w-full" disabled={!podeEnviar} onClick={enviar}>{enviando ? <Loader2 className="animate-spin" size={17} /> : <CheckCircle2 size={17} />}{enviando ? "Salvando..." : modoEdicao ? "Salvar alterações" : "Confirmar e enviar relatório"}</Button>
             </div>}          </CardContent>
         </Card>
       </div>

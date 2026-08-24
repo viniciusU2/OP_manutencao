@@ -148,6 +148,7 @@ function AppContent() {
           <Route path="/sobreaviso" element={<SobreavisoPage />} />
           <Route path="/relatorios-manutencao" element={<RelatoriosManutencaoControlePage />} />
           <Route path="/relatorios-manutencao/novo" element={<RelatoriosManutencaoPage />} />
+          <Route path="/relatorios-manutencao/:id/editar" element={<RelatoriosManutencaoPage />} />
         </Route>
 
         <Route

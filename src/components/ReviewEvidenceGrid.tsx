@@ -16,12 +16,12 @@ function inicial(foto: Foto): Revisao {
   return { ativoId: foto.id_ativo_sugerido?.toString() ?? "", itemId: foto.id_plano_item_sugerido?.toString() ?? "", valor: "", status: "OK", observacao: "", incluir: true };
 }
 
-export default function ReviewEvidenceGrid({ analise, confirmados, onConfirmChange, onReviewsChange }: {
-  analise: Analise; confirmados: Set<string>; onConfirmChange: (arquivo: string, confirmado: boolean) => void; onReviewsChange?: (revisoes: Record<string, RevisaoEvidencia>) => void;
+export default function ReviewEvidenceGrid({ analise, confirmados, onConfirmChange, onReviewsChange, initialReviews }: {
+  analise: Analise; confirmados: Set<string>; onConfirmChange: (arquivo: string, confirmado: boolean) => void; onReviewsChange?: (revisoes: Record<string, RevisaoEvidencia>) => void; initialReviews?: Record<string, RevisaoEvidencia>;
 }) {
   const [fotoAmpliada, setFotoAmpliada] = useState<Foto | null>(null);
   const [revisoes, setRevisoes] = useState<Record<string, Revisao>>(() =>
-    Object.fromEntries(analise.fotos.map((foto) => [foto.arquivo, inicial(foto)]))
+    initialReviews ?? Object.fromEntries(analise.fotos.map((foto) => [foto.arquivo, inicial(foto)]))
   );
 
   function atualizar(arquivo: string, patch: Partial<Revisao>) {

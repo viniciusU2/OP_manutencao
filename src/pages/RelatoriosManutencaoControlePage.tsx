@@ -109,12 +109,6 @@ export default function RelatoriosManutencaoControlePage() {
       link.click(); URL.revokeObjectURL(link.href);
     } catch (e) { toast.error(erro(e, "Falha ao baixar o arquivo.")); }
   }
-  async function editar(item: Relatorio) {
-    const data = window.prompt("Data de referência (AAAA-MM-DD):", item.data_referencia.slice(0, 10)); if (!data) return;
-    const observacao = window.prompt("Observação:", item.observacao ?? ""); if (observacao === null) return;
-    try { await api.put(`/relatorios-manutencao/${item.id_relatorio_manutencao}/revisao`, { data_referencia: data, observacao }); toast.success("Relatório atualizado."); carregar(); }
-    catch (e) { toast.error(erro(e, "Falha ao editar o relatório.")); }
-  }
   async function excluir(item: Relatorio) {
     if (!window.confirm(`Excluir definitivamente o relatório ${item.nome_arquivo_original}?`)) return;
     try { await api.delete(`/relatorios-manutencao/${item.id_relatorio_manutencao}`); toast.success("Relatório excluído."); carregar(); }
@@ -177,7 +171,7 @@ export default function RelatoriosManutencaoControlePage() {
                     <TableCell><Badge variant="secondary">{item.status}</Badge></TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
-                        <Button size="icon" variant="ghost" title="Editar" onClick={() => editar(item)}><Pencil size={16} /></Button>
+                        <Button size="icon" variant="ghost" title="Editar" onClick={() => navigate(`/relatorios-manutencao/${item.id_relatorio_manutencao}/editar`)}><Pencil size={16} /></Button>
                         <Button size="icon" variant="ghost" title="Baixar Word" onClick={() => baixar(item, true)}><Download size={16} /></Button>
                         <Button size="icon" variant="ghost" title="Baixar ZIP" onClick={() => baixar(item, false)}><Archive size={16} /></Button>
                         <Button size="icon" variant="ghost" className="text-red-600 hover:text-red-700" title="Excluir" onClick={() => excluir(item)}><Trash2 size={16} /></Button>
