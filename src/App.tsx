@@ -49,6 +49,9 @@ import RelatoriosManutencaoPage from "./pages/RelatoriosManutencaoPage";
 import RelatoriosManutencaoControlePage from "./pages/RelatoriosManutencaoControlePage";
 import FuncoesOperacaoPage from "./pages/FuncoesOperacaoPage";
 import ProblemasTipicosPage from "./pages/ProblemasTipicosPage";
+import CsdMonitorPage from "./pages/CsdMonitorPage";
+import CsdImportPage from "./pages/CsdImportPage";
+import CsdControlPage from "./pages/CsdControlPage";
 import { useGerarOsPlanosManutencao } from "./hooks/useGerarOsPlanosManutencao";
 
 /* ================= STYLES ================= */
@@ -144,6 +147,9 @@ function AppContent() {
         </Route>
 
         <Route element={<RoleRoute allowedRoles={OPERATIONAL_ACCESS_ROLES} />}>
+          <Route path="/csd-monitor" element={<CsdMonitorPage />} />
+          <Route path="/csd-monitor/importar" element={<CsdImportPage />} />
+          <Route path="/csd-monitor/controle" element={<CsdControlPage />} />
           <Route path="/rdo" element={<RdoPage />} />
           <Route path="/sobreaviso" element={<SobreavisoPage />} />
           <Route path="/relatorios-manutencao" element={<RelatoriosManutencaoControlePage />} />
@@ -191,4 +197,9 @@ function AppContent() {
     </Routes>
   </AppWrapper>
 )}
+
+
+
+
+
 
