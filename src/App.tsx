@@ -41,6 +41,7 @@ import InspecoesPage from "./pages/InspecoesPage";
 import PlanoManutencaoForm from "./pages/PlanoManutencaoForm";
 import PlanosManutencaoPage from "./pages/PlanosManutencaoPage";
 import PlanoExecucoesPage from "./pages/PlanoExecucoesPage";
+import PlanoOsPrevistasPage from "./pages/PlanoOsPrevistasPage";
 import DownloadsPage from "./pages/DownloadsPage";
 import PerfisPage from "./pages/PerfisPage";
 import RdoPage from "./pages/RdoPage";
@@ -184,6 +185,7 @@ function AppContent() {
           <Route path="/problemas-tipicos" element={<ProblemasTipicosPage />} />
           <Route path="/importar-ativos" element={<ImportarAtivos />} />
           <Route path="/planos-manutencao" element={<PlanosManutencaoPage />} />
+          <Route path="/planos-manutencao/os-previstas" element={<PlanoOsPrevistasPage />} />
           <Route path="/planos-manutencao/execucoes" element={<PlanoExecucoesPage />} />
           <Route path="/planos-manutencao/novo" element={<PlanoManutencaoForm />} />
           <Route path="/planos-manutencao/:id/editar" element={<PlanoManutencaoForm />} />
