@@ -100,6 +100,7 @@ export function SSPage1({
             id_subestacao: subestacao === "all" ? undefined : Number(subestacao),
             prazo: prazo === "all" ? undefined : prazo,
             id_tipo_ativo: tipoEquipamento === "all" ? undefined : Number(tipoEquipamento),
+            ordenar_por: "mais_recentes",
             filter_field: advancedFilters.filter(f=>f.value.trim()).map(f=>f.field),
             filter_value: advancedFilters.filter(f=>f.value.trim()).map(f=>f.value),
           },

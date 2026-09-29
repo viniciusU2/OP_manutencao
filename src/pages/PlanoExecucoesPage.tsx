@@ -345,7 +345,7 @@ export default function PlanoExecucoesPage() {
     setSelected(execucao);
     setForm({
       ultima_execucao: toDateTimeLocal(execucao.ultima_execucao),
-      proxima_execucao: toDateTimeLocal(execucao.proxima_execucao),
+      proxima_execucao: toDateTimeLocal(execucao.proxima_execucao).slice(0, 10),
     });
   }
 
@@ -391,7 +391,7 @@ export default function PlanoExecucoesPage() {
     setSavingPlano(true);
 
     const payload: PlanoExecucoesReagendarPlano = {
-      proxima_execucao: new Date(reagendarForm.proxima_execucao).toISOString(),
+      proxima_execucao: `${reagendarForm.proxima_execucao}T08:00:00`,
       id_subestacao: reagendarForm.id_subestacao
         ? Number(reagendarForm.id_subestacao)
         : null,
@@ -445,7 +445,7 @@ export default function PlanoExecucoesPage() {
 
     const payload: PlanoExecucaoUpdate = {
       ultima_execucao: toApiDate(form.ultima_execucao),
-      proxima_execucao: new Date(form.proxima_execucao).toISOString(),
+      proxima_execucao: `${form.proxima_execucao}T08:00:00`,
     };
 
     try {
@@ -861,9 +861,9 @@ export default function PlanoExecucoesPage() {
             </label>
 
             <label className="grid gap-2 text-sm">
-              Proxima execucao
+              Proxima execucao (inicio as 08:00)
               <Input
-                type="datetime-local"
+                type="date"
                 value={form.proxima_execucao}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -928,9 +928,9 @@ export default function PlanoExecucoesPage() {
             </label>
 
             <label className="grid gap-2 text-sm">
-              Nova proxima execucao
+              Nova proxima execucao (inicio as 08:00)
               <Input
-                type="datetime-local"
+                type="date"
                 value={reagendarForm.proxima_execucao}
                 onChange={(event) =>
                   setReagendarForm((current) => ({
