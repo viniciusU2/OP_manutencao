@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
-import { Download, FileSpreadsheet, Filter, RotateCcw } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, Filter, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import api from "../api/api";
@@ -8,7 +8,7 @@ import Container from "../components/Container";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 
-type Documento = "operacionais" | "os" | "si" | "ss" | "ativos" | "inspecoes";
+type Documento = "operacionais" | "os" | "si" | "ss" | "ativos" | "inspecoes" | "auditoria_semanal";
 
 interface Subestacao {
   id_subestacao: number;
@@ -31,6 +31,11 @@ const documentos = [
   { id: "ss" as Documento, titulo: "SS", descricao: "Solicitações de serviço." },
   { id: "ativos" as Documento, titulo: "Ativos", descricao: "Cadastro de ativos." },
   { id: "inspecoes" as Documento, titulo: "Inspeções", descricao: "Inspeções e resultados detalhados por item." },
+  {
+    id: "auditoria_semanal" as Documento,
+    titulo: "Auditoria semanal",
+    descricao: "Indicadores, vencimentos e execução em PDF.",
+  },
 ];
 
 const Header = styled.div`
@@ -61,7 +66,7 @@ const Subtitle = styled.p`
 
 const DocumentGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
   margin-bottom: 18px;
 
@@ -159,7 +164,24 @@ const statusInspecao = ["OK", "NOK", "NA"];
 
 function nomeArquivo(documento: Documento) {
   const data = new Date().toISOString().slice(0, 10);
-  return `${documento}_${data}.xlsx`;
+  return documento === "auditoria_semanal"
+    ? `auditoria_semanal_${data}.pdf`
+    : `${documento}_${data}.xlsx`;
+}
+
+function semanaAtual() {
+  const hoje = new Date();
+  const dia = hoje.getDay();
+  const deslocamento = dia === 0 ? -6 : 1 - dia;
+  const inicio = new Date(hoje);
+  inicio.setDate(hoje.getDate() + deslocamento);
+  const fim = new Date(inicio);
+  fim.setDate(inicio.getDate() + 6);
+  const dataInput = (valor: Date) => {
+    const local = new Date(valor.getTime() - valor.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
+  };
+  return { inicio: dataInput(inicio), fim: dataInput(fim) };
 }
 
 export default function DownloadsPage() {
@@ -192,6 +214,15 @@ export default function DownloadsPage() {
       });
   }, []);
 
+  useEffect(() => {
+    if (documento !== "auditoria_semanal") return;
+    setFiltros((prev) => {
+      if (prev.data_inicio || prev.data_fim) return prev;
+      const semana = semanaAtual();
+      return { ...prev, data_inicio: semana.inicio, data_fim: semana.fim };
+    });
+  }, [documento]);
+
   const opcoesStatus = useMemo(() => {
     if (documento === "ativos") return statusAtivo;
     if (documento === "inspecoes") return statusInspecao;
@@ -215,10 +246,10 @@ export default function DownloadsPage() {
   function paramsDownload() {
     const params: Record<string, string> = {};
 
-    if (filtros.status !== "all") params.status = filtros.status;
+    if (documento !== "auditoria_semanal" && filtros.status !== "all") params.status = filtros.status;
     if (filtros.id_subestacao !== "all") params.id_subestacao = filtros.id_subestacao;
-    if (filtros.data_inicio) params.data_inicio = `${filtros.data_inicio}T00:00:00`;
-    if (filtros.data_fim) params.data_fim = `${filtros.data_fim}T23:59:59`;
+    if (filtros.data_inicio) params.data_inicio = documento === "auditoria_semanal" ? filtros.data_inicio : `${filtros.data_inicio}T00:00:00`;
+    if (filtros.data_fim) params.data_fim = documento === "auditoria_semanal" ? filtros.data_fim : `${filtros.data_fim}T23:59:59`;
 
     if (documento === "ativos" || documento === "inspecoes") {
       if (filtros.id_tipo_ativo !== "all") {
@@ -232,7 +263,9 @@ export default function DownloadsPage() {
   }
 
   async function baixarArquivo() {
-    const endpoint = documento === "ativos"
+    const endpoint = documento === "auditoria_semanal"
+      ? "/downloads/auditoria-semanal"
+      : documento === "ativos"
       ? "/downloads/ativos"
       : documento === "inspecoes"
         ? "/downloads/inspecoes"
@@ -246,7 +279,9 @@ export default function DownloadsPage() {
       });
 
       const blob = new Blob([response.data], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        type: documento === "auditoria_semanal"
+          ? "application/pdf"
+          : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -258,9 +293,9 @@ export default function DownloadsPage() {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      toast.success("Download iniciado");
+      toast.success(documento === "auditoria_semanal" ? "Relatório PDF gerado" : "Download iniciado");
     } catch {
-      toast.error("Erro ao baixar planilha");
+      toast.error(documento === "auditoria_semanal" ? "Erro ao gerar relatório PDF" : "Erro ao baixar planilha");
     } finally {
       setLoading(false);
     }
@@ -275,7 +310,7 @@ export default function DownloadsPage() {
         </div>
         <Summary>
           <Filter size={16} />
-          Filtros aplicados diretamente na planilha
+          {documento === "auditoria_semanal" ? "Período aplicado ao relatório PDF" : "Filtros aplicados diretamente na planilha"}
         </Summary>
       </Header>
 
@@ -287,7 +322,7 @@ export default function DownloadsPage() {
             $active={documento === item.id}
             onClick={() => setDocumento(item.id)}
           >
-            <FileSpreadsheet size={18} />
+            {item.id === "auditoria_semanal" ? <FileText size={18} /> : <FileSpreadsheet size={18} />}
             <strong>{item.titulo}</strong>
             <span>{item.descricao}</span>
           </DocumentButton>
@@ -300,7 +335,7 @@ export default function DownloadsPage() {
         </CardHeader>
         <CardContent>
           <FilterGrid>
-            <Field>
+            {documento !== "auditoria_semanal" && <Field>
               Status
               <Select
                 value={filtros.status}
@@ -313,7 +348,7 @@ export default function DownloadsPage() {
                   </option>
                 ))}
               </Select>
-            </Field>
+            </Field>}
 
             <Field>
               Instalação
@@ -373,7 +408,7 @@ export default function DownloadsPage() {
             </Button>
             <Button type="button" onClick={baixarArquivo} disabled={loading}>
               <Download size={16} />
-              {loading ? "Gerando..." : "Baixar planilha"}
+              {loading ? "Gerando..." : documento === "auditoria_semanal" ? "Baixar relatório PDF" : "Baixar planilha"}
             </Button>
           </Actions>
         </CardContent>

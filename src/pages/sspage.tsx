@@ -15,7 +15,11 @@ import { AdvancedDocumentFilters, type AdvancedFilter } from "../components/Adva
 import { PreventiveProgressStrip } from "../components/PreventiveProgressStrip";
 import { hasPersistentFilter, usePersistentFilter } from "../lib/usePersistentFilter";
 
-const ssFilterFields=["numero_ss","numero_os","data_hora_solicitacao","data_hora_abertura","data_hora_limite","solicitante","matricula","funcao","telefone","email","orgao","instalacao","localizacao","complemento","id_ativo","id_grupo_ativo","esquema_servico","centro_custo","causa","causa_secundaria","equipe","descricao_problema","prioridade","status","emissor","editado_por"].map(value=>({value,label:value.replaceAll("_"," ")}));
+const ssFilterFields = [
+  { value: "codigo_ativo", label: "código do ativo" },
+  ...["numero_ss","numero_os","data_hora_solicitacao","data_hora_abertura","data_hora_limite","solicitante","matricula","funcao","telefone","email","orgao","instalacao","localizacao","complemento","id_ativo","id_grupo_ativo","esquema_servico","centro_custo","causa","causa_secundaria","equipe","descricao_problema","prioridade","status","emissor","editado_por"]
+    .map(value => ({ value, label: value.replaceAll("_", " ") })),
+];
 
 
 
@@ -209,7 +213,7 @@ export function SSPage() {
       <SearchArea>
         <SearchIcon aria-hidden="true">⌕</SearchIcon>
         <SearchInput
-          placeholder="Buscar solicitacão de intervenção..."
+          placeholder="Buscar SS, código do ativo, solicitante ou descrição..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

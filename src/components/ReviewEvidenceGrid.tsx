@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, ImageOff, X, ZoomIn } from "lucide-react";
+import { AlertTriangle, ImageOff, Trash2, X, ZoomIn } from "lucide-react";
 
 type AtivoOpcao = { id_ativo: number; codigo_ativo: string; fase: string | null; bay: string | null };
 type ItemOpcao = { id_plano_item: number; nome_item: string; unidade: string | null };
@@ -16,8 +16,8 @@ function inicial(foto: Foto): Revisao {
   return { ativoId: foto.id_ativo_sugerido?.toString() ?? "", itemId: foto.id_plano_item_sugerido?.toString() ?? "", valor: "", status: "OK", observacao: "", incluir: true };
 }
 
-export default function ReviewEvidenceGrid({ analise, confirmados, onConfirmChange, onReviewsChange, initialReviews }: {
-  analise: Analise; confirmados: Set<string>; onConfirmChange: (arquivo: string, confirmado: boolean) => void; onReviewsChange?: (revisoes: Record<string, RevisaoEvidencia>) => void; initialReviews?: Record<string, RevisaoEvidencia>;
+export default function ReviewEvidenceGrid({ analise, confirmados, onConfirmChange, onReviewsChange, initialReviews, onDeletePhoto }: {
+  analise: Analise; confirmados: Set<string>; onConfirmChange: (arquivo: string, confirmado: boolean) => void; onReviewsChange?: (revisoes: Record<string, RevisaoEvidencia>) => void; initialReviews?: Record<string, RevisaoEvidencia>; onDeletePhoto?: (arquivo: string) => void;
 }) {
   const [fotoAmpliada, setFotoAmpliada] = useState<Foto | null>(null);
   const [revisoes, setRevisoes] = useState<Record<string, Revisao>>(() =>
@@ -72,6 +72,7 @@ export default function ReviewEvidenceGrid({ analise, confirmados, onConfirmChan
               <label className="flex items-center gap-2 font-medium"><input type="checkbox" checked={revisao.incluir} onChange={(e) => atualizar(foto.arquivo, { incluir: e.target.checked })} />Incluir evidência ({Math.round(foto.confianca * 100)}% confiança)</label>
               {foto.requer_confirmacao && <label className="flex items-center gap-1 font-semibold text-amber-800"><input type="checkbox" checked={confirmado} onChange={(e) => onConfirmChange(foto.arquivo, e.target.checked)} />Revisado</label>}
             </div>
+            {onDeletePhoto && <button type="button" className="flex w-full items-center justify-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 font-semibold text-red-700 transition hover:bg-red-100" onClick={() => onDeletePhoto(foto.arquivo)}><Trash2 size={14} />Excluir fotografia do relatório</button>}
           </div>
         </article>;
       })}

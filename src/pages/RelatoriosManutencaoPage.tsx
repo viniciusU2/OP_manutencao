@@ -125,6 +125,7 @@ export default function RelatoriosManutencaoPage() {
   const [analise, setAnalise] = useState<Analise | null>(null);
   const [confirmados, setConfirmados] = useState<Set<string>>(new Set());
   const [revisoesEnvio, setRevisoesEnvio] = useState<Record<string, RevisaoEvidencia>>({});
+  const [nomesFotosNovas, setNomesFotosNovas] = useState<Set<string>>(new Set());
   const [analisando, setAnalisando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [carregando, setCarregando] = useState(true);
@@ -194,6 +195,8 @@ export default function RelatoriosManutencaoPage() {
         setAnalise({ periodicidade: data.periodicidade, quantidade_fotos: fotos.length, quantidade_requer_confirmacao: 0, ativos: data.ativos, itens: data.itens, fotos });
         setConfirmados(new Set(fotos.map((foto: FotoAnalisada) => foto.arquivo)));
         setRevisoesEnvio(Object.fromEntries(data.fotos.map((foto: any) => [foto.arquivo, { ativoId: foto.id_ativo?.toString() ?? "", itemId: foto.id_plano_item?.toString() ?? "", valor: foto.valor ?? "", status: foto.status ?? "OK", observacao: foto.observacao ?? "", incluir: foto.incluir ?? true }])));
+        setArquivo(null);
+        setNomesFotosNovas(new Set());
       } catch (error) { toast.error(mensagemErro(error, "Não foi possível carregar o relatório para edição.")); navigate("/relatorios-manutencao"); }
       finally { setCarregando(false); }
     }
@@ -202,7 +205,8 @@ export default function RelatoriosManutencaoPage() {
   const selecaoCompleta = Boolean(idSubestacao && idTipoAtivo && periodicidade && dataReferencia);
   const pendencias = analise?.fotos.filter((foto) => foto.requer_confirmacao && !confirmados.has(foto.arquivo)) ?? [];
   const dadosRelatorioCompletos = Boolean(textoIntroducao.trim() && periodoCapa.trim() && concessao.trim() && corpoTecnico.length && corpoTecnico.every((pessoa) => pessoa.nome.trim() && pessoa.funcao.trim()) && horaInicio && horaFim && temperaturaInicio.trim() && temperaturaFim.trim() && frequenciaInicio.trim() && frequenciaFim.trim() && tensaoInicio.trim() && tensaoFim.trim());
-  const podeEnviar = Boolean(analise && (modoEdicao || arquivo) && pendencias.length === 0 && dadosRelatorioCompletos && !enviando);
+  const arquivoNovoAguardandoAnalise = Boolean(modoEdicao && arquivo && nomesFotosNovas.size === 0);
+  const podeEnviar = Boolean(analise?.fotos.length && (modoEdicao || arquivo) && !arquivoNovoAguardandoAnalise && pendencias.length === 0 && dadosRelatorioCompletos && !enviando);
 
   const relatoriosFiltrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -215,11 +219,32 @@ export default function RelatoriosManutencaoPage() {
   }, [busca, relatorios, subestacoes, tiposAtivo]);
 
   function selecionarArquivo(file: File | null) {
-    setAnalise(null);
-    setConfirmados(new Set());
-    if (!file) return setArquivo(null);
-    if (!file.name.toLowerCase().endsWith(".zip")) {
-      toast.error("Selecione um arquivo ZIP com as fotografias.");
+    if (!modoEdicao) {
+      setAnalise(null);
+      setConfirmados(new Set());
+      setRevisoesEnvio({});
+    } else if (nomesFotosNovas.size) {
+      setAnalise((atual) => atual ? {
+        ...atual,
+        fotos: atual.fotos.filter((foto) => !nomesFotosNovas.has(foto.arquivo)),
+        quantidade_fotos: atual.fotos.filter((foto) => !nomesFotosNovas.has(foto.arquivo)).length,
+        quantidade_requer_confirmacao: atual.fotos.filter((foto) => !nomesFotosNovas.has(foto.arquivo) && foto.requer_confirmacao).length,
+      } : atual);
+      setConfirmados((atual) => new Set([...atual].filter((nome) => !nomesFotosNovas.has(nome))));
+      setRevisoesEnvio((atual) => Object.fromEntries(Object.entries(atual).filter(([nome]) => !nomesFotosNovas.has(nome))));
+      setNomesFotosNovas(new Set());
+    }
+    if (!file) {
+      setArquivo(null);
+      if (arquivoRef.current) arquivoRef.current.value = "";
+      return;
+    }
+    const extensao = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+    const formatoValido = modoEdicao
+      ? [".jpg", ".jpeg", ".png", ".bmp", ".webp", ".heic"].includes(extensao)
+      : extensao === ".zip";
+    if (!formatoValido) {
+      toast.error(modoEdicao ? "Selecione uma imagem JPG, PNG, BMP, WEBP ou HEIC." : "Selecione um arquivo ZIP com as fotografias.");
       if (arquivoRef.current) arquivoRef.current.value = "";
       return setArquivo(null);
     }
@@ -240,13 +265,37 @@ export default function RelatoriosManutencaoPage() {
     if (!selecaoCompleta || !arquivo) return toast.error("Preencha os dados e selecione o ZIP.");
     setAnalisando(true);
     try {
-      const { data } = await api.post<Analise>("/relatorios-manutencao/analisar", montarFormData());
+      const { data } = await api.post<Analise>(modoEdicao ? "/relatorios-manutencao/analisar-imagem" : "/relatorios-manutencao/analisar", montarFormData());
+      if (modoEdicao && analise) {
+        const nomesExistentes = new Set(analise.fotos.map((foto) => foto.arquivo));
+        const repetidas = data.fotos.filter((foto) => nomesExistentes.has(foto.arquivo)).map((foto) => foto.arquivo);
+        if (repetidas.length) {
+          setArquivo(null);
+          if (arquivoRef.current) arquivoRef.current.value = "";
+          toast.error(`Já existe foto com este nome no relatório: ${repetidas.slice(0, 3).join(", ")}${repetidas.length > 3 ? "..." : ""}`);
+          return;
+        }
+        const novasRevisoes = Object.fromEntries(data.fotos.map((foto) => [foto.arquivo, { ativoId: foto.id_ativo_sugerido?.toString() ?? "", itemId: foto.id_plano_item_sugerido?.toString() ?? "", valor: "", status: "OK", observacao: "", incluir: true }]));
+        setAnalise((atual) => atual ? {
+          ...atual,
+          ativos: data.ativos,
+          itens: data.itens,
+          fotos: [...atual.fotos, ...data.fotos],
+          quantidade_fotos: atual.fotos.length + data.fotos.length,
+          quantidade_requer_confirmacao: atual.quantidade_requer_confirmacao + data.quantidade_requer_confirmacao,
+        } : data);
+        setConfirmados((atual) => new Set([...atual, ...data.fotos.filter((foto) => !foto.requer_confirmacao).map((foto) => foto.arquivo)]));
+        setRevisoesEnvio((atual) => ({ ...atual, ...novasRevisoes }));
+        setNomesFotosNovas(new Set(data.fotos.map((foto) => foto.arquivo)));
+        toast.success(`${data.quantidade_fotos} nova${data.quantidade_fotos === 1 ? " foto adicionada" : "s fotos adicionadas"} à revisão.`);
+        return;
+      }
       setAnalise(data);
       setConfirmados(new Set(data.fotos.filter((foto) => !foto.requer_confirmacao).map((foto) => foto.arquivo)));
       setRevisoesEnvio(Object.fromEntries(data.fotos.map((foto) => [foto.arquivo, { ativoId: foto.id_ativo_sugerido?.toString() ?? "", itemId: foto.id_plano_item_sugerido?.toString() ?? "", valor: "", status: "OK", observacao: "", incluir: true }])));
       toast.success(`${data.quantidade_fotos} foto${data.quantidade_fotos === 1 ? " analisada" : "s analisadas"}.`);
     } catch (error) {
-      setAnalise(null);
+      if (!modoEdicao) setAnalise(null);
       toast.error(mensagemErro(error, "Falha ao analisar as fotografias."));
     } finally {
       setAnalisando(false);
@@ -258,13 +307,17 @@ export default function RelatoriosManutencaoPage() {
     setEnviando(true);
     try {
       if (modoEdicao) {
-        await api.put(`/relatorios-manutencao/${id}/revisao`, {
+        const payload = {
           data_referencia: dataReferencia, observacao: observacao.trim(), texto_introducao: textoIntroducao.trim(), corpo_tecnico: corpoTecnico,
           numero_os: numeroOS.trim(), numero_apr: numeroAPR.trim(), periodo_capa: periodoCapa.trim(), concessao: concessao.trim(),
           hora_inicio: horaInicio, hora_fim: horaFim, temperatura_inicio: temperaturaInicio.trim(), temperatura_fim: temperaturaFim.trim(),
           frequencia_inicio: frequenciaInicio.trim(), frequencia_fim: frequenciaFim.trim(), tensao_inicio: tensaoInicio.trim(), tensao_fim: tensaoFim.trim(),
-          fotos: analise!.fotos.map((foto) => { const revisao = revisoesEnvio[foto.arquivo]; return { arquivo: foto.arquivo, id_ativo: revisao?.ativoId ? Number(revisao.ativoId) : null, id_plano_item: revisao?.itemId ? Number(revisao.itemId) : null, valor: revisao?.valor ?? "", status: revisao?.status ?? "OK", observacao: revisao?.observacao ?? "", incluir: revisao?.incluir ?? true }; }),
-        });
+          fotos: analise!.fotos.map((foto) => { const revisao = revisoesEnvio[foto.arquivo]; return { arquivo: foto.arquivo, id_ativo: revisao?.ativoId ? Number(revisao.ativoId) : null, id_plano_item: revisao?.itemId ? Number(revisao.itemId) : null, valor: revisao?.valor ?? "", status: revisao?.status ?? "OK", observacao: revisao?.observacao ?? "", incluir: revisao?.incluir ?? true, confianca: foto.confianca }; }),
+        };
+        const form = new FormData();
+        form.append("payload_json", JSON.stringify(payload));
+        if (arquivo && nomesFotosNovas.size) form.append("arquivo", arquivo);
+        await api.put(`/relatorios-manutencao/${id}/revisao-arquivos`, form);
         toast.success("Relatório atualizado com sucesso.");
         navigate("/relatorios-manutencao");
         return;
@@ -296,6 +349,39 @@ export default function RelatoriosManutencaoPage() {
       toast.error(mensagemErro(error, "Falha ao enviar o relatório."));
     } finally {
       setEnviando(false);
+    }
+  }
+
+  function removerFoto(arquivoFoto: string) {
+    if (!analise || analise.fotos.length <= 1) {
+      toast.error("O relatório deve manter ao menos uma fotografia.");
+      return;
+    }
+    if (!window.confirm(`Excluir a fotografia ${arquivoFoto} deste relatório?`)) return;
+    setAnalise((atual) => atual ? {
+      ...atual,
+      fotos: atual.fotos.filter((foto) => foto.arquivo !== arquivoFoto),
+      quantidade_fotos: atual.fotos.length - 1,
+      quantidade_requer_confirmacao: atual.fotos.filter((foto) => foto.arquivo !== arquivoFoto && foto.requer_confirmacao).length,
+    } : atual);
+    setConfirmados((atual) => {
+      const proximo = new Set(atual);
+      proximo.delete(arquivoFoto);
+      return proximo;
+    });
+    setRevisoesEnvio((atual) => {
+      const proximo = { ...atual };
+      delete proximo[arquivoFoto];
+      return proximo;
+    });
+    if (nomesFotosNovas.has(arquivoFoto)) {
+      const proximo = new Set(nomesFotosNovas);
+      proximo.delete(arquivoFoto);
+      setNomesFotosNovas(proximo);
+      if (!proximo.size) {
+        setArquivo(null);
+        if (arquivoRef.current) arquivoRef.current.value = "";
+      }
     }
   }
 
@@ -354,7 +440,7 @@ export default function RelatoriosManutencaoPage() {
   return (
     <div className="mx-auto w-full max-w-[1720px] px-2 sm:px-4 xl:px-6">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div><h1 className="m-0 text-2xl font-semibold text-slate-900">{modoEdicao ? "Editar relatório de manutenção" : "Novo relatório de manutenção"}</h1><p className="mt-1 text-sm text-slate-500">{modoEdicao ? "Atualize os dados e os vínculos das evidências. O ZIP original será preservado." : "Preencha os dados, envie o ZIP e revise cada evidência antes de emitir."}</p></div>
+        <div><h1 className="m-0 text-2xl font-semibold text-slate-900">{modoEdicao ? "Editar relatório de manutenção" : "Novo relatório de manutenção"}</h1><p className="mt-1 text-sm text-slate-500">{modoEdicao ? "Atualize os dados, inclua novas fotografias ou exclua evidências existentes." : "Preencha os dados, envie o ZIP e revise cada evidência antes de emitir."}</p></div>
         <Button variant="outline" onClick={() => navigate("/relatorios-manutencao")}><RefreshCw size={16} />Voltar ao controle</Button>
       </div>
 
@@ -406,14 +492,12 @@ export default function RelatoriosManutencaoPage() {
               </div>
             </section>
             <label className="grid gap-1.5 text-sm font-medium text-slate-700">Observação<Textarea value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Contexto, anormalidades ou observações do lote" /></label>
-            {!modoEdicao && <>
             <div className={`rounded-lg border-2 border-dashed p-6 text-center transition ${selecaoCompleta ? "border-blue-300 bg-blue-50/50" : "border-slate-200 bg-slate-50 opacity-60"}`}>
-              <FileArchive className="mx-auto mb-2 text-blue-600" size={34} /><p className="m-0 font-medium text-slate-800">ZIP com as fotografias</p><p className="mb-4 mt-1 text-xs text-slate-500">O campo é liberado após selecionar subestação, tipo, periodicidade e data.</p>
-              <Input ref={arquivoRef} type="file" accept=".zip,application/zip" disabled={!selecaoCompleta} onChange={(e) => selecionarArquivo(e.target.files?.[0] ?? null)} />
+              <FileArchive className="mx-auto mb-2 text-blue-600" size={34} /><p className="m-0 font-medium text-slate-800">{modoEdicao ? "Nova fotografia" : "ZIP com as fotografias"}</p><p className="mb-4 mt-1 text-xs text-slate-500">{modoEdicao ? "Opcional: selecione diretamente uma imagem para acrescentar ao relatório, sem criar outro ZIP." : "O campo é liberado após selecionar subestação, tipo, periodicidade e data."}</p>
+              <Input ref={arquivoRef} type="file" accept={modoEdicao ? ".jpg,.jpeg,.png,.bmp,.webp,.heic,image/jpeg,image/png,image/bmp,image/webp,image/heic" : ".zip,application/zip"} disabled={!selecaoCompleta} onChange={(e) => selecionarArquivo(e.target.files?.[0] ?? null)} />
               {arquivo && <div className="mt-3 flex items-center justify-center gap-2 text-sm"><Archive size={15} /><strong>{arquivo.name}</strong><span className="text-slate-500">({formatarBytes(arquivo.size)})</span><button className="text-red-600" onClick={() => selecionarArquivo(null)} aria-label="Remover arquivo"><X size={16} /></button></div>}
             </div>
-            <Button className="w-full" disabled={!arquivo || !selecaoCompleta || analisando} onClick={analisar}>{analisando ? <Loader2 className="animate-spin" size={17} /> : <Search size={17} />}{analisando ? "Analisando fotografias..." : "Analisar fotografias"}</Button>
-            </>}
+            <Button className="w-full" disabled={!arquivo || !selecaoCompleta || analisando || (modoEdicao && nomesFotosNovas.size > 0)} onClick={analisar}>{analisando ? <Loader2 className="animate-spin" size={17} /> : <Search size={17} />}{analisando ? "Analisando fotografia..." : modoEdicao ? nomesFotosNovas.size ? "Nova fotografia pronta para salvar" : "Analisar e adicionar fotografia" : "Analisar fotografias"}</Button>
           </CardContent>
         </Card>
 
@@ -422,9 +506,11 @@ export default function RelatoriosManutencaoPage() {
           <CardContent>
             {!analise ? <div className="grid min-h-64 place-items-center rounded-lg border border-dashed text-center text-sm text-slate-500"><div><Search className="mx-auto mb-2" /><p>Analise um ZIP para revisar as sugestões.</p></div></div> : <div className="space-y-4">
               <ReviewEvidenceGrid
+                key={analise.fotos.map((foto) => foto.arquivo).join("|")}
                 analise={analise}
                 confirmados={confirmados}
                 initialReviews={revisoesEnvio}
+                onDeletePhoto={modoEdicao ? removerFoto : undefined}
                 onReviewsChange={setRevisoesEnvio}
                 onConfirmChange={(arquivo, confirmado) => setConfirmados((atual) => {
                   const proximo = new Set(atual);
