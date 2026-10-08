@@ -20,7 +20,7 @@ const Brand = styled.div`
 
 export function PasswordRecoveryLayout({ children }: { children: ReactNode }) {
   return <Page><Card>
-    <Brand><img src="/icone-v.svg" alt="ENGVI"/><div><strong>ENGVI</strong><span>GestÃ£o da Vida e Integridade dos Ativos</span></div></Brand>
+    <Brand><img src="/icone-v.svg" alt="ENGVI"/><div><strong>ENGVI</strong><span>Gestão da Vida e Integridade dos Ativos</span></div></Brand>
     {children}
   </Card></Page>;
 }

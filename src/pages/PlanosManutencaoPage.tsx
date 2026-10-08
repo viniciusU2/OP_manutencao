@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link, useNavigate } from "react-router-dom";
-import { Edit, Eye, ListChecks, Plus } from "lucide-react";
+import { BarChart3, Edit, Eye, ListChecks, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import api from "../api/api";
@@ -179,6 +179,13 @@ export default function PlanosManutencaoPage() {
         </div>
 
         <div className="flex flex-wrap items-end gap-2">
+          <Button asChild type="button" variant="outline">
+            <Link to="/planos-manutencao/dashboard">
+              <BarChart3 size={16} />
+              Dashboard
+            </Link>
+          </Button>
+
           <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
             Gerar para o dia
             <input

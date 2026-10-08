@@ -4,10 +4,12 @@ import { useState } from "react"
 
 import {
   LayoutDashboard,
+  BarChart3,
   Zap,
   Building2,
   FileText,
   ClipboardList,
+  ClipboardCheck,
   Calendar,
   Download,
   FileClock,
@@ -394,10 +396,12 @@ const menu = [
   { name: "RDO", path: "/rdo", icon: FileClock, restricted: true },
   { name: "Sobreaviso", path: "/sobreaviso", icon: Clock3, restricted: true },
   { name: "Plano Manut.", path: "/planos-manutencao", icon: Wrench, restricted: true, adminOnly: true },
+  { name: "Dash. Planos", path: "/planos-manutencao/dashboard", icon: BarChart3, restricted: true, adminOnly: true },
   { name: "Exec. Planos", path: "/planos-manutencao/execucoes", icon: ListChecks, restricted: true, adminOnly: true },
   { name: "Inspeções", path: "/inspecoes", icon: ListChecks, restricted: true },
   { name: "Relatórios", path: "/relatorios-manutencao", icon: Images, restricted: true },
   { name: "Downloads", path: "/downloads", icon: Download, restricted: true },
+  { name: "Validar OS antigas", path: "/validacao-os-antigas", icon: ClipboardCheck, restricted: true, adminOnly: true },
   { name: "Perfis", path: "/perfis", icon: UserCog, restricted: true, adminOnly: true },
 
 
@@ -406,8 +410,8 @@ const menu = [
 const menuGroups = [
   { name: "Cadastros", paths: ["/subestacaoPage", "/ativo", "/funcoes-operacao", "/problemas-tipicos"] },
   { name: "OS-SS-SI", paths: ["/controle", "/ss", "/si", "/rdo", "/sobreaviso"] },
-  { name: "Plano manutenção", paths: ["/planos-manutencao", "/planos-manutencao/execucoes", "/inspecoes", "/relatorios-manutencao"] },
-  { name: "Administração", paths: ["/downloads", "/perfis"] },
+  { name: "Plano manutenção", paths: ["/planos-manutencao", "/planos-manutencao/dashboard", "/planos-manutencao/execucoes", "/inspecoes", "/relatorios-manutencao"] },
+  { name: "Administração", paths: ["/downloads", "/validacao-os-antigas", "/perfis"] },
 ]
 
 /* ================= COMPONENT ================= */

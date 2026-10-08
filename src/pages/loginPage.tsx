@@ -18,7 +18,7 @@ import background from "../assets/fundo-tratado.png";
 import ElectricianMascot from "../components/ElectricianMascot";
 
 /* =========================================================
-   ANIMAÃ‡ÃƒO DO HERO
+   ANIMAÇÃO DO HERO
 ========================================================= */
 
 const heroRotate = keyframes`
@@ -527,12 +527,12 @@ export function LoginPage() {
 
       if (!error?.response) {
         setErro(
-          "NÃ£o foi possÃ­vel conectar ao backend. Verifique a API e o CORS.",
+          "Não foi possível conectar ao backend. Verifique a API e o CORS.",
         );
         return;
       }
 
-      setErro("E-mail ou senha invÃ¡lidos.");
+      setErro("E-mail ou senha inválidos.");
     }
   }
 
@@ -549,7 +549,7 @@ export function LoginPage() {
             <strong>ENGVI</strong>
 
             <span>
-              GestÃ£o da Vida e Integridade dos Ativos
+              Gestão da Vida e Integridade dos Ativos
             </span>
           </BrandText>
         </Brand>
@@ -560,8 +560,8 @@ export function LoginPage() {
             <HeroFace>
        
               <p>
-                Centralize informaÃ§Ãµes, acompanhe atividades e
-                mantenha a rastreabilidade da manutenÃ§Ã£o dos ativos.
+                Centralize informações, acompanhe atividades e
+                mantenha a rastreabilidade da manutenção dos ativos.
               </p>
 
               <Signals>
@@ -572,7 +572,7 @@ export function LoginPage() {
 
                 <Signal>
                   <BarChart3 size={16} />
-                  Indicadores de manutenÃ§Ã£o
+                  Indicadores de manutenção
                 </Signal>
               </Signals>
             </HeroFace>
@@ -581,7 +581,7 @@ export function LoginPage() {
             <HeroFace $back>
               <HeroEyebrow>
                 <Wrench size={15} />
-                GestÃ£o inteligente
+                Gestão inteligente
               </HeroEyebrow>
 
         
@@ -590,22 +590,22 @@ export function LoginPage() {
               <ModuleGrid>
                 <ModuleCard>
                   <ClipboardCheck size={18} />
-                  Ordens de serviÃ§o
+                  Ordens de serviço
                 </ModuleCard>
 
                 <ModuleCard>
                   <History size={18} />
-                  HistÃ³rico dos ativos
+                  Histórico dos ativos
                 </ModuleCard>
 
                 <ModuleCard>
                   <Wrench size={18} />
-                  Planos de manutenÃ§Ã£o
+                  Planos de manutenção
                 </ModuleCard>
 
                 <ModuleCard>
                   <ShieldCheck size={18} />
-                  SeguranÃ§a operacional
+                  Segurança operacional
                 </ModuleCard>
               </ModuleGrid>
             </HeroFace>
@@ -621,7 +621,7 @@ export function LoginPage() {
         <FormWrap>
           <Title>
             <h2>Entrar</h2>
-            <p>Acesse sua Ã¡rea de trabalho.</p>
+            <p>Acesse sua área de trabalho.</p>
           </Title>
 
           <form onSubmit={handleLogin}>
@@ -679,7 +679,7 @@ export function LoginPage() {
           </form>
 
           <RegisterText>
-            NÃ£o tem uma conta?{" "}
+            Não tem uma conta?{" "}
             <button
               type="button"
               onClick={() => navigate("/register")}

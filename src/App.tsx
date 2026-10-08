@@ -40,6 +40,9 @@ import { InspecaoDetalhe } from "./pages/InspecaoDetalhe";
 import InspecoesPage from "./pages/InspecoesPage";
 import PlanoManutencaoForm from "./pages/PlanoManutencaoForm";
 import PlanosManutencaoPage from "./pages/PlanosManutencaoPage";
+import PlanoDashboardPage from "./pages/PlanoDashboardPage";
+import DashboardCorretivasPage from "./pages/DashboardCorretivasPage";
+import DashboardInspecoesPage from "./pages/DashboardInspecoesPage";
 import PlanoExecucoesPage from "./pages/PlanoExecucoesPage";
 import PlanoOsPrevistasPage from "./pages/PlanoOsPrevistasPage";
 import DownloadsPage from "./pages/DownloadsPage";
@@ -53,6 +56,7 @@ import ProblemasTipicosPage from "./pages/ProblemasTipicosPage";
 import CsdMonitorPage from "./pages/CsdMonitorPage";
 import CsdImportPage from "./pages/CsdImportPage";
 import CsdControlPage from "./pages/CsdControlPage";
+import ValidacaoOsAntigasPage from "./pages/ValidacaoOsAntigasPage";
 import { useGerarOsPlanosManutencao } from "./hooks/useGerarOsPlanosManutencao";
 
 /* ================= STYLES ================= */
@@ -185,11 +189,15 @@ function AppContent() {
           <Route path="/problemas-tipicos" element={<ProblemasTipicosPage />} />
           <Route path="/importar-ativos" element={<ImportarAtivos />} />
           <Route path="/planos-manutencao" element={<PlanosManutencaoPage />} />
+          <Route path="/planos-manutencao/dashboard" element={<PlanoDashboardPage />} />
+          <Route path="/manutencao-corretiva/dashboard" element={<DashboardCorretivasPage />} />
+          <Route path="/inspecoes/dashboard" element={<DashboardInspecoesPage />} />
           <Route path="/planos-manutencao/os-previstas" element={<PlanoOsPrevistasPage />} />
           <Route path="/planos-manutencao/execucoes" element={<PlanoExecucoesPage />} />
           <Route path="/planos-manutencao/novo" element={<PlanoManutencaoForm />} />
           <Route path="/planos-manutencao/:id/editar" element={<PlanoManutencaoForm />} />
           <Route path="/perfis" element={<PerfisPage />} />
+          <Route path="/validacao-os-antigas" element={<ValidacaoOsAntigasPage />} />
         </Route>
       </Route>
 
