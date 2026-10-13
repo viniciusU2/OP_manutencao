@@ -45,6 +45,7 @@ import DashboardCorretivasPage from "./pages/DashboardCorretivasPage";
 import DashboardInspecoesPage from "./pages/DashboardInspecoesPage";
 import PlanoExecucoesPage from "./pages/PlanoExecucoesPage";
 import PlanoOsPrevistasPage from "./pages/PlanoOsPrevistasPage";
+import PlanoSimulacaoAnualPage from "./pages/PlanoSimulacaoAnualPage";
 import DownloadsPage from "./pages/DownloadsPage";
 import PerfisPage from "./pages/PerfisPage";
 import RdoPage from "./pages/RdoPage";
@@ -193,6 +194,7 @@ function AppContent() {
           <Route path="/manutencao-corretiva/dashboard" element={<DashboardCorretivasPage />} />
           <Route path="/inspecoes/dashboard" element={<DashboardInspecoesPage />} />
           <Route path="/planos-manutencao/os-previstas" element={<PlanoOsPrevistasPage />} />
+          <Route path="/planos-manutencao/simulacao-anual" element={<PlanoSimulacaoAnualPage />} />
           <Route path="/planos-manutencao/execucoes" element={<PlanoExecucoesPage />} />
           <Route path="/planos-manutencao/novo" element={<PlanoManutencaoForm />} />
           <Route path="/planos-manutencao/:id/editar" element={<PlanoManutencaoForm />} />

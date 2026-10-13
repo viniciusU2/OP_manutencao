@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link, useNavigate } from "react-router-dom";
-import { BarChart3, Edit, Eye, ListChecks, Plus } from "lucide-react";
+import { BarChart3, CalendarRange, Edit, Eye, ListChecks, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import api from "../api/api";
@@ -183,6 +183,13 @@ export default function PlanosManutencaoPage() {
             <Link to="/planos-manutencao/dashboard">
               <BarChart3 size={16} />
               Dashboard
+            </Link>
+          </Button>
+
+          <Button asChild type="button" variant="outline">
+            <Link to="/planos-manutencao/simulacao-anual">
+              <CalendarRange size={16} />
+              Plano anual
             </Link>
           </Button>
 

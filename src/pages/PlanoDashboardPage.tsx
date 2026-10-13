@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import {
   AlertTriangle,
   BarChart3,
+  CalendarRange,
   ShieldAlert,
   CheckCircle2,
   ChevronLeft,
@@ -72,11 +73,14 @@ type OrdemRealizada = {
   codigo_ativo?: string | null;
   tipo_ativo?: string | null;
   item_plano?: string | null;
+  data_inicio_programado?: string | null;
+  data_fim_programado?: string | null;
   data_inicio_execucao?: string | null;
   data_execucao?: string | null;
   responsavel?: string | null;
   duracao_horas?: number | null;
   atraso_dias: number;
+  vencida: boolean;
 };
 
 type HistoricoResponse = {
@@ -149,12 +153,31 @@ function paramsDosFiltros(filtros: Filtros) {
   );
 }
 
-function statusClass(status?: string | null) {
+function statusClass(status?: string | null, vencida = false) {
+  if (vencida) return "border-red-200 bg-red-50 text-red-700";
   const normalizado = status?.toUpperCase() ?? "";
   if (["ENCERRADA", "CONCLUIDA", "CONCLUÍDA", "EXECUTADA", "FINALIZADA"].includes(normalizado)) {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
+  if (["EM_EXECUCAO", "EM EXECUÇÃO"].includes(normalizado)) {
+    return "border-blue-200 bg-blue-50 text-blue-700";
+  }
+  if (["PROGRAMADA", "ABERTA"].includes(normalizado)) {
+    return "border-amber-200 bg-amber-50 text-amber-700";
+  }
   return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
+function rotuloStatusFiltro(status: string) {
+  const rotulos: Record<string, string> = {
+    VENCIDAS: "vencidas",
+    ABERTAS: "em aberto",
+    EM_EXECUCAO: "em execução",
+    PROGRAMADA: "programadas",
+    ENCERRADA: "encerradas",
+    REALIZADAS: "realizadas",
+  };
+  return rotulos[status] ?? "todos os status";
 }
 
 export default function PlanoDashboardPage() {
@@ -162,6 +185,7 @@ export default function PlanoDashboardPage() {
   const [historico, setHistorico] = useState<HistoricoResponse | null>(null);
   const [planoSelecionado, setPlanoSelecionado] = useState<number | null>(null);
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_INICIAIS);
+  const [statusHistorico, setStatusHistorico] = useState("");
   const [pagina, setPagina] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
@@ -205,7 +229,7 @@ export default function PlanoDashboardPage() {
   }, []);
 
   const carregarHistorico = useCallback(
-    async (planoId: number, paginaAtual: number, filtrosAtuais: Filtros) => {
+    async (planoId: number, paginaAtual: number, filtrosAtuais: Filtros, statusAtual: string) => {
       setLoadingHistorico(true);
       try {
         const { data } = await api.get<HistoricoResponse>(
@@ -213,6 +237,7 @@ export default function PlanoDashboardPage() {
           {
             params: {
               ...paramsDosFiltros(filtrosAtuais),
+              ...(statusAtual ? { status: statusAtual } : {}),
               page: paginaAtual,
               page_size: 15,
             },
@@ -221,7 +246,7 @@ export default function PlanoDashboardPage() {
         setHistorico(data);
       } catch {
         setHistorico(null);
-        toast.error("Erro ao carregar as OS realizadas do plano");
+        toast.error("Erro ao carregar as OS do plano");
       } finally {
         setLoadingHistorico(false);
       }
@@ -238,8 +263,8 @@ export default function PlanoDashboardPage() {
       setHistorico(null);
       return;
     }
-    if (periodoValido) void carregarHistorico(planoSelecionado, pagina, filtros);
-  }, [carregarHistorico, filtros, pagina, periodoValido, planoSelecionado]);
+    if (periodoValido) void carregarHistorico(planoSelecionado, pagina, filtros, statusHistorico);
+  }, [carregarHistorico, filtros, pagina, periodoValido, planoSelecionado, statusHistorico]);
 
   const planosNoRecorte = useMemo(
     () => possuiFiltroDeDados
@@ -364,6 +389,9 @@ export default function PlanoDashboardPage() {
               <Button asChild variant="outline" className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white">
                 <Link to="/inspecoes/dashboard"><ClipboardCheck size={16} /> Inspeções</Link>
               </Button>
+              <Button asChild variant="outline" className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white">
+                <Link to="/planos-manutencao/simulacao-anual"><CalendarRange size={16} /> Plano anual</Link>
+              </Button>
               <Button asChild className="bg-[#f4b400] text-slate-950 hover:bg-[#ffc42c]">
                 <Link to="/planos-manutencao"><Wrench size={16} /> Planos</Link>
               </Button>
@@ -383,9 +411,9 @@ export default function PlanoDashboardPage() {
                 {planosOrdenados.map((plano) => <option key={plano.id_plano_manutencao} value={plano.id_plano_manutencao}>#{plano.id_plano_manutencao} — {plano.plano}</option>)}
               </select>
             </Slicer>
-            <Slicer label="Instalação">
+            <Slicer label="Subestação">
               <select value={filtros.instalacao} onChange={(event) => atualizarFiltro("instalacao", event.target.value)} className="h-10 w-full rounded border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
-                <option value="">Todas as instalações</option>
+                <option value="">Todas as subestações</option>
                 {dashboard.instalacoes.map((instalacao) => <option key={instalacao} value={instalacao}>{instalacao}</option>)}
               </select>
             </Slicer>
@@ -471,19 +499,39 @@ export default function PlanoDashboardPage() {
             </Visual>
           </div>
 
-          <Visual title="Detalhamento das OS realizadas" subtitle={historico ? `${formatarNumero(historico.total)} registros · ordenação pela execução mais recente` : "Selecione um plano"} action={<Button type="button" variant="ghost" size="sm" onClick={() => planoSelecionado && carregarHistorico(planoSelecionado, pagina, filtros)} disabled={loadingHistorico || !planoSelecionado || !periodoValido}><RefreshCw className={loadingHistorico ? "animate-spin" : ""} size={15} /> Atualizar</Button>}>
+          <Visual
+            title="Detalhamento das OS do plano"
+            subtitle={historico ? `${formatarNumero(historico.total)} registros · ${rotuloStatusFiltro(statusHistorico)} · vencidas primeiro` : "Selecione um plano"}
+            action={<div className="flex flex-wrap items-center justify-end gap-2">
+              <select
+                aria-label="Filtrar ordens por status"
+                value={statusHistorico}
+                onChange={(event) => { setStatusHistorico(event.target.value); setPagina(1); }}
+                className="h-8 rounded border border-slate-300 bg-white px-2 text-xs text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">Todos os status</option>
+                <option value="VENCIDAS">Vencidas</option>
+                <option value="ABERTAS">Em aberto</option>
+                <option value="EM_EXECUCAO">Em execução</option>
+                <option value="PROGRAMADA">Programadas</option>
+                <option value="ENCERRADA">Encerradas</option>
+                <option value="REALIZADAS">Realizadas</option>
+              </select>
+              <Button type="button" variant="ghost" size="sm" onClick={() => planoSelecionado && carregarHistorico(planoSelecionado, pagina, filtros, statusHistorico)} disabled={loadingHistorico || !planoSelecionado || !periodoValido}><RefreshCw className={loadingHistorico ? "animate-spin" : ""} size={15} /> Atualizar</Button>
+            </div>}
+          >
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader className="bg-slate-50"><TableRow><TableHead>Ordem de serviço</TableHead><TableHead>Execução real</TableHead><TableHead>Instalação / ativo</TableHead><TableHead>Item / responsável</TableHead><TableHead className="text-right">Duração</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                <TableHeader className="bg-slate-50"><TableRow><TableHead>Ordem de serviço</TableHead><TableHead>Execução / prazo</TableHead><TableHead>Instalação / ativo</TableHead><TableHead>Item / responsável</TableHead><TableHead className="text-right">Duração</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
                 <TableBody>
-                  {!loadingHistorico && !historico?.items.length && <TableRow><TableCell colSpan={6} className="h-28 text-center text-slate-500">Nenhuma OS realizada para este plano no período.</TableCell></TableRow>}
-                  {historico?.items.map((ordem) => <TableRow key={ordem.id_os} className="hover:bg-blue-50/40">
-                    <TableCell><Link to={`/os/${ordem.id_os}`} className="font-semibold text-blue-700 hover:underline">{ordem.numero_os}</Link>{ordem.atraso_dias > 0 && <p className="mt-1 text-[11px] font-medium text-red-600">{ordem.atraso_dias} dia{ordem.atraso_dias === 1 ? "" : "s"} após o previsto</p>}</TableCell>
-                    <TableCell className="whitespace-nowrap"><strong className="block text-sm text-slate-800">{formatarData(ordem.data_execucao)}</strong><span className="text-xs text-slate-500">Início {formatarData(ordem.data_inicio_execucao, true)}</span></TableCell>
+                  {!loadingHistorico && !historico?.items.length && <TableRow><TableCell colSpan={6} className="h-28 text-center text-slate-500">Nenhuma OS encontrada para este plano e status no período.</TableCell></TableRow>}
+                  {historico?.items.map((ordem) => <TableRow key={ordem.id_os} className={ordem.vencida ? "bg-red-50/50 hover:bg-red-50/80" : "hover:bg-blue-50/40"}>
+                    <TableCell><Link to={`/os/${ordem.id_os}`} className="font-semibold text-blue-700 hover:underline">{ordem.numero_os}</Link>{ordem.atraso_dias > 0 && <p className="mt-1 text-[11px] font-medium text-red-600">{ordem.vencida ? `${ordem.atraso_dias} dia${ordem.atraso_dias === 1 ? "" : "s"} vencida` : `${ordem.atraso_dias} dia${ordem.atraso_dias === 1 ? "" : "s"} após o previsto`}</p>}</TableCell>
+                    <TableCell className="whitespace-nowrap">{ordem.vencida ? <><strong className="block text-sm text-red-700">Prazo {formatarData(ordem.data_fim_programado)}</strong><span className="text-xs text-slate-500">Programada {formatarData(ordem.data_inicio_programado, true)}</span></> : ordem.data_execucao ? <><strong className="block text-sm text-slate-800">{formatarData(ordem.data_execucao)}</strong><span className="text-xs text-slate-500">Início {formatarData(ordem.data_inicio_execucao, true)}</span></> : <><strong className="block text-sm text-slate-800">Programada</strong><span className="text-xs text-slate-500">{formatarData(ordem.data_inicio_programado, true)} até {formatarData(ordem.data_fim_programado, true)}</span></>}</TableCell>
                     <TableCell><span className="block font-medium text-slate-800">{ordem.instalacao || "-"}</span><span className="text-xs text-slate-500">{ordem.codigo_ativo || ordem.tipo_ativo || "Ativo não informado"}</span></TableCell>
                     <TableCell className="max-w-[280px]"><span className="block truncate text-sm" title={ordem.item_plano || undefined}>{ordem.item_plano || "Item não vinculado"}</span><span className="block truncate text-xs text-slate-500" title={ordem.responsavel || undefined}>{ordem.responsavel || "Responsável não informado"}</span></TableCell>
                     <TableCell className="whitespace-nowrap text-right tabular-nums">{ordem.duracao_horas == null ? "-" : `${ordem.duracao_horas.toLocaleString("pt-BR")} h`}</TableCell>
-                    <TableCell><Badge variant="outline" className={statusClass(ordem.status)}>{ordem.status || "Realizada"}</Badge></TableCell>
+                    <TableCell><Badge variant="outline" className={statusClass(ordem.status, ordem.vencida)}>{ordem.vencida ? "VENCIDA" : ordem.status || "Sem status"}</Badge></TableCell>
                   </TableRow>)}
                 </TableBody>
               </Table>
