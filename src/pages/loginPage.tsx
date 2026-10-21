@@ -521,25 +521,14 @@ export function LoginPage() {
                 Novo app de campo
               </HeroEyebrow>
 
-              <h1>ENGVI Mobile com Sobreaviso</h1>
+              <h1>ENGVI Mobile</h1>
 
               <p>
-                Leve a operação para o celular. Consulte a escala,
-                registre solicitações de ajuste e acompanhe aprovações
-                direto do campo, com as mesmas credenciais e permissões
-                do sistema web.
+                Novas oportunidades se abrem, agora o Engvi está na sua mão!
               </p>
 
               <Signals>
-                <Signal>
-                  <ShieldCheck size={16} />
-                  Admin e mantenedor veem toda a escala
-                </Signal>
-
-                <Signal>
-                  <ClipboardCheck size={16} />
-                  Operador acessa apenas o próprio colaborador
-                </Signal>
+                
 
                 <Signal>
                   <History size={16} />
