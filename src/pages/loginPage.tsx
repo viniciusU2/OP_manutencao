@@ -1,14 +1,14 @@
 ﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import styled, { keyframes } from "styled-components";
+import styled from "styled-components";
 import {
-  BarChart3,
   ClipboardCheck,
+  Download,
   History,
   Lock,
   Mail,
   ShieldCheck,
-  Wrench,
+  Smartphone,
 } from "lucide-react";
 
 import api from "../api/api";
@@ -16,27 +16,6 @@ import { useAuth } from "../context/AuthContext";
 import type { Usuario } from "../context/AuthContext";
 import background from "../assets/fundo-tratado.png";
 import ElectricianMascot from "../components/ElectricianMascot";
-
-/* =========================================================
-   ANIMAÇÃO DO HERO
-========================================================= */
-
-const heroRotate = keyframes`
-  0%,
-  38% {
-    transform: rotateY(0deg);
-  }
-
-  45%,
-  88% {
-    transform: rotateY(180deg);
-  }
-
-  95%,
-  100% {
-    transform: rotateY(360deg);
-  }
-`;
 
 /* =========================================================
    LAYOUT PRINCIPAL
@@ -133,52 +112,24 @@ const BrandText = styled.div`
 `;
 
 /* =========================================================
-   HERO 3D
+   APP MOBILE (LOGIN)
 ========================================================= */
 
 const HeroWrapper = styled.div`
   width: 100%;
   max-width: 680px;
-
-  perspective: 1400px;
 `;
 
 const Hero = styled.div`
-  position: relative;
-
   width: 100%;
-  min-height: 300px;
-
-  transform-style: preserve-3d;
-  transform-origin: center center;
-
-  animation: ${heroRotate} 14s ease-in-out infinite;
-  will-change: transform;
-
-  @media (max-width: 900px) {
-    min-height: 320px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-    transform: rotateY(0deg);
-  }
 `;
 
-interface HeroFaceProps {
-  $back?: boolean;
-}
-
-const HeroFace = styled.div<HeroFaceProps>`
-  position: absolute;
-  inset: 0;
-
-  min-height: 300px;
-  padding: 28px 32px;
+const HeroFace = styled.div`
+  padding: 30px 32px;
 
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  align-items: flex-start;
 
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -192,18 +143,12 @@ const HeroFace = styled.div<HeroFaceProps>`
     0 18px 45px rgba(2, 8, 23, 0.34),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-
-  transform: ${({ $back }) =>
-    $back ? "rotateY(180deg)" : "rotateY(0deg)"};
-
   h1 {
     max-width: 620px;
     margin: 0;
 
     color: #ffffff;
-    font-size: clamp(38px, 5vw, 64px);
+    font-size: clamp(32px, 4.4vw, 54px);
     font-weight: 800;
     line-height: 1.08;
     letter-spacing: -0.025em;
@@ -215,21 +160,20 @@ const HeroFace = styled.div<HeroFaceProps>`
 
   p {
     max-width: 560px;
-    margin: 18px 0 0;
+    margin: 16px 0 0;
 
     color: #dbeafe;
-    font-size: 16px;
+    font-size: 15px;
     line-height: 1.6;
 
     text-shadow: 0 2px 6px rgba(0, 0, 0, 0.55);
   }
 
   @media (max-width: 900px) {
-    min-height: 320px;
-    padding: 22px 20px;
+    padding: 24px 20px;
 
     h1 {
-      font-size: clamp(34px, 10vw, 52px);
+      font-size: clamp(30px, 8vw, 44px);
     }
   }
 `;
@@ -255,7 +199,7 @@ const Signals = styled.div`
   flex-wrap: wrap;
   gap: 10px;
 
-  margin-top: 28px;
+  margin-top: 24px;
 `;
 
 const Signal = styled.span`
@@ -279,38 +223,51 @@ const Signal = styled.span`
   }
 `;
 
-const ModuleGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+const HeroDownloadButton = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
 
-  margin-top: 26px;
+  min-height: 46px;
+  margin-top: 24px;
+  padding: 0 20px;
 
-  @media (max-width: 520px) {
-    grid-template-columns: 1fr;
+  border-radius: 9px;
+
+  background: #2563eb;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.32);
+
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &:hover {
+    background: #1d4ed8;
+
+    transform: translateY(-1px);
+    box-shadow: 0 14px 30px rgba(37, 99, 235, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 `;
 
-const ModuleCard = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
+const HeroDownloadMeta = styled.small`
+  display: block;
+  margin-top: 12px;
 
-  padding: 12px;
-
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 10px;
-
-  background: rgba(15, 23, 42, 0.62);
-  color: #e2e8f0;
-
-  font-size: 13px;
-  font-weight: 600;
-
-  svg {
-    flex-shrink: 0;
-    color: #facc15;
-  }
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.5;
 `;
 
 /* =========================================================
@@ -489,6 +446,8 @@ interface AuthResponse {
   access_token: string;
 }
 
+const APK_URL = `${import.meta.env.BASE_URL}downloads/ENGVI_V1.apk`;
+
 /* =========================================================
    COMPONENTE
 ========================================================= */
@@ -556,58 +515,51 @@ export function LoginPage() {
 
         <HeroWrapper>
           <Hero>
-            {/* Face frontal */}
             <HeroFace>
-       
+              <HeroEyebrow>
+                <Smartphone size={15} />
+                Novo app de campo
+              </HeroEyebrow>
+
+              <h1>ENGVI Mobile com Sobreaviso</h1>
+
               <p>
-                Centralize informações, acompanhe atividades e
-                mantenha a rastreabilidade da manutenção dos ativos.
+                Leve a operação para o celular. Consulte a escala,
+                registre solicitações de ajuste e acompanhe aprovações
+                direto do campo, com as mesmas credenciais e permissões
+                do sistema web.
               </p>
 
               <Signals>
                 <Signal>
                   <ShieldCheck size={16} />
-                  Acesso por perfil
+                  Admin e mantenedor veem toda a escala
                 </Signal>
 
                 <Signal>
-                  <BarChart3 size={16} />
-                  Indicadores de manutenção
+                  <ClipboardCheck size={16} />
+                  Operador acessa apenas o próprio colaborador
+                </Signal>
+
+                <Signal>
+                  <History size={16} />
+                  Aprovações e ajustes sincronizados
                 </Signal>
               </Signals>
-            </HeroFace>
 
-            {/* Face traseira */}
-            <HeroFace $back>
-              <HeroEyebrow>
-                <Wrench size={15} />
-                Gestão inteligente
-              </HeroEyebrow>
+              <HeroDownloadButton
+                href={APK_URL}
+                download="ENGVI_V1.apk"
+                aria-label="Baixar o APK atualizado do ENGVI Mobile"
+              >
+                <Download size={17} />
+                Baixar APK atualizado
+              </HeroDownloadButton>
 
-        
-
-      
-              <ModuleGrid>
-                <ModuleCard>
-                  <ClipboardCheck size={18} />
-                  Ordens de serviço
-                </ModuleCard>
-
-                <ModuleCard>
-                  <History size={18} />
-                  Histórico dos ativos
-                </ModuleCard>
-
-                <ModuleCard>
-                  <Wrench size={18} />
-                  Planos de manutenção
-                </ModuleCard>
-
-                <ModuleCard>
-                  <ShieldCheck size={18} />
-                  Segurança operacional
-                </ModuleCard>
-              </ModuleGrid>
+              <HeroDownloadMeta>
+                Android 7.0 ou superior · Versão 1.0.0 · 7,6 MB ·
+                Atualizado em 21/10/2026
+              </HeroDownloadMeta>
             </HeroFace>
           </Hero>
         </HeroWrapper>
