@@ -2,12 +2,11 @@
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import {
-  ClipboardCheck,
+
   Download,
   History,
   Lock,
   Mail,
-  ShieldCheck,
   Smartphone,
 } from "lucide-react";
 
