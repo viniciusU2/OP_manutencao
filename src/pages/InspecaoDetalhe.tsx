@@ -20,6 +20,7 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Separator } from "../components/ui/separator";
 import { OnlyAdmin, OnlyMaintainerOrAdmin } from "../components/onlyAdmin";
+import { resolveMediaUrl as normalizeMediaUrl } from "../lib/media";
 
 interface Resultado {
   id_resultado: number;
@@ -71,27 +72,6 @@ function formatarData(data?: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function normalizeMediaUrl(url?: string | null) {
-  const value = url?.trim();
-  if (!value) return "";
-
-  if (/^(data:image\/|blob:)/i.test(value)) return value;
-
-  try {
-    const parsed = new URL(value);
-    const host = parsed.hostname.toLowerCase();
-
-    if (host.includes("sharepoint.com") || host.includes("onedrive.live.com")) {
-      parsed.searchParams.set("download", "1");
-      return parsed.toString();
-    }
-
-    return value;
-  } catch {
-    return value;
-  }
 }
 
 function isImageUrl(url?: string | null) {
@@ -386,7 +366,7 @@ export function InspecaoDetalhe() {
                     <ImageIcon className="h-12 w-12" />
                     <p className="font-medium">Previa da foto indisponivel</p>
                     <Button asChild variant="secondary">
-                      <a href={fotoAtual.url} target="_blank" rel="noreferrer">
+                      <a href={fotoAtual.src} target="_blank" rel="noreferrer">
                         <ExternalLink className="h-4 w-4" />
                         Abrir foto
                       </a>
@@ -456,7 +436,7 @@ export function InspecaoDetalhe() {
                   {fotoAtual.status}
                 </Badge>
                 <Button asChild variant="outline" size="sm" className="w-fit">
-                  <a href={fotoAtual.url} target="_blank" rel="noreferrer">
+                  <a href={fotoAtual.src} target="_blank" rel="noreferrer">
                     <ExternalLink className="h-4 w-4" />
                     Abrir foto
                   </a>
@@ -531,16 +511,18 @@ export function InspecaoDetalhe() {
                     {resultado.foto && (
                       <div className="mt-3">
                         <a
-                          href={resultado.foto}
+                          href={normalizeMediaUrl(resultado.foto)}
                           target="_blank"
                           rel="noreferrer"
                           className="text-sm font-medium text-blue-700 underline"
                         >
                           Abrir foto
                         </a>
-                        {/^(https?:|data:image\/)/i.test(resultado.foto) && (
+                        {/^(https?:|data:image\/|blob:|\/inspecoes\/fotos\/)/i.test(
+                          resultado.foto
+                        ) && (
                           <img
-                            src={resultado.foto}
+                            src={normalizeMediaUrl(resultado.foto)}
                             alt={`Foto do item ${resultado.nome_item || ""}`}
                             className="mt-2 max-h-40 rounded-md border object-contain"
                           />

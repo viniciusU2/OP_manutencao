@@ -21,6 +21,7 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Separator } from "../components/ui/separator";
+import { resolveMediaUrl as normalizePhotoUrl } from "../lib/media";
 import {
   Table,
   TableBody,
@@ -102,27 +103,6 @@ function firstText(...values: Array<string | null | undefined>) {
 
 function getAtivoImage(ativo: Ativo) {
   return firstText(ativo.foto_url, ativo.imagem_url, ativo.foto, ativo.imagem);
-}
-
-function normalizePhotoUrl(url?: string | null) {
-  const value = url?.trim();
-  if (!value) return "";
-
-  if (/^(data:image\/|blob:)/i.test(value)) return value;
-
-  try {
-    const parsed = new URL(value);
-    const host = parsed.hostname.toLowerCase();
-
-    if (host.includes("sharepoint.com") || host.includes("onedrive.live.com")) {
-      parsed.searchParams.set("download", "1");
-      return parsed.toString();
-    }
-
-    return value;
-  } catch {
-    return value;
-  }
 }
 
 function getTipoAtivo(ativo: Ativo) {
@@ -378,7 +358,7 @@ export function AtivoDetalhe() {
                 </span>
                 {fotoAtual?.url && (
                   <Button asChild size="sm" variant="outline">
-                    <a href={fotoAtual.url} target="_blank" rel="noreferrer">
+                    <a href={fotoAtualSrc} target="_blank" rel="noreferrer">
                       Abrir foto
                     </a>
                   </Button>
@@ -407,7 +387,7 @@ export function AtivoDetalhe() {
                   <div className="flex gap-2">
                     {fotoAtual?.url && (
                       <Button size="icon-sm" variant="secondary" asChild>
-                        <a href={fotoAtual.url} target="_blank" rel="noreferrer" title="Abrir foto">
+                        <a href={fotoAtualSrc} target="_blank" rel="noreferrer" title="Abrir foto">
                           <ExternalLink />
                         </a>
                       </Button>

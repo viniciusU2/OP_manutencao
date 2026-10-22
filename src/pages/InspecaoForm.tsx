@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Camera, Loader2, Trash2 } from "lucide-react";
 import styled from "styled-components";
 import { toast } from "sonner";
 
@@ -9,6 +10,7 @@ import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
+import { resolveMediaUrl } from "../lib/media";
 
 type Status = "OK" | "NOK" | "NA";
 
@@ -153,6 +155,132 @@ const ItemGrid = styled.div`
   }
 `;
 
+const ChecklistHint = styled.p`
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+`;
+
+const FotoCampo = styled.div`
+  position: relative;
+
+  display: grid;
+  gap: 8px;
+`;
+
+const FotoInput = styled.input`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+
+  &:focus-visible ~ label,
+  &:focus-visible ~ * label {
+    outline: 2px solid #93c5fd;
+    outline-offset: 2px;
+  }
+`;
+
+const FotoBotao = styled.label`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  min-height: 40px;
+  padding: 0 12px;
+
+  border: 1px dashed #94a3b8;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #334155;
+
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background-color 0.2s ease;
+
+  &:hover {
+    border-color: #2563eb;
+    color: #1d4ed8;
+    background: #eff6ff;
+  }
+`;
+
+const FotoPreview = styled.div`
+  display: grid;
+  gap: 8px;
+
+  img {
+    width: 100%;
+    height: 130px;
+    object-fit: cover;
+
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+
+    background: #f8fafc;
+  }
+`;
+
+const FotoAcoes = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  label,
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    min-height: 32px;
+    padding: 0 10px;
+
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+
+    background: #ffffff;
+    color: #334155;
+
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  label:hover,
+  button:hover {
+    border-color: #2563eb;
+    color: #1d4ed8;
+  }
+
+  button {
+    color: #b91c1c;
+  }
+
+  button:hover {
+    border-color: #fca5a5;
+    color: #991b1b;
+  }
+
+  label[aria-disabled="true"],
+  button:disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+`;
+
 const Meta = styled.div`
   color: #64748b;
   font-size: 12px;
@@ -191,6 +319,7 @@ export default function InspecaoForm() {
   const [itens, setItens] = useState<PlanoItem[]>([]);
   const [ordensServico, setOrdensServico] = useState<OrdemServicoOption[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fotosEnviando, setFotosEnviando] = useState<Record<number, boolean>>({});
   const [form, setForm] = useState({
     id_subestacao: 0,
     id_ativo: 0,
@@ -336,6 +465,79 @@ export default function InspecaoForm() {
       resultados[index] = { ...resultados[index], [field]: value };
       return { ...prev, resultados };
     });
+  }
+
+  async function enviarFoto(index: number, arquivo: File) {
+    const tipo = (arquivo.type || "").toLowerCase();
+
+    if (
+      tipo &&
+      !tipo.startsWith("image/") &&
+      tipo !== "application/octet-stream"
+    ) {
+      toast.error("Selecione um arquivo de imagem.");
+      return;
+    }
+
+    if (arquivo.size > 20 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 20 MB.");
+      return;
+    }
+
+    const fotoAnterior = form.resultados[index]?.foto;
+
+    setFotosEnviando((prev) => ({ ...prev, [index]: true }));
+
+    try {
+      const dados = new FormData();
+      dados.append("arquivo", arquivo);
+
+      const resposta = await api.post<{ url: string }>("/inspecoes/fotos", dados);
+      const url = resposta.data?.url;
+
+      if (!url) {
+        throw new Error("A API não retornou a URL da foto.");
+      }
+
+      updateResultado(index, "foto", url);
+      toast.success("Foto enviada para o servidor.");
+
+      if (
+        fotoAnterior?.startsWith("/inspecoes/fotos/") &&
+        fotoAnterior !== url
+      ) {
+        void api.delete(fotoAnterior).catch(() => undefined);
+      }
+    } catch (error: unknown) {
+      const detalhe = (
+        error as { response?: { data?: { detail?: unknown } } }
+      )?.response?.data?.detail;
+
+      toast.error(
+        typeof detalhe === "string"
+          ? detalhe
+          : "Não foi possível enviar a foto. Tente novamente."
+      );
+    } finally {
+      setFotosEnviando((prev) => {
+        const proximo = { ...prev };
+        delete proximo[index];
+        return proximo;
+      });
+    }
+  }
+
+  async function removerFoto(index: number, url?: string) {
+    updateResultado(index, "foto", "");
+
+    if (!url?.startsWith("/inspecoes/fotos/")) return;
+
+    try {
+      await api.delete(url);
+    } catch {
+      // 409: a foto já está vinculada a uma inspeção salva. O backend
+      // remove o arquivo órfão quando a inspeção é atualizada.
+    }
   }
 
   function calcularStatus(valor: number | undefined, item: PlanoItem): Status {
@@ -516,7 +718,13 @@ export default function InspecaoForm() {
           </FullWidth>
 
           <Checklist>
-            <h2 className="text-lg font-semibold">Checklist</h2>
+            <div>
+              <h2 className="text-lg font-semibold">Checklist</h2>
+              <ChecklistHint>
+                Use <strong>Tirar foto</strong> para abrir a câmera do celular. A
+                imagem é enviada para o servidor e vinculada ao item da inspeção.
+              </ChecklistHint>
+            </div>
             {itens.length === 0 ? (
               <EmptyState>
                 Selecione um ativo com itens de plano para essa periodicidade.
@@ -565,11 +773,68 @@ export default function InspecaoForm() {
                           updateResultado(index, "observacao_item", e.target.value)
                         }
                       />
-                      <Input
-                        placeholder="Foto opcional (URL ou caminho)"
-                        value={resultado?.foto ?? ""}
-                        onChange={(e) => updateResultado(index, "foto", e.target.value)}
-                      />
+                      <FotoCampo>
+                        <FotoInput
+                          id={`foto-item-${item.id_plano_item}`}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          capture="environment"
+                          disabled={Boolean(fotosEnviando[index])}
+                          onChange={(e) => {
+                            const arquivo = e.target.files?.[0];
+                            e.target.value = "";
+                            if (arquivo) {
+                              void enviarFoto(index, arquivo);
+                            }
+                          }}
+                        />
+
+                        {resultado?.foto ? (
+                          <FotoPreview>
+                            <img
+                              src={resolveMediaUrl(resultado.foto)}
+                              alt={`Foto do item ${item.nome_item}`}
+                            />
+
+                            <FotoAcoes>
+                              <label
+                                htmlFor={`foto-item-${item.id_plano_item}`}
+                                aria-disabled={
+                                  fotosEnviando[index] ? "true" : undefined
+                                }
+                              >
+                                {fotosEnviando[index] ? (
+                                  <Loader2 size={14} className="animate-spin" />
+                                ) : (
+                                  <Camera size={14} />
+                                )}
+                                {fotosEnviando[index] ? "Enviando..." : "Trocar"}
+                              </label>
+
+                              <button
+                                type="button"
+                                disabled={Boolean(fotosEnviando[index])}
+                                onClick={() => void removerFoto(index, resultado.foto)}
+                              >
+                                <Trash2 size={14} />
+                                Remover
+                              </button>
+                            </FotoAcoes>
+                          </FotoPreview>
+                        ) : (
+                          <FotoBotao
+                            htmlFor={`foto-item-${item.id_plano_item}`}
+                            aria-disabled={fotosEnviando[index] ? "true" : undefined}
+                          >
+                            {fotosEnviando[index] ? (
+                              <Loader2 size={18} className="animate-spin" />
+                            ) : (
+                              <Camera size={18} />
+                            )}
+                            {fotosEnviando[index] ? "Enviando..." : "Tirar foto"}
+                          </FotoBotao>
+                        )}
+                      </FotoCampo>
                     </ItemGrid>
                   </CardItem>
                 );
