@@ -9,7 +9,6 @@ import {
   Building2,
   FileText,
   ClipboardList,
-  ClipboardCheck,
   Calendar,
   CalendarRange,
   Download,
@@ -403,7 +402,6 @@ const menu = [
   { name: "Inspeções", path: "/inspecoes", icon: ListChecks, restricted: true },
   { name: "Relatórios", path: "/relatorios-manutencao", icon: Images, restricted: true },
   { name: "Downloads", path: "/downloads", icon: Download, restricted: true },
-  { name: "Validar OS antigas", path: "/validacao-os-antigas", icon: ClipboardCheck, restricted: true, adminOnly: true },
   { name: "Perfis", path: "/perfis", icon: UserCog, restricted: true, adminOnly: true },
 
 
@@ -413,7 +411,7 @@ const menuGroups = [
   { name: "Cadastros", paths: ["/subestacaoPage", "/ativo", "/funcoes-operacao", "/problemas-tipicos"] },
   { name: "OS-SS-SI", paths: ["/controle", "/ss", "/si", "/rdo", "/sobreaviso"] },
   { name: "Plano manutenção", paths: ["/planos-manutencao", "/planos-manutencao/dashboard", "/planos-manutencao/simulacao-anual", "/planos-manutencao/execucoes", "/inspecoes", "/relatorios-manutencao"] },
-  { name: "Administração", paths: ["/downloads", "/validacao-os-antigas", "/perfis"] },
+  { name: "Administração", paths: ["/downloads", "/perfis"] },
 ]
 
 /* ================= COMPONENT ================= */

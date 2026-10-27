@@ -27,6 +27,7 @@ type Lista = { items: Relatorio[]; total: number };
 type ErroApi = { response?: { data?: { detail?: unknown } }; message?: string };
 
 const selectClass = "h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+const selectLayoutClass = "h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 const itensPagina = 20;
 
 function erro(error: unknown, fallback: string) {
@@ -54,6 +55,8 @@ export default function RelatoriosManutencaoControlePage() {
   const [dataInicio, setDataInicio] = usePersistentFilter("relatorios-manutencao", "data-inicio", "");
   const [dataFim, setDataFim] = usePersistentFilter("relatorios-manutencao", "data-fim", "");
   const [filtrosAbertos, setFiltrosAbertos] = usePersistentFilter("relatorios-manutencao", "painel-aberto", true);
+  const [fotosPorPagina, setFotosPorPagina] = useState(2);
+  const [tamanhoFoto, setTamanhoFoto] = useState(100);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -103,7 +106,10 @@ export default function RelatoriosManutencaoControlePage() {
   async function baixar(item: Relatorio, word: boolean) {
     try {
       const sufixo = word ? "/arquivo-word" : "/arquivo";
-      const { data } = await api.get(`/relatorios-manutencao/${item.id_relatorio_manutencao}${sufixo}`, { responseType: "blob" });
+      const { data } = await api.get(`/relatorios-manutencao/${item.id_relatorio_manutencao}${sufixo}`, {
+        responseType: "blob",
+        params: word ? { fotos_por_pagina: fotosPorPagina, tamanho_foto: tamanhoFoto } : undefined,
+      });
       const link = document.createElement("a"); link.href = URL.createObjectURL(data);
       link.download = word ? `RELATORIO-${item.periodicidade}-${item.data_referencia}.docx` : item.nome_arquivo_original;
       link.click(); URL.revokeObjectURL(link.href);
@@ -129,6 +135,30 @@ export default function RelatoriosManutencaoControlePage() {
       </div>
 
       <div className="relative rounded-xl bg-slate-100 p-3"><Search className="absolute left-7 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><Input className="h-11 bg-white pl-11 pr-11" placeholder="Buscar por arquivo, subestação, ativo, emissor ou editor..." value={search} onChange={(e) => setSearch(e.target.value)} />{search && <button className="absolute right-7 top-1/2 -translate-y-1/2 text-slate-500" onClick={() => setSearch("")}><X size={18} /></button>}</div>
+
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500"><FileText size={16} className="text-blue-600" />Layout do Word</span>
+        <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">Fotos por página
+          <select className={`${selectLayoutClass} w-36`} value={fotosPorPagina} onChange={(e) => setFotosPorPagina(Number(e.target.value))}>
+            <option value={1}>1 por página</option>
+            <option value={2}>2 por página</option>
+            <option value={3}>3 por página</option>
+            <option value={4}>4 por página</option>
+            <option value={6}>6 por página (3 + 3)</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">Tamanho da foto
+          <select className={`${selectLayoutClass} w-40`} value={tamanhoFoto} onChange={(e) => setTamanhoFoto(Number(e.target.value))}>
+            <option value={100}>100% (padrão)</option>
+            <option value={90}>90%</option>
+            <option value={80}>80%</option>
+            <option value={70}>70%</option>
+            <option value={60}>60%</option>
+            <option value={50}>50%</option>
+          </select>
+        </label>
+        <span className="text-xs text-slate-400">Aplicado ao baixar em Word.</span>
+      </div>
 
       <FilterSidebar open={filtrosAbertos} onOpenChange={setFiltrosAbertos} filters={<>
         <label className="grid gap-1.5 text-xs font-semibold text-slate-600">Status<select className={selectClass} value={status} onChange={(e) => setStatus(e.target.value)}><option value="all">Todos os status</option>{Array.from(new Set(relatorios.map((i) => i.status))).map((v) => <option key={v}>{v}</option>)}</select></label>

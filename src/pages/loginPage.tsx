@@ -76,6 +76,8 @@ const Intro = styled.section`
 ========================================================= */
 
 const Brand = styled.div`
+  width: 100%;
+
   display: flex;
   align-items: center;
   gap: 12px;
@@ -108,6 +110,47 @@ const BrandText = styled.div`
     color: #cbd5e1;
     font-size: 12px;
     font-weight: 500;
+  }
+
+  @media (max-width: 900px) {
+    span {
+      display: none;
+    }
+  }
+`;
+
+const BrandLogin = styled.a`
+  display: none;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 8px 12px;
+
+  border: 1px solid rgba(191, 219, 254, 0.35);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.35);
+
+  color: #dbeafe;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+
+  &:hover {
+    border-color: rgba(191, 219, 254, 0.6);
+    background: rgba(15, 23, 42, 0.55);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #93c5fd;
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 900px) {
+    display: inline-flex;
   }
 `;
 
@@ -1125,6 +1168,10 @@ export function LoginPage() {
               Gestão da Vida e Integridade dos Ativos
             </span>
           </BrandText>
+
+          <BrandLogin href="#login" aria-label="Ir para o formulário de login">
+            Entrar
+          </BrandLogin>
         </Brand>
 
         <HeroWrapper>
@@ -1165,7 +1212,7 @@ export function LoginPage() {
         <ElectricianMascot />
       </Intro>
 
-      <LoginPanel>
+      <LoginPanel id="login">
         <FormWrap>
           <Title>
             <h2>Entrar</h2>
