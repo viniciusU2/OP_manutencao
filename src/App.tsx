@@ -52,6 +52,7 @@ import RdoPage from "./pages/RdoPage";
 import SobreavisoPage from "./pages/SobreavisoPage";
 import RelatoriosManutencaoPage from "./pages/RelatoriosManutencaoPage";
 import RelatoriosManutencaoControlePage from "./pages/RelatoriosManutencaoControlePage";
+import ImportarInspecoesRelatorioPage from "./pages/ImportarInspecoesRelatorioPage";
 import FuncoesOperacaoPage from "./pages/FuncoesOperacaoPage";
 import ProblemasTipicosPage from "./pages/ProblemasTipicosPage";
 import CsdMonitorPage from "./pages/CsdMonitorPage";
@@ -159,6 +160,7 @@ function AppContent() {
           <Route path="/rdo" element={<RdoPage />} />
           <Route path="/sobreaviso" element={<SobreavisoPage />} />
           <Route path="/relatorios-manutencao" element={<RelatoriosManutencaoControlePage />} />
+          <Route path="/relatorios-manutencao/inspecoes" element={<ImportarInspecoesRelatorioPage />} />
           <Route path="/relatorios-manutencao/novo" element={<RelatoriosManutencaoPage />} />
           <Route path="/relatorios-manutencao/:id/editar" element={<RelatoriosManutencaoPage />} />
         </Route>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Archive, Download, FileText, Filter, Loader2, Pencil, Plus, RefreshCw, Search, Trash2, X } from "lucide-react";
+import { Archive, Download, FileText, Filter, Loader2, Pencil, Plus, RefreshCw, Search, Sparkles, Trash2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -113,7 +113,19 @@ export default function RelatoriosManutencaoControlePage() {
       const link = document.createElement("a"); link.href = URL.createObjectURL(data);
       link.download = word ? `RELATORIO-${item.periodicidade}-${item.data_referencia}.docx` : item.nome_arquivo_original;
       link.click(); URL.revokeObjectURL(link.href);
-    } catch (e) { toast.error(erro(e, "Falha ao baixar o arquivo.")); }
+    } catch (e) {
+      // A resposta de erro vem como Blob; lê o "detail" para mostrar a causa real
+      // em vez de "Request failed with status code 404".
+      const dados = (e as { response?: { data?: unknown } }).response?.data;
+      let detalhe: string | null = null;
+      if (dados instanceof Blob) {
+        try {
+          const json = JSON.parse(await dados.text()) as { detail?: unknown };
+          if (typeof json.detail === "string") detalhe = json.detail;
+        } catch { detalhe = null; }
+      }
+      toast.error(detalhe ?? erro(e, "Falha ao baixar o arquivo."));
+    }
   }
   async function excluir(item: Relatorio) {
     if (!window.confirm(`Excluir definitivamente o relatório ${item.nome_arquivo_original}?`)) return;
@@ -125,7 +137,7 @@ export default function RelatoriosManutencaoControlePage() {
     <div className="mx-auto w-full max-w-[1720px] space-y-5 px-2 sm:px-4 xl:px-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div><h1 className="m-0 text-2xl font-semibold text-slate-900">Controle de relatórios</h1><p className="mt-1 text-sm text-slate-500">Consulte, filtre e gerencie os relatórios de manutenção emitidos.</p></div>
-        <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={carregar}><RefreshCw size={16} />Atualizar</Button><Button onClick={() => navigate("/relatorios-manutencao/novo")}><Plus size={17} />Novo relatório</Button></div>
+        <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={carregar}><RefreshCw size={16} />Atualizar</Button><Button variant="outline" onClick={() => navigate("/relatorios-manutencao/inspecoes")}><Sparkles size={16} />A partir das inspeções</Button><Button onClick={() => navigate("/relatorios-manutencao/novo")}><Plus size={17} />Novo relatório</Button></div>
       </header>
 
       <div className="grid gap-3 sm:grid-cols-3">

@@ -308,6 +308,15 @@ function numero(valor: unknown) {
   return Number.isFinite(n) ? n : undefined;
 }
 
+// Só mostra a pré-visualização quando o valor já é uma foto utilizável
+// (upload no servidor ou link completo), para o campo de link não sumir
+// enquanto o usuário digita/cola a URL.
+function fotoValida(valor?: string) {
+  const texto = valor?.trim() ?? "";
+  if (!texto) return false;
+  return texto.startsWith("/inspecoes/fotos/") || /^(https?:\/\/|data:image\/|blob:)/i.test(texto);
+}
+
 export default function InspecaoForm() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
@@ -721,8 +730,9 @@ export default function InspecaoForm() {
             <div>
               <h2 className="text-lg font-semibold">Checklist</h2>
               <ChecklistHint>
-                Use <strong>Tirar foto</strong> para abrir a câmera do celular. A
-                imagem é enviada para o servidor e vinculada ao item da inspeção.
+                Use <strong>Tirar foto</strong> para abrir a câmera do celular ou{" "}
+                <strong>cole o link da foto</strong> (Drive, SharePoint) no campo abaixo da
+                imagem. A imagem enviada fica vinculada ao item da inspeção.
               </ChecklistHint>
             </div>
             {itens.length === 0 ? (
@@ -789,7 +799,7 @@ export default function InspecaoForm() {
                           }}
                         />
 
-                        {resultado?.foto ? (
+                        {fotoValida(resultado?.foto) ? (
                           <FotoPreview>
                             <img
                               src={resolveMediaUrl(resultado.foto)}
@@ -834,6 +844,14 @@ export default function InspecaoForm() {
                             {fotosEnviando[index] ? "Enviando..." : "Tirar foto"}
                           </FotoBotao>
                         )}
+
+                        <Input
+                          type="url"
+                          inputMode="url"
+                          placeholder="ou cole o link da foto (Drive, SharePoint...)"
+                          value={resultado?.foto ?? ""}
+                          onChange={(e) => updateResultado(index, "foto", e.target.value)}
+                        />
                       </FotoCampo>
                     </ItemGrid>
                   </CardItem>

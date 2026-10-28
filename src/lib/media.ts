@@ -23,6 +23,16 @@ export function resolveMediaUrl(url?: string | null) {
     const parsed = new URL(value);
     const host = parsed.hostname.toLowerCase();
 
+    if (host === "drive.google.com") {
+      // Link "abrir no Drive" (/file/d/ID/view) é uma página HTML e não
+      // carrega em <img>; o endpoint thumbnail devolve a imagem.
+      const id =
+        parsed.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ??
+        parsed.searchParams.get("id");
+      if (id) return `https://drive.google.com/thumbnail?id=${id}&sz=w1600`;
+      return value;
+    }
+
     if (host.includes("sharepoint.com") || host.includes("onedrive.live.com")) {
       parsed.searchParams.set("download", "1");
       return parsed.toString();
