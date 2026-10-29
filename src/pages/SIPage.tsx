@@ -172,9 +172,10 @@ export function SIPage() {
       </>}>
 
       <SIPage1 
-      
+       
        search={search}
         status={status}
+        onStatusChange={setStatus}
         subestacao={subestacaoSelecionada}
         tipoEquipamento={tipoEquipamento}
         advancedFilters={advancedFilters} />

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { Fragment, useEffect, useState } from "react";
 import styled from "styled-components";
 import api from "../api/api";
 import Container from "../components/Container";
@@ -8,7 +8,11 @@ import {
   Ban,
   CheckCircle2,
   Clock3,
+  FileEdit,
+  FilePlus2,
+  FileText,
   History,
+  Lock,
   RotateCcw,
   Send,
   ShieldCheck,
@@ -317,6 +321,14 @@ const JustificativaBox = styled.div`
     border-color: #ef4444;
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
   }
+
+  span.meta {
+    display: block;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #b91c1c;
+    opacity: 0.75;
+  }
 `;
 
 const BannerErro = styled.div`
@@ -328,6 +340,172 @@ const BannerErro = styled.div`
   color: #991b1b;
   font-size: 14px;
 `;
+
+/* ================= TRILHA DO FLUXO ================= */
+
+const FluxoTrilha = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 22px;
+`;
+
+const FluxoPasso = styled.div`
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 92px;
+  text-align: center;
+`;
+
+const FluxoCirculo = styled.span<{ $cor: string; $prenchido: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid ${({ $cor }) => $cor};
+  background: ${({ $cor, $prenchido }) => ($prenchido ? $cor : "#ffffff")};
+  color: ${({ $cor, $prenchido }) => ($prenchido ? "#ffffff" : $cor)};
+`;
+
+const FluxoRotulo = styled.span<{ $atual: boolean; $cor: string }>`
+  font-size: 12px;
+  font-weight: ${({ $atual }) => ($atual ? 700 : 500)};
+  color: ${({ $atual, $cor }) => ($atual ? $cor : "#64748b")};
+`;
+
+const FluxoNota = styled.span<{ $cor: string }>`
+  font-size: 11px;
+  color: ${({ $cor }) => $cor};
+`;
+
+const FluxoLinha = styled.span<{ $ativo: boolean }>`
+  flex: 1 1 auto;
+  height: 2px;
+  margin-top: 16px;
+  border-radius: 2px;
+  background: ${({ $ativo }) => ($ativo ? "#10b981" : "#e2e8f0")};
+`;
+
+/* ================= BOTÕES DE AÇÃO DO FLUXO ================= */
+
+const AcaoButton = styled(Button)<{ $variante: "primaria" | "sucesso" | "perigo" | "neutro" }>`
+  ${({ $variante }) => {
+    if ($variante === "sucesso") {
+      return "background:#15803d; box-shadow:0 8px 18px rgba(21,128,61,.18); &:hover{background:#166534;}";
+    }
+    if ($variante === "perigo") {
+      return "background:#dc2626; box-shadow:0 8px 18px rgba(220,38,38,.18); &:hover{background:#b91c1c;}";
+    }
+    if ($variante === "neutro") {
+      return "background:#ffffff; color:#b91c1c; border:1px solid #fecaca; box-shadow:none; &:hover{background:#fef2f2; border-color:#fca5a5;}";
+    }
+    return "";
+  }}
+`;
+
+const VARIENTE_ACAO: Record<SIAcao, "primaria" | "sucesso" | "perigo" | "neutro"> = {
+  enviar: "primaria",
+  aprovar: "sucesso",
+  rejeitar: "perigo",
+  cancelar: "neutro",
+};
+
+const SomenteLeituraChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+`;
+
+/* ================= LINHA DO TEMPO DO HISTÓRICO ================= */
+
+const LinhaTempo = styled.ol`
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 0;
+`;
+
+const LinhaTempoItem = styled.li`
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 12px;
+  padding-bottom: 20px;
+  position: relative;
+
+  &:last-child {
+    padding-bottom: 4px;
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 16px;
+    top: 36px;
+    bottom: 2px;
+    width: 2px;
+    border-radius: 2px;
+    background: #e2e8f0;
+  }
+
+  &:last-child::before {
+    display: none;
+  }
+`;
+
+const Marco = styled.span<{ $cor: string }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid ${({ $cor }) => `${$cor}55`};
+  background: ${({ $cor }) => `${$cor}14`};
+  color: ${({ $cor }) => $cor};
+  position: relative;
+  z-index: 1;
+`;
+
+const LinhaTempoCorpo = styled.div`
+  min-width: 0;
+  padding-top: 4px;
+
+  strong {
+    font-size: 14px;
+    color: #0f172a;
+  }
+
+  .meta {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  .obs {
+    display: block;
+    margin-top: 6px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    font-size: 13px;
+    color: #475569;
+  }
+`;
+
 
 const LiberationState = styled.div<{ $active?: boolean }>`
   display: flex;
@@ -1062,6 +1240,66 @@ export default function SIForm() {
     return <Ban size={17} />;
   }
 
+  const STATUS_DO_FLUXO_NOVO = ["RASCUNHO", "ENVIADA", "REJEITADA", "APROVADA", "CANCELADA"];
+
+  function FluxoSteps({ status }: { status: string }) {
+    if (!STATUS_DO_FLUXO_NOVO.includes(status)) return null;
+
+    const cancelada = status === "CANCELADA";
+    const rejeitada = status === "REJEITADA";
+    const posicao = status === "APROVADA" ? 3 : status === "ENVIADA" ? 2 : 1;
+
+    const passos = [
+      { rotulo: "Rascunho", icone: <FileEdit size={15} /> },
+      { rotulo: "Em análise", icone: <Send size={15} /> },
+      {
+        rotulo: cancelada ? "Cancelada" : "Aprovada",
+        icone: cancelada ? <Ban size={15} /> : <ShieldCheck size={15} />,
+      },
+    ];
+
+    return (
+      <FluxoTrilha>
+        {passos.map((passo, indice) => {
+          const numero = indice + 1;
+          const feito = cancelada ? numero < 3 : numero < posicao;
+          const atual = !cancelada && numero === posicao;
+          const cor = cancelada
+            ? numero === 3
+              ? "#ef4444"
+              : "#94a3b8"
+            : atual
+              ? rejeitada && numero === 1
+                ? "#ef4444"
+                : "#2563eb"
+              : feito
+                ? "#10b981"
+                : "#cbd5e1";
+
+          return (
+            <Fragment key={passo.rotulo}>
+              {indice > 0 && (
+                <FluxoLinha
+                  $ativo={cancelada ? true : numero <= posicao}
+                />
+              )}              <FluxoPasso>
+                <FluxoCirculo $cor={cor} $prenchido={atual || (cancelada && numero === 3)}>
+                  {feito ? <CheckCircle2 size={15} /> : passo.icone}
+                </FluxoCirculo>
+                <FluxoRotulo $atual={atual || (cancelada && numero === 3)} $cor={cor}>
+                  {passo.rotulo}
+                </FluxoRotulo>
+                {rejeitada && numero === 1 && (
+                  <FluxoNota $cor="#ef4444">devolvida para correção</FluxoNota>
+                )}
+              </FluxoPasso>
+            </Fragment>
+          );
+        })}
+      </FluxoTrilha>
+    );
+  }
+
   return (
     <Container>
       <DocumentBackButton to="/si" label="Voltar para Solicitações de Intervenção" />
@@ -1080,30 +1318,31 @@ export default function SIForm() {
             <StatusChip $status={statusAtual}>
               {rotuloStatus(statusAtual)}
             </StatusChip>
+            {somenteLeitura && (
+              <SomenteLeituraChip>
+                <Lock size={13} /> Somente leitura
+              </SomenteLeituraChip>
+            )}
             <p>{STATUS_SI_DESCRICAO[statusAtual] ?? ""}</p>
           </StatusBanner>
+
+          <FluxoSteps status={statusAtual} />
 
           {erroFluxo && <BannerErro>{erroFluxo}</BannerErro>}
 
           {acoes.length > 0 && (
             <Actions style={{ justifyContent: "flex-start", marginBottom: 20 }}>
               {acoes.map((acao) => (
-                <Button
+                <AcaoButton
                   key={acao}
                   type="button"
+                  $variante={VARIENTE_ACAO[acao]}
                   onClick={() => solicitarAcao(acao)}
                   disabled={executando !== null}
-                  style={
-                    acao === "cancelar" || acao === "rejeitar"
-                      ? { background: "#ffffff", color: "#b91c1c", border: "1px solid #fecaca" }
-                      : acao === "aprovar"
-                        ? { background: "#15803d" }
-                        : undefined
-                  }
                 >
                   {executando === acao ? <Clock3 size={17} /> : <IconeAcao acao={acao} />}
                   {executando === acao ? "Processando..." : ROTULO_ACAO[acao]}
-                </Button>
+                </AcaoButton>
               ))}
             </Actions>
           )}
@@ -1115,7 +1354,11 @@ export default function SIForm() {
               <textarea
                 value={justificativa}
                 onChange={(e) => setJustificativa(e.target.value)}
-                placeholder="Descreva a justificativa (obrigatória)"
+                placeholder={
+                  acaoPendente === "rejeitar"
+                    ? "Descreva o que a Manutenção Local deve corrigir (obrigatório)"
+                    : "Motivo do cancelamento da SI (obrigatório)"
+                }
                 autoFocus
               />
               <Actions style={{ justifyContent: "flex-start", marginTop: 12 }}>
@@ -1129,15 +1372,19 @@ export default function SIForm() {
                 >
                   Voltar
                 </SecondaryButton>
-                <DangerButton
+                <AcaoButton
                   type="button"
+                  $variante={acaoPendente === "rejeitar" ? "perigo" : "neutro"}
                   onClick={() => executarAcao(acaoPendente, justificativa)}
                   disabled={executando !== null || !justificativa.trim()}
                 >
-                  {executando ? <Clock3 size={17} /> : <IconeAcao acao={acaoPendente} />}
-                  Confirmar
-                </DangerButton>
+                  {executando === acaoPendente ? <Clock3 size={17} /> : <IconeAcao acao={acaoPendente} />}
+                  Confirmar {acaoPendente === "rejeitar" ? "rejeição" : "cancelamento"}
+                </AcaoButton>
               </Actions>
+              <span className="meta">
+                A justificativa fica registrada no histórico e é visível para a Manutenção Local.
+              </span>
             </JustificativaBox>
           )}
         </>
@@ -1862,36 +2109,56 @@ export default function SIForm() {
             </div>
             <span>{historico.length} registro(s) de auditoria</span>
           </HistoryHeader>
-          <TableWrap>
-            <HistoryTable>
-              <thead>
-                <tr>
-                  <th>Quando</th>
-                  <th>Ação</th>
-                  <th>De</th>
-                  <th>Para</th>
-                  <th>Quem</th>
-                  <th>Observação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {historico.map((registro) => (
-                  <tr key={registro.id_historico}>
-                    <td>{formatarDataHora(registro.criado_em)}</td>
-                    <td>{acaoLabelHistorico(registro.acao)}</td>
-                    <td>{registro.status_anterior ? rotuloStatus(registro.status_anterior) : "—"}</td>
-                    <td>
-                      <StatusPill $status={registro.status_novo}>
-                        {rotuloStatus(registro.status_novo)}
-                      </StatusPill>
-                    </td>
-                    <td>{registro.usuario_nome}</td>
-                    <td>{registro.observacao || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </HistoryTable>
-          </TableWrap>
+          <LinhaTempo>
+            {historico.map((registro) => {
+              const acao = registro.acao.toLowerCase();
+              const cor =
+                acao === "aprovar"
+                  ? "#10b981"
+                  : acao === "rejeitar"
+                    ? "#ef4444"
+                    : acao === "enviar"
+                      ? "#8b5cf6"
+                      : acao === "criar"
+                        ? "#3b82f6"
+                        : "#64748b";
+              const icone =
+                acao === "aprovar" ? (
+                  <ShieldCheck size={16} />
+                ) : acao === "rejeitar" ? (
+                  <ShieldX size={16} />
+                ) : acao === "enviar" ? (
+                  <Send size={16} />
+                ) : acao === "criar" ? (
+                  <FilePlus2 size={16} />
+                ) : (
+                  <FileText size={16} />
+                );
+
+              return (
+                <LinhaTempoItem key={registro.id_historico}>
+                  <Marco $cor={cor}>{icone}</Marco>
+                  <LinhaTempoCorpo>
+                    <strong>{acaoLabelHistorico(registro.acao)}</strong>
+                    {registro.status_anterior && (
+                      <span className="meta">
+                        {rotuloStatus(registro.status_anterior)} →{" "}
+                        <StatusPill $status={registro.status_novo}>
+                          {rotuloStatus(registro.status_novo)}
+                        </StatusPill>
+                      </span>
+                    )}
+                    <span className="meta">
+                      {registro.usuario_nome} · {formatarDataHora(registro.criado_em)}
+                    </span>
+                    {registro.observacao && (
+                      <span className="obs">{registro.observacao}</span>
+                    )}
+                  </LinhaTempoCorpo>
+                </LinhaTempoItem>
+              );
+            })}
+          </LinhaTempo>
         </>
       )}
     </Container>

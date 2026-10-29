@@ -49,6 +49,30 @@ export const DESCRICAO_ACAO: Record<SIAcao, string> = {
 
 export const ACOES_COM_JUSTIFICATIVA: SIAcao[] = ["rejeitar", "cancelar"];
 
+/** Cor de destaque de cada status (ponto do resumo, trilha do fluxo). */
+export const STATUS_SI_COR: Record<string, string> = {
+  RASCUNHO: "#64748b",
+  ENVIADA: "#8b5cf6",
+  REJEITADA: "#ef4444",
+  APROVADA: "#10b981",
+  CANCELADA: "#94a3b8",
+  PROGRAMADA: "#3b82f6",
+  CONCLUIDA: "#10b981",
+  ENCERRADA: "#10b981",
+};
+
+/** Ordem em que os status aparecem no resumo da lista. */
+export const ORDEM_STATUS_SI = [
+  "RASCUNHO",
+  "ENVIADA",
+  "REJEITADA",
+  "APROVADA",
+  "PROGRAMADA",
+  "CONCLUIDA",
+  "ENCERRADA",
+  "CANCELADA",
+] as const;
+
 function normalizarRole(role?: string | null) {
   return (role ?? "").trim().toLowerCase();
 }
@@ -56,6 +80,28 @@ function normalizarRole(role?: string | null) {
 /** Somente a Manutenção Local (papel `mantenedor`) cria SI. */
 export function podeCriarSI(usuario: UsuarioSI) {
   return normalizarRole(usuario?.role) === "mantenedor";
+}
+
+/** O Centro de Operações analisa as SI enviadas. */
+export function ehCentroOperacoes(usuario: UsuarioSI) {
+  const role = normalizarRole(usuario?.role);
+  return role === "admin" || role === "operador";
+}
+
+/**
+ * O status pede ação deste perfil?
+ * Manutenção: rascunho a concluir ou rejeitada a corrigir.
+ * Operação: SI enviada aguardando análise.
+ */
+export function statusRequerAcao(status?: string | null, usuario?: UsuarioSI) {
+  const valor = (status ?? "").toUpperCase();
+  if (podeCriarSI(usuario)) {
+    return valor === "RASCUNHO" || valor === "REJEITADA";
+  }
+  if (ehCentroOperacoes(usuario)) {
+    return valor === "ENVIADA";
+  }
+  return false;
 }
 
 /** O backend é a fonte da verdade; estes helpers só guiam a interface. */
