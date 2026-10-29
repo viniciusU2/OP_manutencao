@@ -27,7 +27,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import "./index.css";
 import type { JSX } from "react";
 import { Toaster } from "./components/ui/sonner"
-import { FULL_ACCESS_ROLES, OPERATIONAL_ACCESS_ROLES } from "./lib/permissions";
+import { FULL_ACCESS_ROLES, OPERATIONAL_ACCESS_ROLES, SI_ACCESS_ROLES, isOperator } from "./lib/permissions";
 import { SIPage } from "./pages/SIPage";
 import SIForm from "./pages/SIForm";
 import { SSForm } from "./pages/SSForm"
@@ -93,6 +93,17 @@ function RoleRoute({ allowedRoles }: { allowedRoles: string[] }) {
 
   return <Outlet />;
 }
+
+/* O operador (Centro de Operações) não usa dashboard: começa direto na SI. */
+function HomeRoute({ element }: { element: JSX.Element }) {
+  const { usuario } = useAuth();
+
+  if (isOperator(usuario?.role)) {
+    return <Navigate to="/si" replace />;
+  }
+
+  return element;
+}
 /* ================= APP ROOT ================= */
 
 export default function App() {
@@ -133,9 +144,12 @@ function AppContent() {
           </ProtectedRoute>
         }
       >
-        {/* 🔓 LIVRE */}
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/dashboard-analitico" element={<DashboardAnalitico />} />
+        {/* 🔓 LIVRE — o operador (Centro de Operações) começa direto nas SI */}
+        <Route path="/" element={<HomeRoute element={<Dashboard />} />} />
+        <Route
+          path="/dashboard-analitico"
+          element={<HomeRoute element={<DashboardAnalitico />} />}
+        />
 
         {/* 🔒 ADMIN */}
         <Route
@@ -145,10 +159,14 @@ function AppContent() {
           <Route path="/os" element={<OrdemServicoPage />} />
           <Route path="/os/lote" element={<OrdemServicoLotePage />} />
           <Route path="/os/:id" element={<OrdemServicoPage />} />
-          <Route path="/si" element={<SIPage />} />
           <Route path="/ss" element={<SSPage />} />
           <Route path="/ss/nova" element={<SSForm />} />
           <Route path="/ss/:id" element={<SSForm />} />
+        </Route>
+
+        {/* 🔒 SI — também acessível ao operador (Centro de Operações) */}
+        <Route element={<RoleRoute allowedRoles={SI_ACCESS_ROLES} />}>
+          <Route path="/si" element={<SIPage />} />
           <Route path="/si/nova" element={<SIForm />} />
           <Route path="/si/:id" element={<SIForm />} />
         </Route>

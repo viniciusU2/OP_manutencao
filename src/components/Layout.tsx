@@ -481,6 +481,18 @@ export default function Layout() {
               const items=visibleMenu.filter(item=>group.paths.includes(item.path));
               if(!items.length)return null;
               const groupActive=items.some(item=>item.path===activePath);
+              // Menu limpo para o operador: com um único item visível, o grupo
+              // vira link direto em vez de dropdown. Os demais perfis ficam
+              // exatamente como antes.
+              if (items.length === 1 && isOperator(usuario?.role)) {
+                const item = items[0];
+                const Icon = item.icon;
+                return (
+                  <NavItem key={item.path} to={item.path} $active={activePath===item.path} $collapsed={false}>
+                    <Icon size={18}/><span>{item.name}</span>
+                  </NavItem>
+                );
+              }
               return <DropdownMenu key={group.name}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className={`h-9 gap-1.5 px-3 text-sm hover:bg-white/80 hover:text-slate-950 ${groupActive ? "bg-white shadow-sm" : ""} ${group.name !== "OS-SS-SI" && groupActive ? "text-blue-700" : "text-slate-700"}`}>

@@ -14,6 +14,7 @@ import { AdvancedDocumentFilters, type AdvancedFilter } from "../components/Adva
 import { PreventiveProgressStrip } from "../components/PreventiveProgressStrip";
 import { hasPersistentFilter, usePersistentFilter } from "../lib/usePersistentFilter";
 import { podeCriarSI } from "../lib/siFluxo";
+import { canManage } from "../lib/permissions";
 
 const siFilterFields=["numero_si","numero_sgi","numero_os","numero_apr","id_subestacao","id_ativo","id_grupo_ativo","especie","prioridade","natureza","caracteristica_intervencao","tipo","documentos_referencia","data_inicio_preriodo_total","data_fim_preriodo_total","data_inicio_preriodo_manutencao","data_fim_preriodo_manutencao","justificativa","responsavel","substituto","aproveitamento","inclusao_servico","orgaos","descricao_servicos","observacoes","status_manutencao","status_operacao","emissor","editado_por","criado_em"].map(value=>({value,label:value.replaceAll("_"," ")}));
 
@@ -97,7 +98,7 @@ export function SIPage() {
 
   return (
     <FilterPageFrame $filtersOpen={filtrosVisiveis}><Container>
-      <PreventiveProgressStrip subestacao={subestacaoSelecionada} />
+      {canManage(usuario?.role) && <PreventiveProgressStrip subestacao={subestacaoSelecionada} />}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2>Solicitação de Intervenção</h2>
 
