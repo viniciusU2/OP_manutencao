@@ -13,6 +13,7 @@ import { FilterPageFrame, FilterSidebar } from "../components/FilterSidebar";
 import { AdvancedDocumentFilters, type AdvancedFilter } from "../components/AdvancedDocumentFilters";
 import { PreventiveProgressStrip } from "../components/PreventiveProgressStrip";
 import { hasPersistentFilter, usePersistentFilter } from "../lib/usePersistentFilter";
+import { podeCriarSI } from "../lib/siFluxo";
 
 const siFilterFields=["numero_si","numero_sgi","numero_os","numero_apr","id_subestacao","id_ativo","id_grupo_ativo","especie","prioridade","natureza","caracteristica_intervencao","tipo","documentos_referencia","data_inicio_preriodo_total","data_fim_preriodo_total","data_inicio_preriodo_manutencao","data_fim_preriodo_manutencao","justificativa","responsavel","substituto","aproveitamento","inclusao_servico","orgaos","descricao_servicos","observacoes","status_manutencao","status_operacao","emissor","editado_por","criado_em"].map(value=>({value,label:value.replaceAll("_"," ")}));
 
@@ -100,12 +101,14 @@ export function SIPage() {
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2>Solicitação de Intervenção</h2>
 
-        <button
-          onClick={() => navigate("/si/nova")}
-          className="w-full rounded bg-blue-600 px-4 py-2 text-white sm:w-auto"
-        >
-          + Nova SI
-        </button>
+        {podeCriarSI(usuario) && (
+          <button
+            onClick={() => navigate("/si/nova")}
+            className="w-full rounded bg-blue-600 px-4 py-2 text-white sm:w-auto"
+          >
+            + Nova SI
+          </button>
+        )}
       </div>
 
       
@@ -127,10 +130,14 @@ export function SIPage() {
           onChange={(e) => setStatus(e.target.value)}
         >
           <option value="all">Todos status</option>
-          <option value="ABERTA">Aberta</option>
-          <option value="PROGRAMADA">Programada</option>
-          <option value="ENCERRADA">Encerrada</option>
-          <option value="EM_EXECUCAO">Em execucão</option>
+          <option value="RASCUNHO">Rascunho</option>
+          <option value="ENVIADA">Enviada / Em análise</option>
+          <option value="REJEITADA">Rejeitada</option>
+          <option value="APROVADA">Aprovada</option>
+          <option value="CANCELADA">Cancelada</option>
+          <option value="PROGRAMADA">Programada (legado)</option>
+          <option value="CONCLUIDA">Concluída (legado)</option>
+          <option value="ENCERRADA">Encerrada (legado)</option>
         </Select>
         </FilterField>
 

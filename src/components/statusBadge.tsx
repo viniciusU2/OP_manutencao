@@ -26,7 +26,9 @@ export type StatusKey =
   | "NORMAL"
   | "BAIXA"
   | "ALTA"
-  | "MEDIA";
+  | "MEDIA"
+  | "RASCUNHO"
+  | "ENVIADA";
 
 export interface StatusBadgeProps {
   status?: StatusKey | string;
@@ -67,6 +69,9 @@ export const statusStyles: Record<string, string> = {
 
   ALTA: "bg-red-50 text-red-700 border-red-200",
   MEDIA: "bg-amber-50 text-amber-700 border-amber-200",
+
+  RASCUNHO: "bg-slate-100 text-slate-600 border-slate-300",
+  ENVIADA: "bg-violet-50 text-violet-700 border-violet-200",
 };
 
 
@@ -103,6 +108,9 @@ export const statusLabels: Record<string, string> = {
 
   ALTA: "Alta",
   MEDIA: "Média",
+
+  RASCUNHO: "Rascunho",
+  ENVIADA: "Enviada / Em análise",
 };
 
 export  function StatusBadge({ status, className }: StatusBadgeProps) {

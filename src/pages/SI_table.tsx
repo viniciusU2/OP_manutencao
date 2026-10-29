@@ -61,9 +61,10 @@ async function baixarSI(si: SI) {
       await api.delete(`/si/${si.id_si}`);
       setRefreshKey((value) => value + 1);
       toast.success("SI excluida com sucesso");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao excluir SI:", error);
-      toast.error("Erro ao excluir SI");
+      const detalhe = error?.response?.data?.detail;
+      toast.error(typeof detalhe === "string" ? detalhe : "Erro ao excluir SI");
     }
   }
 

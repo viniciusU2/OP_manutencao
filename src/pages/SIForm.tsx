@@ -2,10 +2,21 @@
 import styled from "styled-components";
 import api from "../api/api";
 import Container from "../components/Container";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { CheckCircle2, Clock3, RotateCcw, Wrench, XCircle } from "lucide-react";
-import type { SI, SILiberacao } from "../types/SI";
+import {
+  Ban,
+  CheckCircle2,
+  Clock3,
+  History,
+  RotateCcw,
+  Send,
+  ShieldCheck,
+  ShieldX,
+  Wrench,
+  XCircle,
+} from "lucide-react";
+import type { SI, SIAcao, SIHistorico, SILiberacao } from "../types/SI";
 import type { Subestacao } from "../types/Subestacao";
 import type { Ativo } from "../types/Ativo";
 import { SelecaoHierarquicaAtivo } from "../components/SelecaoHierarquicaAtivo";
@@ -13,6 +24,17 @@ import type { TipoAtivo } from "../types/TipoAtivo";
 import { useAuth } from "../context/AuthContext";
 import UsuarioSelect from "../components/UsuarioSelect";
 import { DocumentBackButton } from "../components/DocumentBackButton";
+import {
+  ACOES_COM_JUSTIFICATIVA,
+  DESCRICAO_ACAO,
+  ROTULO_ACAO,
+  acoesDaSI,
+  podeEditarSI,
+  podeCriarSI,
+  rotuloStatus,
+  statusDaSI,
+  STATUS_SI_DESCRICAO,
+} from "../lib/siFluxo";
 import {
   PRIORIDADES_OPERACAO,
   especiePorAtivo,
@@ -157,6 +179,154 @@ const LiberationPanel = styled.div`
   border-radius: 8px;
   background: #f8fbff;
   padding: 18px;
+`;
+
+const FieldsetBloqueado = styled.fieldset`
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+
+  &:disabled input,
+  &:disabled select,
+  &:disabled textarea {
+    background: #f8fafc;
+    color: #64748b;
+    cursor: not-allowed;
+  }
+`;
+
+const StatusBanner = styled.div<{ $status: string }>`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 24px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid
+    ${({ $status }) =>
+      $status === "ENVIADA"
+        ? "#ddd6fe"
+        : $status === "APROVADA"
+          ? "#bbf7d0"
+          : $status === "REJEITADA"
+            ? "#fecaca"
+            : $status === "CANCELADA"
+              ? "#cbd5e1"
+              : "#bfdbfe"};
+  background: ${({ $status }) =>
+    $status === "ENVIADA"
+      ? "#f5f3ff"
+      : $status === "APROVADA"
+        ? "#f0fdf4"
+        : $status === "REJEITADA"
+          ? "#fef2f2"
+          : $status === "CANCELADA"
+            ? "#f8fafc"
+            : "#eff6ff"};
+  color: #0f172a;
+
+  strong {
+    font-size: 14px;
+  }
+
+  p {
+    flex: 1 1 320px;
+    margin: 0;
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.45;
+  }
+`;
+
+const StatusChip = styled.span<{ $status: string }>`
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border: 1px solid
+    ${({ $status }) =>
+      $status === "ENVIADA"
+        ? "#c4b5fd"
+        : $status === "APROVADA"
+          ? "#86efac"
+          : $status === "REJEITADA"
+            ? "#fca5a5"
+            : $status === "CANCELADA"
+              ? "#cbd5e1"
+              : "#93c5fd"};
+  background: ${({ $status }) =>
+    $status === "ENVIADA"
+      ? "#ede9fe"
+      : $status === "APROVADA"
+        ? "#dcfce7"
+        : $status === "REJEITADA"
+          ? "#fee2e2"
+          : $status === "CANCELADA"
+            ? "#f1f5f9"
+            : "#dbeafe"};
+  color: ${({ $status }) =>
+    $status === "ENVIADA"
+      ? "#5b21b6"
+      : $status === "APROVADA"
+        ? "#166534"
+        : $status === "REJEITADA"
+          ? "#991b1b"
+          : $status === "CANCELADA"
+            ? "#475569"
+            : "#1d4ed8"};
+`;
+
+const JustificativaBox = styled.div`
+  margin: 0 0 20px;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #fff7f7;
+
+  strong {
+    display: block;
+    font-size: 14px;
+    color: #991b1b;
+  }
+
+  p {
+    margin: 4px 0 12px;
+    font-size: 13px;
+    color: #7f1d1d;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 92px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #fca5a5;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+  }
+`;
+
+const BannerErro = styled.div`
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 14px;
 `;
 
 const LiberationState = styled.div<{ $active?: boolean }>`
@@ -330,10 +500,39 @@ function statusLiberacaoLabel(status: string) {
   return status;
 }
 
+type ErroApi = { response?: { data?: { detail?: unknown } }; message?: string };
+
+function mensagemErro(error: unknown, padrao: string) {
+  const detalhe = (error as ErroApi).response?.data?.detail;
+  if (typeof detalhe === "string") return detalhe;
+  if (Array.isArray(detalhe)) {
+    return detalhe
+      .map((item) => {
+        if (typeof item === "object" && item && "msg" in item) return String(item.msg);
+        return String(item);
+      })
+      .join("; ");
+  }
+  return (error as ErroApi).message ?? padrao;
+}
+
+function acaoLabelHistorico(acao: string) {
+  const rotulos: Record<string, string> = {
+    criar: "Criação",
+    enviar: "Envio",
+    aprovar: "Aprovação",
+    rejeitar: "Rejeição",
+    cancelar: "Cancelamento",
+    migracao: "Migração",
+  };
+  return rotulos[acao.toLowerCase()] ?? acao;
+}
+
 /* ================= COMPONENT ================= */
 
 export default function SIForm() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { usuario } = useAuth();
 
   const isEdit = Boolean(id);
@@ -344,6 +543,15 @@ export default function SIForm() {
   const [tiposAtivo, setTiposAtivo] = useState<TipoAtivo[]>([]);
   const [liberacoes, setLiberacoes] = useState<SILiberacao[]>([]);
   const [savingLiberacao, setSavingLiberacao] = useState(false);
+
+  // Fluxo de status
+  const [si, setSi] = useState<SI | null>(null);
+  const [historico, setHistorico] = useState<SIHistorico[]>([]);
+  const [salvando, setSalvando] = useState(false);
+  const [executando, setExecutando] = useState<SIAcao | null>(null);
+  const [acaoPendente, setAcaoPendente] = useState<SIAcao | null>(null);
+  const [justificativa, setJustificativa] = useState("");
+  const [erroFluxo, setErroFluxo] = useState("");
 
   const [form, setForm] = useState<SI>({
     id_si: 0,
@@ -449,10 +657,10 @@ export default function SIForm() {
             idSubestacao = ativoRes.data.id_subestacao ?? null;
           }
 
+          setSi(si);
           setForm({
             ...si,
             id_subestacao: idSubestacao,
-
             numero_os: si.numero_os ?? "",
             numero_si: si.numero_si ?? "",
             numero_sgi: si.numero_sgi ?? "",
@@ -511,9 +719,20 @@ export default function SIForm() {
     }
   }
 
+  async function carregarHistorico() {
+    if (!id) return;
+    try {
+      const res = await api.get<SIHistorico[]>(`/si/${id}/historico`);
+      setHistorico(res.data);
+    } catch (error) {
+      console.error("Erro ao carregar histórico da SI:", error);
+    }
+  }
+
   useEffect(() => {
     if (isEdit) {
       carregarLiberacoes();
+      carregarHistorico();
     }
   }, [id, isEdit]);
 
@@ -625,6 +844,19 @@ export default function SIForm() {
     try {
       if (!validarFormulario()) return;
 
+      if (isEdit && !podeEditarSI(si)) {
+        toast.error(
+          "Esta SI não pode ser editada no status atual. Use uma das ações de fluxo.",
+        );
+        return;
+      }
+      if (!isEdit && !podeCriarSI(usuario)) {
+        toast.error("Somente a Manutenção Local pode criar uma SI.");
+        return;
+      }
+
+      setSalvando(true);
+
       const {
         id_si: _idSi,
         criado_em: _criadoEm,
@@ -674,16 +906,20 @@ export default function SIForm() {
       };
 
       if (isEdit) {
-        await api.put(`/si/${id}`, payload);
+        const { data } = await api.put<SI>(`/si/${id}`, payload);
+        setSi(data);
         toast.success("SI atualizada com sucesso!");
       } else {
-        await api.post("/si", payload);
-        toast.success("SI cadastrada com sucesso!");
+        const { data } = await api.post<SI>("/si", payload);
+        toast.success("SI criada como rascunho. Revise e envie para a Operação.");
+        navigate(`/si/${data.id_si}`);
       }
 
     } catch (error) {
       console.error("Erro ao salvar SI:", error);
-      toast.error("Erro ao salvar SI");
+      toast.error(mensagemErro(error, "Erro ao salvar SI"));
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -790,16 +1026,149 @@ export default function SIForm() {
     }
   }
 
+  const somenteLeitura = isEdit && !podeEditarSI(si);
+  const acoes = acoesDaSI(si);
+  const statusAtual = statusDaSI(si);
+
+  async function executarAcao(acao: SIAcao, observacao?: string) {
+    if (!id) return;
+    setExecutando(acao);
+    setErroFluxo("");
+    try {
+      const { data } = await api.post<SI>(`/si/${id}/${acao}`, {
+        observacao: observacao?.trim() || null,
+      });
+      setSi(data);
+      setAcaoPendente(null);
+      setJustificativa("");
+      toast.success(
+        acao === "enviar"
+          ? "SI enviada para o Centro de Operações."
+          : acao === "aprovar"
+            ? "SI aprovada."
+            : acao === "rejeitar"
+              ? "SI rejeitada e devolvida para a Manutenção Local."
+              : "SI cancelada.",
+      );
+      await carregarHistorico();
+    } catch (error) {
+      console.error(`Erro ao executar ${acao}:`, error);
+      const mensagem = mensagemErro(error, "Não foi possível concluir a ação.");
+      setErroFluxo(mensagem);
+      toast.error(mensagem);
+    } finally {
+      setExecutando(null);
+    }
+  }
+
+  function solicitarAcao(acao: SIAcao) {
+    setErroFluxo("");
+    if (ACOES_COM_JUSTIFICATIVA.includes(acao)) {
+      setJustificativa("");
+      setAcaoPendente(acao);
+      return;
+    }
+    void executarAcao(acao);
+  }
+
+  function IconeAcao({ acao }: { acao: SIAcao }) {
+    if (acao === "enviar") return <Send size={17} />;
+    if (acao === "aprovar") return <ShieldCheck size={17} />;
+    if (acao === "rejeitar") return <ShieldX size={17} />;
+    return <Ban size={17} />;
+  }
+
   return (
     <Container>
       <DocumentBackButton to="/si" label="Voltar para Solicitações de Intervenção" />
       <PageTitle>
-        <h2>{isEdit ? "Editar SI" : "Nova SI"}</h2>
-        <p>Cadastro e controle de solicitação de intervenção</p>
+        <h2>{isEdit ? form.numero_si || "Solicitação de Intervenção" : "Nova SI"}</h2>
+        <p>
+          {isEdit
+            ? "Cadastro e controle de solicitação de intervenção"
+            : "Somente a Manutenção Local cria SI. Ela nasce como rascunho."}
+        </p>
       </PageTitle>
 
+      {isEdit && si && (
+        <>
+          <StatusBanner $status={statusAtual}>
+            <StatusChip $status={statusAtual}>
+              {rotuloStatus(statusAtual)}
+            </StatusChip>
+            <p>{STATUS_SI_DESCRICAO[statusAtual] ?? ""}</p>
+          </StatusBanner>
+
+          {erroFluxo && <BannerErro>{erroFluxo}</BannerErro>}
+
+          {acoes.length > 0 && (
+            <Actions style={{ justifyContent: "flex-start", marginBottom: 20 }}>
+              {acoes.map((acao) => (
+                <Button
+                  key={acao}
+                  type="button"
+                  onClick={() => solicitarAcao(acao)}
+                  disabled={executando !== null}
+                  style={
+                    acao === "cancelar" || acao === "rejeitar"
+                      ? { background: "#ffffff", color: "#b91c1c", border: "1px solid #fecaca" }
+                      : acao === "aprovar"
+                        ? { background: "#15803d" }
+                        : undefined
+                  }
+                >
+                  {executando === acao ? <Clock3 size={17} /> : <IconeAcao acao={acao} />}
+                  {executando === acao ? "Processando..." : ROTULO_ACAO[acao]}
+                </Button>
+              ))}
+            </Actions>
+          )}
+
+          {acaoPendente && (
+            <JustificativaBox>
+              <strong>{ROTULO_ACAO[acaoPendente]}</strong>
+              <p>{DESCRICAO_ACAO[acaoPendente]}</p>
+              <textarea
+                value={justificativa}
+                onChange={(e) => setJustificativa(e.target.value)}
+                placeholder="Descreva a justificativa (obrigatória)"
+                autoFocus
+              />
+              <Actions style={{ justifyContent: "flex-start", marginTop: 12 }}>
+                <SecondaryButton
+                  type="button"
+                  onClick={() => {
+                    setAcaoPendente(null);
+                    setJustificativa("");
+                  }}
+                  disabled={executando !== null}
+                >
+                  Voltar
+                </SecondaryButton>
+                <DangerButton
+                  type="button"
+                  onClick={() => executarAcao(acaoPendente, justificativa)}
+                  disabled={executando !== null || !justificativa.trim()}
+                >
+                  {executando ? <Clock3 size={17} /> : <IconeAcao acao={acaoPendente} />}
+                  Confirmar
+                </DangerButton>
+              </Actions>
+            </JustificativaBox>
+          )}
+        </>
+      )}
+
+      {!isEdit && !podeCriarSI(usuario) && (
+        <BannerErro>
+          Seu perfil não tem permissão para criar SI. Somente a Manutenção Local
+          (papel <strong>mantenedor</strong>) pode criar e editar.
+        </BannerErro>
+      )}
+
       <Card>
-        <SectionTitle>Identificação</SectionTitle>
+        <FieldsetBloqueado disabled={somenteLeitura}>
+          <SectionTitle>Identificação</SectionTitle>
 
         <FormGrid>
           <FormGroup>
@@ -1405,6 +1774,7 @@ export default function SIForm() {
             />
           </FormGroup>
         </FormGrid>
+        </FieldsetBloqueado>
 
         {isEdit && (
           <>
@@ -1497,7 +1867,7 @@ export default function SIForm() {
         )}
 
         <Actions>
-          {isEdit && !liberacaoEmExecucao && (
+          {isEdit && !liberacaoEmExecucao && !somenteLeitura && (
             <SecondaryButton
               type="button"
               onClick={registrarLiberacaoManutencao}
@@ -1508,7 +1878,7 @@ export default function SIForm() {
             </SecondaryButton>
           )}
 
-          {isEdit && liberacaoEmExecucao && (
+          {isEdit && liberacaoEmExecucao && !somenteLeitura && (
             <>
               <SecondaryButton
                 type="button"
@@ -1530,11 +1900,55 @@ export default function SIForm() {
             </>
           )}
 
-          <Button onClick={salvar}>
-            {isEdit ? "Atualizar SI" : "Criar SI"}
-          </Button>
+          {(!isEdit || !somenteLeitura) && (
+            <Button onClick={salvar} disabled={salvando}>
+              {isEdit ? (salvando ? "Salvando..." : "Atualizar SI") : "Criar SI"}
+            </Button>
+          )}
         </Actions>
       </Card>
+
+      {isEdit && historico.length > 0 && (
+        <>
+          <HistoryHeader style={{ marginTop: 28 }}>
+            <div className="flex items-center gap-2">
+              <History size={18} />
+              <h3>Histórico de status</h3>
+            </div>
+            <span>{historico.length} registro(s) de auditoria</span>
+          </HistoryHeader>
+          <TableWrap>
+            <HistoryTable>
+              <thead>
+                <tr>
+                  <th>Quando</th>
+                  <th>Ação</th>
+                  <th>De</th>
+                  <th>Para</th>
+                  <th>Quem</th>
+                  <th>Observação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historico.map((registro) => (
+                  <tr key={registro.id_historico}>
+                    <td>{formatarDataHora(registro.criado_em)}</td>
+                    <td>{acaoLabelHistorico(registro.acao)}</td>
+                    <td>{registro.status_anterior ? rotuloStatus(registro.status_anterior) : "—"}</td>
+                    <td>
+                      <StatusPill $status={registro.status_novo}>
+                        {rotuloStatus(registro.status_novo)}
+                      </StatusPill>
+                    </td>
+                    <td>{registro.usuario_nome}</td>
+                    <td>{registro.observacao || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </HistoryTable>
+          </TableWrap>
+        </>
+      )}
     </Container>
   );
 }

@@ -38,20 +38,21 @@ export const columns = (
     cell: ({ row }) => row.original.editado_por || "-",
   },
   {
-      accessorKey: "status_manutencao",
-      header: "status_manutencao",
-      cell: ({ row }) => {
-        return <StatusBadge status={row.original.status_manutencao} />;
-      },
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.original.status;
+      return (
+        <div className="flex flex-col gap-1">
+          <StatusBadge status={status} />
+          {!row.original.pode_editar && (
+            <span className="text-[11px] text-slate-400">somente leitura</span>
+          )}
+        </div>
+      );
     },
+  },
   {
-      accessorKey: "status_operacao",
-      header: "status_operacao",
-      cell: ({ row }) => {
-        return <StatusBadge status={row.original.status_operacao} />;
-      },
-    },
-      {
     id: "acoes",
     header: "",
     cell: ({ row }) => {
@@ -67,16 +68,18 @@ export const columns = (
             <Download size={18} />
           </button>
 
-          <OnlyAdmin>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => onDelete(si)}
-              title="Excluir SI"
-            >
-              <Trash2 size={16} />
-            </Button>
-          </OnlyAdmin>
+          {si.pode_excluir && (
+            <OnlyAdmin>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => onDelete(si)}
+                title="Excluir SI"
+              >
+                <Trash2 size={16} />
+              </Button>
+            </OnlyAdmin>
+          )}
         </div>
       );
     },

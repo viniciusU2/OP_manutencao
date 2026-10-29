@@ -80,7 +80,27 @@ export interface SI {
   natureza?: string;
   caracteristica_intervencao?: string;
 
+  // Fluxo de status (definido pelo backend)
+  status?: string;
+  status_rotulo?: string;
+  pode_editar?: boolean;
+  pode_excluir?: boolean;
+  acoes?: SIAcao[];
+}
 
+export type SIAcao = "enviar" | "aprovar" | "rejeitar" | "cancelar";
+
+export interface SIHistorico {
+  id_historico: number;
+  id_si: number;
+  acao: string;
+  status_anterior?: string | null;
+  status_novo: string;
+  observacao?: string | null;
+  usuario_id?: number | null;
+  usuario_nome: string;
+  usuario_perfil?: string | null;
+  criado_em: string;
 }
 
 export type SICreate = Omit<SI, "id_si" | "criado_em">;
