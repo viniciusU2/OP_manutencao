@@ -462,22 +462,6 @@ const TIPOS_PROGRAMACAO_SI = [
   { value: "CONTINUA", label: "Contínua" },
 ];
 
-const STATUS_LIBERACAO_SI = [
-  { value: "PROGRAMADA", label: "Programada" },
-  { value: "INTERROMPIDA", label: "Interrompida" },
-  { value: "CONCLUIDA", label: "Concluída" },
-  { value: "CANCELADA", label: "Cancelada" },
-];
-
-const STATUS_LIBERACAO_MANUTENCAO_SI = [
-  { value: "PROGRAMADA", label: "Programada" },
-  { value: "AUTORIZADA", label: "Autorizada" },
-  { value: "REINICIADA", label: "Reiniciada" },
-  { value: "INTERROMPIDA", label: "Interrompida" },
-  { value: "CONCLUIDA", label: "Concluída" },
-  { value: "CANCELADA", label: "Cancelada" },
-];
-
 function hojeISO() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -523,7 +507,7 @@ function acaoLabelHistorico(acao: string) {
     aprovar: "Aprovação",
     rejeitar: "Rejeição",
     cancelar: "Cancelamento",
-    migracao: "Migração",
+    migracao: "Registro",
   };
   return rotulos[acao.toLowerCase()] ?? acao;
 }
@@ -1618,26 +1602,6 @@ export default function SIForm() {
 
         <FormGrid>
           <FormGroup>
-            <label>Status de liberação para manutenção</label>
-            <select
-              name="status_manutencao"
-              onChange={handleChange}
-              value={form.status_manutencao ?? "PROGRAMADA"}
-            >
-              <option value="">Selecione</option>
-              {form.status_manutencao &&
-                !STATUS_LIBERACAO_MANUTENCAO_SI.some((status) => status.value === form.status_manutencao) && (
-                  <option value={form.status_manutencao}>{form.status_manutencao}</option>
-                )}
-              {STATUS_LIBERACAO_MANUTENCAO_SI.map((status) => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
-          </FormGroup>
-
-          <FormGroup>
             <label>Responsável ONS</label>
             <input
               name="responsavel_ons_manutencao"
@@ -1698,25 +1662,6 @@ export default function SIForm() {
         <SectionTitle>Liberação para operação</SectionTitle>
 
         <FormGrid>
-          <FormGroup>
-            <label>Status de liberação para operação</label>
-            <select
-              name="status_operacao"
-              onChange={handleChange}
-              value={form.status_operacao ?? "PROGRAMADA"}
-            >
-              {form.status_operacao &&
-                !STATUS_LIBERACAO_SI.some((status) => status.value === form.status_operacao) && (
-                  <option value={form.status_operacao}>{form.status_operacao}</option>
-                )}
-              {STATUS_LIBERACAO_SI.map((status) => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
-          </FormGroup>
-
           <FormGroup>
             <label>Responsável ONS</label>
             <input

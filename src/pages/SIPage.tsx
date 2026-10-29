@@ -135,9 +135,9 @@ export function SIPage() {
           <option value="REJEITADA">Rejeitada</option>
           <option value="APROVADA">Aprovada</option>
           <option value="CANCELADA">Cancelada</option>
-          <option value="PROGRAMADA">Programada (legado)</option>
-          <option value="CONCLUIDA">Concluída (legado)</option>
-          <option value="ENCERRADA">Encerrada (legado)</option>
+          <option value="PROGRAMADA">Programada</option>
+          <option value="CONCLUIDA">Concluída</option>
+          <option value="ENCERRADA">Encerrada</option>
         </Select>
         </FilterField>
 

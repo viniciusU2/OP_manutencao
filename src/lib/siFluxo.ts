@@ -8,9 +8,9 @@ export const STATUS_SI_LABEL: Record<string, string> = {
   REJEITADA: "Rejeitada",
   APROVADA: "Aprovada",
   CANCELADA: "Cancelada",
-  PROGRAMADA: "Programada (legado)",
-  CONCLUIDA: "Concluída (legado)",
-  ENCERRADA: "Encerrada (legado)",
+  PROGRAMADA: "Programada",
+  CONCLUIDA: "Concluída",
+  ENCERRADA: "Encerrada",
 };
 
 export const STATUS_SI_DESCRICAO: Record<string, string> = {
@@ -24,9 +24,9 @@ export const STATUS_SI_DESCRICAO: Record<string, string> = {
     "Aprovada pelo Centro de Operações. Não pode mais ser editada; só o cancelamento é possível.",
   CANCELADA: "Cancelada. Documento somente leitura, sem novas alterações de status.",
   PROGRAMADA:
-    "Status herdado do fluxo anterior. Ainda pode ser editada e enviada para o novo fluxo.",
-  CONCLUIDA: "Status herdado do fluxo anterior. Documento somente leitura.",
-  ENCERRADA: "Status herdado do fluxo anterior. Documento somente leitura.",
+    "SI programada. A Manutenção Local ainda pode editar e enviar para o Centro de Operações.",
+  CONCLUIDA: "SI concluída. Documento somente leitura.",
+  ENCERRADA: "SI encerrada. Documento somente leitura.",
 };
 
 export const ROTULO_ACAO: Record<SIAcao, string> = {

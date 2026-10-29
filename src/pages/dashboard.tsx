@@ -53,6 +53,7 @@ interface SS {
 interface SI {
   id_si: number;
   numero_si: string;
+  status?: string | null;
   status_operacao?: string;
   status_manutencao?: string;
   id_subestacao?: number | null;
@@ -698,7 +699,15 @@ export function Dashboard() {
   const totals = useMemo(() => {
     const osAbertas = filtered.os.filter((item) => isOpenStatus(item.status)).length;
     const ssAbertas = filtered.ss.filter((item) => isOpenStatus(item.status)).length;
-    const siPendentes = filtered.si.filter((item) => isOpenStatus(item.status_operacao) || isOpenStatus(item.status_manutencao)).length;
+    // O status oficial da SI e a coluna `status` do fluxo; os campos por lado
+    // so existem nos documentos antigos e sao usados como fallback.
+    const siPendentes = filtered.si.filter((item) => {
+      const statusFluxo = normalizedStatus(item.status ?? "");
+      if (statusFluxo) {
+        return !["RASCUNHO", "APROVADA", "CONCLUIDA", "ENCERRADA", "CANCELADA"].includes(statusFluxo);
+      }
+      return isOpenStatus(item.status_operacao) || isOpenStatus(item.status_manutencao);
+    }).length;
     const ativosAtivos = filtered.ativos.filter((item) => isOperationalAsset(item.status)).length;
 
     return { osAbertas, ssAbertas, siPendentes, ativosAtivos };

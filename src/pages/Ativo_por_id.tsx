@@ -73,15 +73,15 @@ function getFaseBadge(fase?: string) {
 function getStatusBadge(status?: string) {
   const normalized = (status ?? "").toUpperCase();
 
-  if (["OK", "CONCLUIDA", "ENCERRADA", "ATENDIDA", "ATIVO"].includes(normalized)) {
+  if (["OK", "CONCLUIDA", "ENCERRADA", "ATENDIDA", "ATIVO", "APROVADA"].includes(normalized)) {
     return <Badge className="bg-green-100 text-green-800">{status || "OK"}</Badge>;
   }
 
-  if (["NOK", "ABERTA", "PENDENTE", "INATIVO"].includes(normalized)) {
+  if (["NOK", "ABERTA", "PENDENTE", "INATIVO", "REJEITADA"].includes(normalized)) {
     return <Badge className="bg-red-100 text-red-800">{status || "NOK"}</Badge>;
   }
 
-  if (["PROGRAMADA", "EM ANDAMENTO"].includes(normalized)) {
+  if (["PROGRAMADA", "EM ANDAMENTO", "ENVIADA"].includes(normalized)) {
     return <Badge className="bg-amber-100 text-amber-800">{status}</Badge>;
   }
 
@@ -508,7 +508,7 @@ export function AtivoDetalhe() {
               icon={<CalendarClock />}
               label="Solicitacoes de intervencao"
               value={solicitacoesIntervencao.length}
-              detail={siOrdenadas[0]?.status_manutencao ? `Ultima: ${siOrdenadas[0].status_manutencao}` : "Sem SI vinculada"}
+              detail={siOrdenadas[0]?.status || siOrdenadas[0]?.status_manutencao ? `Ultima: ${siOrdenadas[0].status ?? siOrdenadas[0].status_manutencao}` : "Sem SI vinculada"}
             />
           </div>
 
@@ -745,7 +745,7 @@ export function AtivoDetalhe() {
                             </div>
                           </TableCell>
                           <TableCell>{si.tipo || "-"}</TableCell>
-                          <TableCell>{getStatusBadge(si.status_manutencao)}</TableCell>
+                          <TableCell>{getStatusBadge(si.status ?? si.status_manutencao)}</TableCell>
                           <TableCell>{formatDate(si.data_inicio_preriodo_total ?? si.criado_em)}</TableCell>
                           <TableCell className="text-right">
                             <Button size="sm" variant="outline" asChild>
