@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import {
   Ban,
   CheckCircle2,
+  ClipboardCheck,
   Clock3,
   FileEdit,
   FilePlus2,
@@ -412,6 +413,7 @@ const VARIENTE_ACAO: Record<SIAcao, "primaria" | "sucesso" | "perigo" | "neutro"
   enviar: "primaria",
   aprovar: "sucesso",
   rejeitar: "perigo",
+  concluir: "sucesso",
   cancelar: "neutro",
 };
 
@@ -684,8 +686,10 @@ function acaoLabelHistorico(acao: string) {
     enviar: "Envio",
     aprovar: "Aprovação",
     rejeitar: "Rejeição",
+    concluir: "Conclusão",
     cancelar: "Cancelamento",
     migracao: "Registro",
+    reverter: "Correção",
   };
   return rotulos[acao.toLowerCase()] ?? acao;
 }
@@ -1189,6 +1193,7 @@ export default function SIForm() {
   }
 
   const somenteLeitura = isEdit && !podeEditarSI(si);
+  const liberacoesEditaveis = isEdit && si?.pode_editar_liberacoes === true;
   const acoes = acoesDaSI(si);
   const statusAtual = statusDaSI(si);
 
@@ -1237,17 +1242,25 @@ export default function SIForm() {
     if (acao === "enviar") return <Send size={17} />;
     if (acao === "aprovar") return <ShieldCheck size={17} />;
     if (acao === "rejeitar") return <ShieldX size={17} />;
+    if (acao === "concluir") return <ClipboardCheck size={17} />;
     return <Ban size={17} />;
   }
 
   const STATUS_DO_FLUXO_NOVO = ["RASCUNHO", "ENVIADA", "REJEITADA", "APROVADA", "CANCELADA"];
+  // SIs concluídas do fluxo novo têm "concluir" (ou "aprovar") no histórico;
+  // as antigas (somente "Registro") mostram apenas o banner.
+  const ACAO_FLUXO_NOVO = ["enviar", "aprovar", "rejeitar", "concluir", "cancelar"];
 
   function FluxoSteps({ status }: { status: string }) {
-    if (!STATUS_DO_FLUXO_NOVO.includes(status)) return null;
+    const concluidaDoFluxoNovo =
+      status === "CONCLUIDA" &&
+      historico.some((h) => ACAO_FLUXO_NOVO.includes((h.acao ?? "").toLowerCase()));
+    if (!STATUS_DO_FLUXO_NOVO.includes(status) && !concluidaDoFluxoNovo) return null;
 
     const cancelada = status === "CANCELADA";
     const rejeitada = status === "REJEITADA";
-    const posicao = status === "APROVADA" ? 3 : status === "ENVIADA" ? 2 : 1;
+    const concluida = status === "CONCLUIDA";
+    const posicao = concluida ? 4 : status === "APROVADA" ? 3 : status === "ENVIADA" ? 2 : 1;
 
     const passos = [
       { rotulo: "Rascunho", icone: <FileEdit size={15} /> },
@@ -1256,7 +1269,8 @@ export default function SIForm() {
         rotulo: cancelada ? "Cancelada" : "Aprovada",
         icone: cancelada ? <Ban size={15} /> : <ShieldCheck size={15} />,
       },
-    ];
+      { rotulo: "Concluída", icone: <ClipboardCheck size={15} /> },
+    ].slice(0, cancelada ? 3 : 4);
 
     return (
       <FluxoTrilha>
@@ -1283,10 +1297,10 @@ export default function SIForm() {
                   $ativo={cancelada ? true : numero <= posicao}
                 />
               )}              <FluxoPasso>
-                <FluxoCirculo $cor={cor} $prenchido={atual || (cancelada && numero === 3)}>
+                <FluxoCirculo $cor={cor} $prenchido={atual || (cancelada && numero === 3) || (concluida && numero === 4)}>
                   {feito ? <CheckCircle2 size={15} /> : passo.icone}
                 </FluxoCirculo>
-                <FluxoRotulo $atual={atual || (cancelada && numero === 3)} $cor={cor}>
+                <FluxoRotulo $atual={atual || (cancelada && numero === 3) || (concluida && numero === 4)} $cor={cor}>
                   {passo.rotulo}
                 </FluxoRotulo>
                 {rejeitada && numero === 1 && (
@@ -1844,7 +1858,11 @@ export default function SIForm() {
             />
           </FormGroup>
         </FormGrid>
+        </FieldsetBloqueado>
 
+        {/* Liberações seguem editáveis enquanto a SI está aprovada:
+            é nesse período que a intervenção é executada. */}
+        <FieldsetBloqueado disabled={!liberacoesEditaveis}>
         <SectionTitle>Liberação para manutenção</SectionTitle>
 
         <FormGrid>
@@ -2059,7 +2077,7 @@ export default function SIForm() {
         )}
 
         <Actions>
-          {isEdit && !liberacaoEmExecucao && !somenteLeitura && (
+          {isEdit && !liberacaoEmExecucao && liberacoesEditaveis && (
             <SecondaryButton
               type="button"
               onClick={registrarLiberacaoManutencao}
@@ -2070,7 +2088,7 @@ export default function SIForm() {
             </SecondaryButton>
           )}
 
-          {isEdit && liberacaoEmExecucao && !somenteLeitura && (
+          {isEdit && liberacaoEmExecucao && liberacoesEditaveis && (
             <>
               <SecondaryButton
                 type="button"
@@ -2113,7 +2131,7 @@ export default function SIForm() {
             {historico.map((registro) => {
               const acao = registro.acao.toLowerCase();
               const cor =
-                acao === "aprovar"
+                acao === "aprovar" || acao === "concluir"
                   ? "#10b981"
                   : acao === "rejeitar"
                     ? "#ef4444"
@@ -2125,6 +2143,8 @@ export default function SIForm() {
               const icone =
                 acao === "aprovar" ? (
                   <ShieldCheck size={16} />
+                ) : acao === "concluir" ? (
+                  <ClipboardCheck size={16} />
                 ) : acao === "rejeitar" ? (
                   <ShieldX size={16} />
                 ) : acao === "enviar" ? (

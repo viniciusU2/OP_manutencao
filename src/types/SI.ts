@@ -84,11 +84,12 @@ export interface SI {
   status?: string;
   status_rotulo?: string;
   pode_editar?: boolean;
+  pode_editar_liberacoes?: boolean;
   pode_excluir?: boolean;
   acoes?: SIAcao[];
 }
 
-export type SIAcao = "enviar" | "aprovar" | "rejeitar" | "cancelar";
+export type SIAcao = "enviar" | "aprovar" | "rejeitar" | "concluir" | "cancelar";
 
 export interface SIHistorico {
   id_historico: number;

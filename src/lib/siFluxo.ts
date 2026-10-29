@@ -21,7 +21,7 @@ export const STATUS_SI_DESCRICAO: Record<string, string> = {
   REJEITADA:
     "Devolvida pela Operação. Corrija o que for necessário e reenvie — a mesma SI volta para análise.",
   APROVADA:
-    "Aprovada pelo Centro de Operações. Não pode mais ser editada; só o cancelamento é possível.",
+    "Aprovada pelo Centro de Operações. O documento fica somente leitura, mas as liberações continuam registrando; conclua a SI quando a intervenção terminar.",
   CANCELADA: "Cancelada. Documento somente leitura, sem novas alterações de status.",
   PROGRAMADA:
     "SI programada. A Manutenção Local ainda pode editar e enviar para o Centro de Operações.",
@@ -33,6 +33,7 @@ export const ROTULO_ACAO: Record<SIAcao, string> = {
   enviar: "Enviar para a Operação",
   aprovar: "Aprovar",
   rejeitar: "Rejeitar",
+  concluir: "Concluir SI",
   cancelar: "Cancelar SI",
 };
 
@@ -40,9 +41,11 @@ export const DESCRICAO_ACAO: Record<SIAcao, string> = {
   enviar:
     "A SI vai para o Centro de Operações e fica bloqueada para edição até a análise.",
   aprovar:
-    "A SI é aprovada e passa a ser somente leitura para todos. Só poderá ser cancelada.",
+    "A SI é aprovada e o documento passa a ser somente leitura. As liberações continuam registrando durante a execução.",
   rejeitar:
     "A SI volta editável para a Manutenção Local corrigir e reenviar. Explique o motivo.",
+  concluir:
+    "Encerra a SI com a intervenção executada. O documento fica somente leitura para todos.",
   cancelar:
     "Encerra a SI definitivamente. Ela fica somente leitura e não volta mais para análise.",
 };
@@ -90,16 +93,17 @@ export function ehCentroOperacoes(usuario: UsuarioSI) {
 
 /**
  * O status pede ação deste perfil?
- * Manutenção: rascunho a concluir ou rejeitada a corrigir.
- * Operação: SI enviada aguardando análise.
+ * Manutenção: rascunho a concluir, rejeitada a corrigir ou aprovada a
+ * concluir depois de executar.
+ * Operação: SI enviada aguardando análise (e aprovada a concluir).
  */
 export function statusRequerAcao(status?: string | null, usuario?: UsuarioSI) {
   const valor = (status ?? "").toUpperCase();
   if (podeCriarSI(usuario)) {
-    return valor === "RASCUNHO" || valor === "REJEITADA";
+    return valor === "RASCUNHO" || valor === "REJEITADA" || valor === "APROVADA";
   }
   if (ehCentroOperacoes(usuario)) {
-    return valor === "ENVIADA";
+    return valor === "ENVIADA" || valor === "APROVADA";
   }
   return false;
 }
