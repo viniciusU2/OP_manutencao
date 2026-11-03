@@ -1017,7 +1017,7 @@ export default function SIForm() {
         return;
       }
       if (!isEdit && !podeCriarSI(usuario)) {
-        toast.error("Somente a Manutenção Local pode criar uma SI.");
+        toast.error("Somente a Manutenção Local e administradores criam SI.");
         return;
       }
 
@@ -1322,7 +1322,7 @@ export default function SIForm() {
         <p>
           {isEdit
             ? "Cadastro e controle de solicitação de intervenção"
-            : "Somente a Manutenção Local cria SI. Ela nasce como rascunho."}
+            : "A SI nasce como rascunho. Manutenção Local e administradores criam."}
         </p>
       </PageTitle>
 
@@ -1407,7 +1407,7 @@ export default function SIForm() {
       {!isEdit && !podeCriarSI(usuario) && (
         <BannerErro>
           Seu perfil não tem permissão para criar SI. Somente a Manutenção Local
-          (papel <strong>mantenedor</strong>) pode criar e editar.
+          (papel <strong>mantenedor</strong>) e administradores podem criar.
         </BannerErro>
       )}
 

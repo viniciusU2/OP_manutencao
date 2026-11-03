@@ -80,9 +80,10 @@ function normalizarRole(role?: string | null) {
   return (role ?? "").trim().toLowerCase();
 }
 
-/** Somente a Manutenção Local (papel `mantenedor`) cria SI. */
+/** Manutenção Local (papel `mantenedor`) e admin (acesso total) criam SI. */
 export function podeCriarSI(usuario: UsuarioSI) {
-  return normalizarRole(usuario?.role) === "mantenedor";
+  const role = normalizarRole(usuario?.role);
+  return role === "mantenedor" || role === "admin";
 }
 
 /** O Centro de Operações analisa as SI enviadas. */
