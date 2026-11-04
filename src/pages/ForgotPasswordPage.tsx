@@ -3,13 +3,14 @@ import { ArrowLeft, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 import api from "../api/api";
 import { PasswordRecoveryLayout } from "../components/PasswordRecoveryLayout";
+import { textoDoErro } from "../lib/apiErro";
 
 export function ForgotPasswordPage() {
   const [email,setEmail]=useState(""); const [loading,setLoading]=useState(false);
   const [message,setMessage]=useState(""); const [error,setError]=useState("");
   async function submit(e:React.FormEvent){e.preventDefault();setLoading(true);setError("");
     try{const {data}=await api.post("/forgot-password",{email});setMessage(data.message);}
-    catch(err:any){setError(err?.response?.data?.detail||"Não foi possível enviar a solicitação. Tente novamente.");}
+    catch(err:any){setError(textoDoErro(err,"Não foi possível enviar a solicitação. Tente novamente."));}
     finally{setLoading(false)}
   }
   return <PasswordRecoveryLayout>
