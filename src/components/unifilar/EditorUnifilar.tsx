@@ -6,6 +6,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Background, BackgroundVariant, ConnectionMode, Controls,
   addEdge, applyEdgeChanges, applyNodeChanges, ReactFlow, ReactFlowProvider,
@@ -154,6 +155,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
   idSubestacao: number; nomeSubestacao: string; podeEditar: boolean;
 }) {
   const { screenToFlowPosition, fitView } = useReactFlow();
+  const navigate = useNavigate();
   const atualizarInternos = useUpdateNodeInternals();
 
   const inicial = useMemo<Snapshot>(() => carregarLocal(idSubestacao) ?? { nodes: [], edges: [] }, [idSubestacao]);
@@ -545,6 +547,13 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                       {ativos.find((ativo) => ativo.id_ativo === sel.data.id_ativo)?.status ?? "Ativo da subestação"}
                     </span>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/ativo/${sel.data.id_ativo}`)}
+                    className="mt-1 inline-flex items-center gap-1 rounded border border-blue-300 bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700 hover:bg-blue-100"
+                  >
+                    Ver ativo #{sel.data.id_ativo}
+                  </button>
                 </label>
               )}
               <div className="text-[11px] text-slate-600">
