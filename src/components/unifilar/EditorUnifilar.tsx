@@ -435,6 +435,11 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
               modo leitura
             </span>
           )}
+          {editar && (
+            <span className="mr-1 hidden rounded bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 sm:inline">
+              Dica: arraste de um ponto azul (terminal) até outro
+            </span>
+          )}
           {podeEditar && modoEdicao && (
             <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={salvarAgora} disabled={!editar || !pronto || salvando} title="Salvar (Ctrl+S)">
               <Save className="mr-1 h-3.5 w-3.5" />{salvando ? "Salvando..." : "Salvar"}
@@ -485,7 +490,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
             nodesConnectable={editar && pronto}
             nodesDraggable={editar && pronto}
             connectionMode={ConnectionMode.Loose}
-            connectionRadius={30}
+            connectionRadius={40}
             elementsSelectable
             snapToGrid={editar}
             snapGrid={[10, 10]}

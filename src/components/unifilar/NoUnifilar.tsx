@@ -11,7 +11,7 @@ import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { SimboloUnifilar } from "./SimboloUnifilar";
 import { TERMINAIS_BARRAMENTO, tipo } from "./catalogo";
 
-const CLASSE_TERMINAL = "!h-2 !w-2 !min-h-0 !min-w-0 !border-0 bg-blue-600";
+const CLASSE_TERMINAL = "!h-3 !w-3 !min-h-0 !min-w-0 !border-2 !border-white bg-blue-600 shadow-sm";
 
 function Terminal({ id, position, rotulo }: { id: string; position: Position; rotulo: string }) {
   return (
