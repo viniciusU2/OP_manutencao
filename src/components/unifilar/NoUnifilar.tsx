@@ -7,12 +7,28 @@
  * pontas do condutor quando o equipamento gira.
  */
 
-import { Fragment } from "react";
-import {
-  Handle, Position, type NodeProps, type Node,
-} from "@xyflow/react";
+import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { SimboloUnifilar } from "./SimboloUnifilar";
 import { TERMINAIS_BARRAMENTO, tipo } from "./catalogo";
+
+const CLASSE_TERMINAL = "!h-2 !w-2 !min-h-0 !min-w-0 !border-0 bg-blue-600";
+
+function Terminal({ id, position, rotulo }: { id: string; position: Position; rotulo: string }) {
+  return (
+    <Handle
+      id={id}
+      type="source"
+      position={position}
+      className={CLASSE_TERMINAL}
+      aria-label={rotulo}
+      // modo Loose: o mesmo terminal inicia (ponta de saida) e recebe
+      // (ponta de chegada) conexoes, sem handles ocultos duplicados.
+      isConnectable
+      isConnectableStart
+      isConnectableEnd
+    />
+  );
+}
 
 export type DadosComponente = {
   tipo: string;
@@ -70,16 +86,12 @@ export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
           const [esq, dir, topo, base] = bordasBarramento(data.rotacao);
           const posicoes = [esq, dir, topo, base];
           return (
-            <Fragment key={t.id}>
-              <Handle
-                id={t.id}
-                type="source"
-                position={posicoes[indice]}
-                className="!h-1.5 !w-1.5 !min-h-0 !min-w-0 !border-0 bg-blue-600"
-                isConnectable
-              />
-              <Handle id={t.id} type="target" position={posicoes[indice]} style={{ opacity: 0, pointerEvents: "none" }} />
-            </Fragment>
+            <Terminal
+              key={t.id}
+              id={t.id}
+              position={posicoes[indice]}
+              rotulo={`${t.label.toLowerCase()} de ${identificador || "barramento"}`}
+            />
           );
         })}
       </div>
@@ -93,10 +105,8 @@ export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
       className={`relative flex flex-col items-center ${selected ? "rounded-md ring-2 ring-blue-600" : ""}`}
       style={{ width: data.largura, minHeight: data.altura }}
     >
-      <Handle id="T1" type="source" position={t1} className="!h-1.5 !w-1.5 !min-h-0 !min-w-0 !border-0 bg-blue-600" isConnectable />
-      <Handle id="T1" type="target" position={t1} style={{ opacity: 0, pointerEvents: "none" }} />
-      <Handle id="T2" type="source" position={t2} className="!h-1.5 !w-1.5 !min-h-0 !min-w-0 !border-0 bg-blue-600" isConnectable />
-      <Handle id="T2" type="target" position={t2} style={{ opacity: 0, pointerEvents: "none" }} />
+      <Terminal id="T1" position={t1} rotulo={`topo de ${identificador || "equipamento"}`} />
+      <Terminal id="T2" position={t2} rotulo={`base de ${identificador || "equipamento"}`} />
 
       <div style={{ transform: `rotate(${data.rotacao}deg)` }}>
         <SimboloUnifilar tipo={definicao.codigo} largura={data.largura} altura={data.altura} />

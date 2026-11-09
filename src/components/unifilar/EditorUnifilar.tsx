@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Background, BackgroundVariant, Controls,
+  Background, BackgroundVariant, ConnectionMode, Controls,
   addEdge, applyEdgeChanges, applyNodeChanges, ReactFlow, ReactFlowProvider,
   useEdgesState, useNodesState, useReactFlow, useUpdateNodeInternals,
 } from "@xyflow/react";
@@ -58,7 +58,21 @@ function carregarLocal(idSubes: number): Snapshot | null {
     const cru = localStorage.getItem(chave(idSubes));
     if (!cru) return null;
     const d = JSON.parse(cru) as Snapshot & { formato?: string };
-    if (d.formato === FORMATO && Array.isArray(d.nodes)) return { nodes: d.nodes, edges: d.edges };
+    if (d.formato === FORMATO && Array.isArray(d.nodes)) {
+      // descarta arestas legadas de versao com ponta indefinida ou no
+      // inexistente (compatibilidade com rascunhos salvos antes do
+      // modo Loose): ligacao sem terminal definido nao e confiavel
+      const ids = new Set(d.nodes.map((n) => n.id));
+      const boas = d.edges.filter(
+        (e) =>
+          ids.has(e.source) &&
+          ids.has(e.target) &&
+          typeof e.sourceHandle === "string" &&
+          typeof e.targetHandle === "string" &&
+          e.source !== e.target,
+      );
+      return { nodes: d.nodes, edges: boas };
+    }
   } catch { /* corrompido: vazio */ }
   return null;
 }
@@ -308,6 +322,8 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
             onPaneClick={() => setIdSel(null)}
             nodesConnectable={editar}
             nodesDraggable={editar}
+            connectionMode={ConnectionMode.Loose}
+            connectionRadius={30}
             elementsSelectable
             snapToGrid={editar}
             snapGrid={[10, 10]}
