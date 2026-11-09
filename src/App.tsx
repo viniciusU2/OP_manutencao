@@ -19,6 +19,7 @@ import { LoginPage } from "./pages/loginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import UnifilarPage from "./pages/UnifilarPage";
 
 import Layout from "./components/Layout";
 
@@ -150,6 +151,9 @@ function AppContent() {
           path="/dashboard-analitico"
           element={<HomeRoute element={<DashboardAnalitico />} />}
         />
+
+        {/* UNIFILAR — navegação para todos; edição interna para admin/mantenedor */}
+        <Route path="/subestacoes/:id/unifilar" element={<UnifilarPage />} />
 
         {/* 🔒 ADMIN */}
         <Route
