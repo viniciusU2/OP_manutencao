@@ -24,7 +24,7 @@ export const CATALOGO: TipoComponente[] = [
   { codigo: "DISJUNTOR", nome: "Disjuntor", aceitaAtivo: true, maxPorTerminal: 1, largura: 44, altura: 72, categoria: "equipamento" },
   { codigo: "SECCIONADORA", nome: "Seccionadora", aceitaAtivo: true, maxPorTerminal: 1, largura: 40, altura: 72, categoria: "equipamento" },
   { codigo: "SECCIONADORA_ATERRAMENTO", nome: "Seccionadora de aterramento", aceitaAtivo: true, maxPorTerminal: 1, largura: 40, altura: 96, categoria: "equipamento" },
-  { codigo: "TC", nome: "Transformador de corrente (TC)", aceitaAtivo: true, maxPorTerminal: 1, largura: 40, altura: 72, categoria: "instrumento" },
+  { codigo: "TC", nome: "Transformador de corrente (TC)", aceitaAtivo: true, maxPorTerminal: 1, largura: 32, altura: 108, categoria: "instrumento" },
   { codigo: "TP", nome: "Transformador de potencial (TP)", aceitaAtivo: true, maxPorTerminal: 1, largura: 44, altura: 88, categoria: "instrumento" },
   { codigo: "TPC", nome: "Transformador de potencial capacitivo (TPC)", aceitaAtivo: true, maxPorTerminal: 1, largura: 44, altura: 104, categoria: "instrumento" },
   { codigo: "PARA_RAIOS", nome: "Para-raios", aceitaAtivo: true, maxPorTerminal: 1, largura: 40, altura: 96, categoria: "instrumento" },

@@ -21,9 +21,7 @@ function Frame(svg: ReactNode, w: number, h: number) {
 }
 
 /** Tramos de condutor com o terminal no topo (T1) e na base (T2). */
-function Tramos(w: number, h: number) {
-  return <line x1={w / 2} y1={0} x2={w / 2} y2={h} {...traço} />;
-}
+
 
 function AterramentoSimbolo(x: number, y: number) {
   return (
@@ -109,18 +107,15 @@ export function SimboloUnifilar({
     }
 
     case "TC": {
-      // ANSI 200: tramo atravessa um nucleo circular.
-      const r = Math.min(largura, altura) * 0.62;
-      const cx = largura / 2;
-      const cyP = altura * 0.5;
-      return Frame(
-        <g>
-          {Tramos(largura, altura)}
-          <circle cx={cx} cy={cyP} r={r} {...traço} />
-          <line x1={cx - r * 0.55} y1={cyP - r * 0.55} x2={cx + r * 0.55} y2={cyP + r * 0.55} {...traço} />
-        </g>,
-        largura,
-        altura,
+      return (
+        <svg viewBox="0 0 32 108" width={largura} height={altura} fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+          <path d="M11.5203 22L11.5203 0" stroke="black" />
+          <rect x="7.02026" y="22.5" width="10" height="11" stroke="black" />
+          <path d="M15.0203 71C4.52025 72 0.0374426 71.5 0.537438 66.5C0.537438 62 5.02026 61.5 15.0203 61.5" stroke="black" />
+          <path d="M11.5203 108L11.5203 34" stroke="black" />
+          <path d="M21.5202 53L21.5201 53C11.0201 52 0.520235 51 1.02023 56C1.02023 60.5 5.52023 61.5 15.5202 61.5" stroke="black" />
+          <rect x="21.0203" y="47.5" width="10" height="11" stroke="black" />
+        </svg>
       );
     }
 
