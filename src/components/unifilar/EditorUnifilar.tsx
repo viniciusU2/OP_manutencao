@@ -20,6 +20,7 @@ import {
 
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import api from "../../api/api";
 import { CATALOGO, CATEGORIAS, tipo as buscarTipo } from "./catalogo";
 import { SimboloUnifilar } from "./SimboloUnifilar";
 import { NoUnifilar, type NoUnifilarType } from "./NoUnifilar";
@@ -40,6 +41,16 @@ const ROTULO: Record<string, string> = {
 };
 
 type Snapshot = { nodes: NoUnifilarType[]; edges: Edge[] };
+type RespostaDiagrama = Partial<Snapshot> & {
+  id_subestacao?: number;
+  atualizado_em?: string | null;
+};
+type AtivoAssociavel = {
+  id_ativo: number;
+  codigo_ativo: string;
+  bay?: string | null;
+  status?: string | null;
+};
 const ESTILO = { strokeWidth: 2, stroke: "#0f172a" } as const;
 
 /** id unico seguro para contextos http (crypto.randomUUID exige https). */
@@ -77,6 +88,52 @@ function carregarLocal(idSubes: number): Snapshot | null {
   return null;
 }
 
+function normalizarSnapshot(valor: Partial<Snapshot> | null | undefined): Snapshot {
+  const nodes = Array.isArray(valor?.nodes) ? valor.nodes.map((node) => {
+    const definicao = buscarTipo(node.data?.tipo ?? "CONEXAO");
+    return {
+      ...node,
+      type: "noUnifilar" as const,
+      data: {
+        ...node.data,
+        codigo: node.data?.codigo ?? "",
+        nome: node.data?.nome ?? "",
+        vao: node.data?.vao ?? "",
+        rotacao: node.data?.rotacao ?? 0,
+        largura: node.data?.largura ?? definicao.largura,
+        altura: node.data?.tipo === "REATOR" && node.data?.altura === 80
+          ? definicao.altura
+          : node.data?.altura ?? definicao.altura,
+      },
+    };
+  }) : [];
+  const edges = Array.isArray(valor?.edges) ? valor.edges.map((edge) => ({
+    ...edge,
+    type: edge.type ?? "smoothstep",
+    style: ESTILO,
+  })) : [];
+  return { nodes, edges };
+}
+
+function assinatura(snapshot: Snapshot): string {
+  return JSON.stringify({
+    nodes: snapshot.nodes.map((node) => ({
+      id: node.id,
+      type: node.type ?? "noUnifilar",
+      position: node.position,
+      data: node.data,
+    })),
+    edges: snapshot.edges.map((edge) => ({
+      id: edge.id,
+      source: edge.source,
+      sourceHandle: edge.sourceHandle ?? null,
+      target: edge.target,
+      targetHandle: edge.targetHandle ?? null,
+      type: edge.type ?? "smoothstep",
+    })),
+  });
+}
+
 function proxCodigo(nodes: NoUnifilarType[], tipoCod: string): string {
   const p = PREFIXO[tipoCod] ?? tipoCod.slice(0, 3).toUpperCase();
   const usados = new Set(nodes.map((n) => n.data.codigo).filter((c) => c.startsWith(p)));
@@ -104,11 +161,24 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
   const [edges, setEdges] = useEdgesState(inicial.edges);
   const [modoEdicao, setModoEdicao] = useState(podeEditar);
   const [idSel, setIdSel] = useState<string | null>(null);
+  const [pronto, setPronto] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [ativos, setAtivos] = useState<AtivoAssociavel[]>([]);
   const fonteArraste = useRef<string | null>(null);
+  const ultimaAssinaturaServidor = useRef("");
+  const avisoFalhaAutosave = useRef(false);
   const editar = modoEdicao && podeEditar;
 
   // quando o papel do usuario chega (carregamento async), o modo inicial acompanha
   useEffect(() => setModoEdicao(podeEditar), [podeEditar]);
+
+  useEffect(() => {
+    let ativo = true;
+    api.get<AtivoAssociavel[]>(`/ativos/${idSubestacao}`)
+      .then(({ data }) => { if (ativo) setAtivos(Array.isArray(data) ? data : []); })
+      .catch(() => { if (ativo) setAtivos([]); });
+    return () => { ativo = false; };
+  }, [idSubestacao]);
 
   // histórico
   const passado = useRef<Snapshot[]>([]);
@@ -126,15 +196,103 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
   }, [snap, setEdges, setNodes]);
   const podeUndo = passado.current.length > 0, podeRedo = futuro.current.length > 0;
 
-  // persistência
+  // Carrega do servidor; rascunho local so migra se o servidor nunca
+  // recebeu um diagrama para esta subestacao.
   useEffect(() => {
-    const t = setTimeout(() => salvarLocal({ nodes, edges }, idSubestacao, nomeSubestacao), 700);
-    return () => clearTimeout(t);
-  }, [edges, idSubestacao, nomeSubestacao, nodes]);
+    let ativo = true;
+    setPronto(false);
+    ultimaAssinaturaServidor.current = "";
+
+    const carregar = async () => {
+      try {
+        const { data } = await api.get<RespostaDiagrama>(`/unifilar/diagrama/${idSubestacao}`);
+        if (!ativo) return;
+
+        let snapshot = normalizarSnapshot(data);
+        const rascunho = carregarLocal(idSubestacao);
+        if (data.atualizado_em == null && podeEditar && rascunho?.nodes.length) {
+          const migrado = normalizarSnapshot(rascunho);
+          const resposta = await api.put<RespostaDiagrama>(
+            `/unifilar/diagrama/${idSubestacao}`,
+            migrado,
+          );
+          if (!ativo) return;
+          snapshot = normalizarSnapshot(resposta.data);
+          toast.success("Rascunho local migrado para o servidor.");
+        }
+
+        setNodes(snapshot.nodes);
+        setEdges(snapshot.edges);
+        ultimaAssinaturaServidor.current = assinatura(snapshot);
+        salvarLocal(snapshot, idSubestacao, nomeSubestacao);
+        setPronto(true);
+      } catch {
+        if (!ativo) return;
+        const fallback = normalizarSnapshot(carregarLocal(idSubestacao));
+        setNodes(fallback.nodes);
+        setEdges(fallback.edges);
+        setPronto(true);
+        toast.error("Nao foi possivel carregar o diagrama do servidor; exibindo o rascunho local.");
+      }
+    };
+
+    void carregar();
+    return () => { ativo = false; };
+  }, [idSubestacao, nomeSubestacao, podeEditar, setEdges, setNodes]);
+
+  // Mantem uma copia local de recuperacao; a persistencia oficial e remota.
+  useEffect(() => {
+    if (!pronto) return;
+    const snapshot = normalizarSnapshot({ nodes, edges });
+    const timer = setTimeout(() => salvarLocal(snapshot, idSubestacao, nomeSubestacao), 700);
+    return () => clearTimeout(timer);
+  }, [edges, idSubestacao, nomeSubestacao, nodes, pronto]);
+
+  // Autosave remoto com debounce, somente durante edicao autorizada.
+  useEffect(() => {
+    if (!pronto || !editar) return;
+    const snapshot = normalizarSnapshot({ nodes, edges });
+    const atual = assinatura(snapshot);
+    if (!atual || atual === ultimaAssinaturaServidor.current) return;
+
+    const timer = setTimeout(() => {
+      void api.put<RespostaDiagrama>(`/unifilar/diagrama/${idSubestacao}`, snapshot)
+        .then(({ data }) => {
+          const salvo = normalizarSnapshot(data);
+          ultimaAssinaturaServidor.current = assinatura(salvo);
+          salvarLocal(salvo, idSubestacao, nomeSubestacao);
+          avisoFalhaAutosave.current = false;
+        })
+        .catch(() => {
+          salvarLocal(snapshot, idSubestacao, nomeSubestacao);
+          if (!avisoFalhaAutosave.current) {
+            toast.error("Falha ao sincronizar com o servidor; o rascunho ficou salvo neste navegador.");
+            avisoFalhaAutosave.current = true;
+          }
+        });
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [edges, editar, idSubestacao, nomeSubestacao, nodes, pronto]);
+
   const salvarAgora = useCallback(() => {
-    salvarLocal({ nodes, edges }, idSubestacao, nomeSubestacao);
-    toast.success("Diagrama salvo", { description: "Gravado localmente â€” banco de dados na Etapa 2." });
-  }, [edges, idSubestacao, nomeSubestacao, nodes]);
+    const snapshot = normalizarSnapshot({ nodes, edges });
+    setSalvando(true);
+    void api.put<RespostaDiagrama>(`/unifilar/diagrama/${idSubestacao}`, snapshot)
+      .then(({ data }) => {
+        const salvo = normalizarSnapshot(data);
+        setNodes(salvo.nodes);
+        setEdges(salvo.edges);
+        ultimaAssinaturaServidor.current = assinatura(salvo);
+        salvarLocal(salvo, idSubestacao, nomeSubestacao);
+        avisoFalhaAutosave.current = false;
+        toast.success("Diagrama salvo no servidor.");
+      })
+      .catch(() => {
+        salvarLocal(snapshot, idSubestacao, nomeSubestacao);
+        toast.error("Falha ao salvar no servidor; o rascunho ficou neste navegador.");
+      })
+      .finally(() => setSalvando(false));
+  }, [edges, idSubestacao, nomeSubestacao, nodes, setEdges, setNodes]);
 
   // mutações
   const inserir = useCallback((tipoCod: string, x: number, y: number) => {
@@ -233,7 +391,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
   }, [editar, edges, setEdges]);
 
   // propriedades
-  const campo = useCallback((k: "codigo" | "nome" | "vao", v: string) => {
+  const campo = useCallback((k: "codigo" | "nome" | "vao" | "id_ativo", v: string | number | null) => {
     if (!sel) return;
     setNodes((at) => at.map((n) => (n.id === sel.id ? { ...n, data: { ...n.data, [k]: v } } : n)));
   }, [sel, setNodes]);
@@ -275,9 +433,11 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
               modo leitura
             </span>
           )}
-          <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={salvarAgora} title="Salvar (Ctrl+S)">
-            <Save className="mr-1 h-3.5 w-3.5" />Salvar
-          </Button>
+          {podeEditar && modoEdicao && (
+            <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={salvarAgora} disabled={!editar || !pronto || salvando} title="Salvar (Ctrl+S)">
+              <Save className="mr-1 h-3.5 w-3.5" />{salvando ? "Salvando..." : "Salvar"}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -293,7 +453,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                 <p className="mb-1 text-[10px] font-semibold uppercase text-slate-500">{ROTULO[cat]}</p>
                 <div className="grid grid-cols-2 gap-1.5">
                   {itens.map((d) => (
-                    <button key={d.codigo} type="button" disabled={!editar} draggable={editar}
+                    <button key={d.codigo} type="button" disabled={!editar || !pronto} draggable={editar && pronto}
                       onDragStart={(e) => { e.dataTransfer.setData("text/unifilar", d.codigo); fonteArraste.current = d.codigo; }}
                       onDragEnd={() => { fonteArraste.current = null; }}
                       onClick={() => doCentro(d.codigo)}
@@ -320,8 +480,8 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
             onConnect={onConnect}
             onNodeClick={(_, n) => setIdSel(n.id)}
             onPaneClick={() => setIdSel(null)}
-            nodesConnectable={editar}
-            nodesDraggable={editar}
+            nodesConnectable={editar && pronto}
+            nodesDraggable={editar && pronto}
             connectionMode={ConnectionMode.Loose}
             connectionRadius={30}
             elementsSelectable
@@ -364,8 +524,30 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                 Vão
                 <Input value={sel.data.vao} disabled={!editar} placeholder="ex.: 15D7" onChange={(e) => campo("vao", e.target.value)} className="h-8 text-xs" />
               </label>
+              {defSel.aceitaAtivo && (
+                <label className="grid gap-1 text-[11px] font-semibold text-slate-700">
+                  Ativo associado
+                  <select
+                    value={sel.data.id_ativo ?? ""}
+                    disabled={!editar}
+                    onChange={(e) => campo("id_ativo", e.target.value ? Number(e.target.value) : null)}
+                    className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs font-normal disabled:bg-slate-100"
+                  >
+                    <option value="">Sem associação</option>
+                    {ativos.map((ativo) => (
+                      <option key={ativo.id_ativo} value={ativo.id_ativo}>
+                        {ativo.codigo_ativo}{ativo.bay ? ` — vão ${ativo.bay}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {sel.data.id_ativo != null && (
+                    <span className="text-[10px] font-normal text-slate-500">
+                      {ativos.find((ativo) => ativo.id_ativo === sel.data.id_ativo)?.status ?? "Ativo da subestação"}
+                    </span>
+                  )}
+                </label>
+              )}
               <div className="text-[11px] text-slate-600">
-                <p><strong className="text-slate-700">Ativo associado:</strong> â€” (Etapa 3)</p>
                 <p><strong className="text-slate-700">Ligações:</strong>{" "}
                   {edges.filter((e) => e.source === sel.id || e.target === sel.id).length}</p>
               </div>

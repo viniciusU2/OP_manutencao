@@ -38,6 +38,7 @@ export type DadosComponente = {
   rotacao: number; // 0 | 90 | 180 | 270
   largura: number;
   altura: number;
+  id_ativo?: number | null;
 };
 
 export type NoUnifilarType = Node<DadosComponente, "noUnifilar">;

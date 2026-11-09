@@ -28,7 +28,7 @@ export const CATALOGO: TipoComponente[] = [
   { codigo: "TP", nome: "Transformador de potencial (TP)", aceitaAtivo: true, maxPorTerminal: 1, largura: 44, altura: 88, categoria: "instrumento" },
   { codigo: "TPC", nome: "Transformador de potencial capacitivo (TPC)", aceitaAtivo: true, maxPorTerminal: 1, largura: 44, altura: 104, categoria: "instrumento" },
   { codigo: "PARA_RAIOS", nome: "Para-raios", aceitaAtivo: true, maxPorTerminal: 1, largura: 40, altura: 96, categoria: "instrumento" },
-  { codigo: "REATOR", nome: "Reator", aceitaAtivo: true, maxPorTerminal: 1, largura: 44, altura: 80, categoria: "equipamento" },
+  { codigo: "REATOR", nome: "Reator", aceitaAtivo: true, maxPorTerminal: 1, largura: 44, altura: 110, categoria: "equipamento" },
   { codigo: "TRANSFORMADOR", nome: "Transformador de potencia", aceitaAtivo: true, maxPorTerminal: 1, largura: 64, altura: 88, categoria: "equipamento" },
   { codigo: "CONEXAO", nome: "Ponto de conexao", aceitaAtivo: false, maxPorTerminal: 99, largura: 16, altura: 16, categoria: "apoio" },
   { codigo: "ETIQUETA_VAO", nome: "Identificacao de vao", aceitaAtivo: false, maxPorTerminal: 99, largura: 110, altura: 26, categoria: "apoio" },

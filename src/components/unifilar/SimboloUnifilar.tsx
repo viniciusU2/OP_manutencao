@@ -179,30 +179,26 @@ export function SimboloUnifilar({
     }
 
     case "REATOR": {
-      // Enrolamento (espiras) em serie com o tramo.
-      const n = 4;
-      const r = Math.min(largura * 0.62, altura * 0.16);
-      const cx = largura / 2;
-      const primeiro = altura * 0.24;
-      const passo = (altura * 0.56) / n;
-      const arcos = [];
-      for (let i = 0; i < n; i += 1) {
-        arcos.push(
-          <path
-            key={i}
-            d={`M ${cx - r} ${primeiro + i * passo} a ${r} ${r} 0 0 0 ${2 * r} 0`}
-            {...traço}
-          />,
-        );
-      }
-      return Frame(
-        <g>
-          <line x1={cx} y1={0} x2={cx} y2={primeiro} {...traço} />
-          {arcos}
-          <line x1={cx} y1={primeiro + n * passo} x2={cx} y2={altura} {...traço} />
-        </g>,
-        largura,
-        altura,
+      // Simbolo baseado no desenho Reator.svg fornecido pelo usuario.
+      return (
+        <svg
+          viewBox="0 0 86 214"
+          width={largura}
+          height={altura}
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <path d="M42.5 119.5L42.5 22.9899" stroke="black" />
+          <line x1="42.5" y1="214" x2="42.5" y2="183" stroke="black" />
+          <line x1="86" y1="23.5" y2="23.5" stroke="black" />
+          <line x1="73" y1="11.5" x2="13" y2="11.5" stroke="black" />
+          <line x1="58" y1="0.5" x2="28" y2="0.5" stroke="black" />
+          <path d="M42.5 119.681C36.7602 121.396 33 124.258 33 127.5C33 130.742 36.7602 133.604 42.5 135.319" stroke="black" />
+          <path d="M41 166.5C35.2602 168.214 32 171.577 32 174.819C32 178.06 36.7602 181.786 42.5 183.5" stroke="black" />
+          <path d="M40.5714 152C35.3741 150.136 32 147.128 32 143.735C32 140.04 36.0009 136.802 42 135" stroke="black" />
+          <path d="M41 166.765C35.5428 165.036 32 162.247 32 159.1C32 155.674 33.7009 153.671 40 152" stroke="black" />
+        </svg>
       );
     }
 
