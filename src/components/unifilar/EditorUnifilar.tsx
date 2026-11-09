@@ -368,15 +368,16 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
     if (!editar || !c.source || !c.target) return;
     if (c.source === c.target) { toast.warning("Um componente não se liga a si mesmo."); return; }
     const igual = edges.some((e) =>
-      (e.source === c.source && e.sourceHandle === c.sourceHandle && e.target === c.target && e.targetHandle === c.targetHandle) ||
-      (e.source === c.target && e.sourceHandle === c.targetHandle && e.target === c.source && e.targetHandle === c.sourceHandle));
+      (e.source === c.source && (e.sourceHandle ?? null) === (c.sourceHandle ?? null) && e.target === c.target && (e.targetHandle ?? null) === (c.targetHandle ?? null)) ||
+      (e.source === c.target && (e.sourceHandle ?? null) === (c.targetHandle ?? null) && e.target === c.source && (e.targetHandle ?? null) === (c.sourceHandle ?? null)));
     if (igual) { toast.warning("Já existe uma ligação idêntica entre estes terminais."); return; }
     const tipoNo = (no: string) => buscarTipo(nodes.find((n) => n.id === no)?.data.tipo ?? "").maxPorTerminal;
-    if (grau(c.source, c.sourceHandle) >= tipoNo(c.source) || grau(c.target, c.targetHandle) >= tipoNo(c.target)) {
+    if (grau(c.source, c.sourceHandle ?? null) >= tipoNo(c.source) || grau(c.target, c.targetHandle ?? null) >= tipoNo(c.target)) {
       toast.warning("Terminal sem capacidade para outra ligação.");
       return;
     }
     setEdges((at) => addEdge({ ...c, type: "smoothstep", style: ESTILO }, at));
+    toast.success("Ligação criada.");
   }, [editar, edges, grau, nodes, setEdges]);
 
   // mudanças de nós/arestas conforme o modo
