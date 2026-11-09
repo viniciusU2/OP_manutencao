@@ -52,7 +52,7 @@ type AtivoAssociavel = {
   bay?: string | null;
   status?: string | null;
 };
-const ESTILO = { strokeWidth: 2, stroke: "#0f172a" } as const;
+const ESTILO = { strokeWidth: 3, stroke: "#1e3a8a" } as const;
 
 /** id unico seguro para contextos http (crypto.randomUUID exige https). */
 function idUnico() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
@@ -108,11 +108,25 @@ function normalizarSnapshot(valor: Partial<Snapshot> | null | undefined): Snapsh
       },
     };
   }) : [];
-  const edges = Array.isArray(valor?.edges) ? valor.edges.map((edge) => ({
-    ...edge,
-    type: edge.type ?? "smoothstep",
-    style: ESTILO,
-  })) : [];
+  const edges = Array.isArray(valor?.edges) ? valor.edges
+    .filter((edge) => {
+      const nodes = Array.isArray(valor?.nodes) ? valor.nodes : [];
+      const ids = new Set(nodes.map((node) => node.id));
+      return (
+        ids.has(edge.source) &&
+        ids.has(edge.target) &&
+        edge.source !== edge.target &&
+        typeof edge.sourceHandle === "string" &&
+        typeof edge.targetHandle === "string" &&
+        edge.sourceHandle.length > 0 &&
+        edge.targetHandle.length > 0
+      );
+    })
+    .map((edge) => ({
+      ...edge,
+      type: undefined,
+      style: ESTILO,
+    })) : [];
   return { nodes, edges };
 }
 
@@ -376,7 +390,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
       toast.warning("Terminal sem capacidade para outra ligação.");
       return;
     }
-    setEdges((at) => addEdge({ ...c, type: "smoothstep", style: ESTILO }, at));
+    setEdges((at) => addEdge({ ...c, style: ESTILO }, at));
     toast.success("Ligação criada.");
   }, [editar, edges, grau, nodes, setEdges]);
 
@@ -496,7 +510,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
             snapToGrid={editar}
             snapGrid={[10, 10]}
             deleteKeyCode={editar ? ["Backspace", "Delete"] : null}
-            defaultEdgeOptions={{ type: "smoothstep", style: ESTILO }}
+            defaultEdgeOptions={{ style: ESTILO }}
             connectionLineStyle={ESTILO}
             fitView
             proOptions={{ hideAttribution: true }}
