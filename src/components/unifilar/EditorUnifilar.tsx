@@ -1,5 +1,10 @@
 /**
- * EditorUnifilar â€” Etapa 1 (editor grÃ¡fico) sobre React Flow.
+ * EditorUnifilar - editor grafico do diagrama unifilar (React Flow).
+ *
+ * As ligacoes sao desenhadas por uma camada SVG propria, em coordenadas
+ * de fluxo, medida a partir dos terminais renderizados. A rota e
+ * ortogonal e sai de cada terminal na direcao do seu lado. Barramentos
+ * oferecem pontos de derivacao dinamicos ao longo do seu comprimento.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -9,7 +14,7 @@ import {
   addEdge, applyNodeChanges, ReactFlow, ReactFlowProvider,
   useEdgesState, useNodesState, useReactFlow, useUpdateNodeInternals,
 } from "@xyflow/react";
-import type { Connection, Edge, NodeChange } from "@xyflow/react";
+import type { Connection, Edge, NodeChange, Viewport } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { toast } from "sonner";
 import {
@@ -25,6 +30,8 @@ import { NoUnifilar, type NoUnifilarType } from "./NoUnifilar";
 
 const nodeTypes = { noUnifilar: NoUnifilar } as const;
 const FORMATO = "diagrama-unifilar-v1";
+const COR_LIGACAO = "#1e3a8a";
+const RECUO = 18;
 
 const PREFIXO: Record<string, string> = {
   BARRAMENTO: "BAR", DISJUNTOR: "DJ", SECCIONADORA: "SEC",
@@ -49,7 +56,11 @@ type AtivoAssociavel = {
   bay?: string | null;
   status?: string | null;
 };
-const ESTILO = { strokeWidth: 3, stroke: "#1e3a8a" } as const;
+type Ponto = { x: number; y: number };
+type Linha = { id: string; pontos: Ponto[] };
+
+const ESTILO = { strokeWidth: 3, stroke: COR_LIGACAO } as const;
+const TRANSFORMACAO = /translate\(\s*(-?[\d.]+)px,\s*(-?[\d.]+)px\)\s*scale\(\s*(-?[\d.]+)\s*\)/;
 
 function idUnico() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
 function chave(idSubes: number) { return `unifilar:diagrama:${idSubes}`; }
@@ -66,16 +77,7 @@ function carregarLocal(idSubes: number): Snapshot | null {
     if (!cru) return null;
     const d = JSON.parse(cru) as Snapshot & { formato?: string };
     if (d.formato === FORMATO && Array.isArray(d.nodes)) {
-      const ids = new Set(d.nodes.map((n) => n.id));
-      const boas = d.edges.filter(
-        (e) =>
-          ids.has(e.source) &&
-          ids.has(e.target) &&
-          typeof e.sourceHandle === "string" &&
-          typeof e.targetHandle === "string" &&
-          e.source !== e.target,
-      );
-      return { nodes: d.nodes, edges: boas };
+      return normalizarSnapshot(d);
     }
   } catch { /* corrompido */ }
   return null;
@@ -102,22 +104,16 @@ function normalizarSnapshot(valor: Partial<Snapshot> | null | undefined): Snapsh
   }) : [];
   const ids = new Set(nodes.map((node) => node.id));
   const edges = Array.isArray(valor?.edges) ? valor.edges
-    .filter((edge) => {
-      return (
-        ids.has(edge.source) &&
-        ids.has(edge.target) &&
-        edge.source !== edge.target &&
-        typeof edge.sourceHandle === "string" &&
-        typeof edge.targetHandle === "string" &&
-        (edge.sourceHandle as string).length > 0 &&
-        (edge.targetHandle as string).length > 0
-      );
-    })
-    .map((edge) => ({
-      ...edge,
-      type: "smoothstep",
-      style: ESTILO,
-    })) : [];
+    .filter((edge) =>
+      ids.has(edge.source) &&
+      ids.has(edge.target) &&
+      edge.source !== edge.target &&
+      typeof edge.sourceHandle === "string" &&
+      typeof edge.targetHandle === "string" &&
+      edge.sourceHandle.length > 0 &&
+      edge.targetHandle.length > 0,
+    )
+    .map((edge) => ({ ...edge, type: "smoothstep", style: ESTILO })) : [];
   return { nodes, edges };
 }
 
@@ -156,6 +152,99 @@ function proxCodigo(nodes: NoUnifilarType[], tipoCod: string): string {
   return `${p}${String(n).padStart(2, "0")}`;
 }
 
+/** Rota ortogonal entre dois terminais, saindo de cada um na sua direcao. */
+function rotaOrtogonal(p1: Ponto, d1: Ponto, p2: Ponto, d2: Ponto): Ponto[] {
+  const a = { x: p1.x + d1.x * RECUO, y: p1.y + d1.y * RECUO };
+  const b = { x: p2.x + d2.x * RECUO, y: p2.y + d2.y * RECUO };
+  const verticalSaida = d1.x === 0;
+  const verticalChegada = d2.x === 0;
+  if (verticalSaida && verticalChegada) {
+    const meio = (a.y + b.y) / 2;
+    return [p1, a, { x: a.x, y: meio }, { x: b.x, y: meio }, b, p2];
+  }
+  if (!verticalSaida && !verticalChegada) {
+    const meio = (a.x + b.x) / 2;
+    return [p1, a, { x: meio, y: a.y }, { x: meio, y: b.y }, b, p2];
+  }
+  if (verticalSaida) return [p1, a, { x: a.x, y: b.y }, b, p2];
+  return [p1, a, { x: b.x, y: a.y }, b, p2];
+}
+
+function caminho(pontos: Ponto[]): string {
+  return pontos.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+}
+
+/** Mede no DOM as ligacoes, em coordenadas de fluxo (independentes de zoom/pan). */
+function medirLigacoes(wrap: HTMLElement, arestas: Edge[], nos: NoUnifilarType[]): Linha[] {
+  const base = wrap.querySelector<HTMLElement>(".react-flow__viewport");
+  if (!base) return [];
+  const area = wrap.getBoundingClientRect();
+  const m = TRANSFORMACAO.exec(base.style.transform);
+  const tx = m ? parseFloat(m[1]) : 0;
+  const ty = m ? parseFloat(m[2]) : 0;
+  const z = m ? parseFloat(m[3]) : 1;
+  const paraFluxo = (x: number, y: number): Ponto => ({ x: (x - area.left - tx) / z, y: (y - area.top - ty) / z });
+
+  const noEl = (id: string) => wrap.querySelector<HTMLElement>(`.react-flow__node[data-id="${id}"]`);
+  const handleEl = (id: string, h: string | null | undefined) =>
+    h ? noEl(id)?.querySelector<HTMLElement>(`.react-flow__handle[data-handleid="${h}"]`) ?? null : null;
+  const centroDe = (el: Element): Ponto => {
+    const r = el.getBoundingClientRect();
+    return paraFluxo(r.left + r.width / 2, r.top + r.height / 2);
+  };
+  const direcaoDe = (el: Element): Ponto => {
+    const c = el.className;
+    if (c.includes("handle-top")) return { x: 0, y: -1 };
+    if (c.includes("handle-bottom")) return { x: 0, y: 1 };
+    if (c.includes("handle-left")) return { x: -1, y: 0 };
+    return { x: 1, y: 0 };
+  };
+  const tipoDe = new Map(nos.map((n) => [n.id, n.data.tipo]));
+
+  const nominal = (id: string, h: string | null | undefined): Ponto | null => {
+    const el = handleEl(id, h) ?? noEl(id);
+    return el ? centroDe(el) : null;
+  };
+
+  /** Ponto de derivacao no barramento, alinhado a posicao do outro terminal. */
+  const pontoNoBarramento = (no: HTMLElement, alvo: Ponto): { p: Ponto; d: Ponto } => {
+    const r = no.getBoundingClientRect();
+    const topo = paraFluxo(r.left, r.top);
+    const fundo = paraFluxo(r.right, r.bottom);
+    const horizontal = (fundo.x - topo.x) >= (fundo.y - topo.y);
+    if (horizontal) {
+      const x = Math.min(Math.max(alvo.x, topo.x + 8), fundo.x - 8);
+      return alvo.y < (topo.y + fundo.y) / 2
+        ? { p: { x, y: topo.y }, d: { x: 0, y: -1 } }
+        : { p: { x, y: fundo.y }, d: { x: 0, y: 1 } };
+    }
+    const y = Math.min(Math.max(alvo.y, topo.y + 8), fundo.y - 8);
+    return alvo.x < (topo.x + fundo.x) / 2
+      ? { p: { x: topo.x, y }, d: { x: -1, y: 0 } }
+      : { p: { x: fundo.x, y }, d: { x: 1, y: 0 } };
+  };
+
+  const ponta = (id: string, h: string | null | undefined, alvo: Ponto): { p: Ponto; d: Ponto } | null => {
+    const no = noEl(id);
+    if (!no) return null;
+    if (tipoDe.get(id) === "BARRAMENTO") return pontoNoBarramento(no, alvo);
+    const el = handleEl(id, h);
+    return el ? { p: centroDe(el), d: direcaoDe(el) } : null;
+  };
+
+  const linhas: Linha[] = [];
+  for (const e of arestas) {
+    const alvoA = nominal(e.target, e.targetHandle);
+    const alvoB = nominal(e.source, e.sourceHandle);
+    if (!alvoA || !alvoB) continue;
+    const A = ponta(e.source, e.sourceHandle, alvoA);
+    const B = ponta(e.target, e.targetHandle, alvoB);
+    if (!A || !B) continue;
+    linhas.push({ id: e.id, pontos: rotaOrtogonal(A.p, A.d, B.p, B.d) });
+  }
+  return linhas;
+}
+
 function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
   idSubestacao: number; nomeSubestacao: string; podeEditar: boolean;
 }) {
@@ -171,12 +260,36 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
   const [pronto, setPronto] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [ativos, setAtivos] = useState<AtivoAssociavel[]>([]);
+  const [linhas, setLinhas] = useState<Linha[]>([]);
+  const [vista, setVista] = useState<Viewport>({ x: 0, y: 0, zoom: 1 });
   const fonteArraste = useRef<string | null>(null);
   const ultimaAssinaturaServidor = useRef("");
   const avisoFalhaAutosave = useRef(false);
+  const areaRef = useRef<HTMLDivElement>(null);
   const editar = modoEdicao && podeEditar;
 
   useEffect(() => setModoEdicao(podeEditar), [podeEditar]);
+
+  useEffect(() => {
+    if (!pronto) return;
+    const t = window.setTimeout(() => fitView({ padding: 0.12, duration: 200 }), 350);
+    return () => clearTimeout(t);
+  }, [pronto, fitView]);
+
+  const atualizarLinhas = useCallback(() => {
+    if (areaRef.current) setLinhas(medirLigacoes(areaRef.current, edges, nodes));
+  }, [edges, nodes]);
+
+  useEffect(() => {
+    const quadro = requestAnimationFrame(atualizarLinhas);
+    const atraso = window.setTimeout(atualizarLinhas, 300);
+    return () => { cancelAnimationFrame(quadro); clearTimeout(atraso); };
+  }, [atualizarLinhas, pronto]);
+
+  useEffect(() => {
+    window.addEventListener("resize", atualizarLinhas);
+    return () => window.removeEventListener("resize", atualizarLinhas);
+  }, [atualizarLinhas]);
 
   useEffect(() => {
     let ativo = true;
@@ -191,10 +304,9 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
         let snapshot = normalizarSnapshot(data);
         const rascunho = carregarLocal(idSubestacao);
         if (data.atualizado_em == null && podeEditar && rascunho?.nodes.length) {
-          const migrado = normalizarSnapshot(rascunho);
           const resposta = await api.put<RespostaDiagrama>(
             `/unifilar/diagrama/${idSubestacao}`,
-            migrado,
+            normalizarSnapshot(rascunho),
           );
           if (!ativo) return;
           snapshot = normalizarSnapshot(resposta.data);
@@ -212,7 +324,6 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
         const fallback = normalizarSnapshot(carregarLocal(idSubestacao));
         setNodes(fallback.nodes);
         setEdges(fallback.edges);
-        window.setTimeout(() => atualizarInternos(fallback.nodes.map((node) => node.id)), 200);
         setPronto(true);
         toast.error("Nao foi possivel carregar o diagrama do servidor; exibindo o rascunho local.");
       }
@@ -285,7 +396,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
       width: def.largura, height: def.altura,
       data: {
         tipo: def.codigo, codigo: proxCodigo(nodes, def.codigo),
-        nome: def.codigo === "ETIQUETA_VAO" ? "VÃ£o 1" : "", vao: "", rotacao: 0,
+        nome: def.codigo === "ETIQUETA_VAO" ? "Vão 1" : "", vao: "", rotacao: 0,
         largura: def.largura, altura: def.altura,
       },
     };
@@ -348,18 +459,18 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
 
   const onConnect = useCallback((c: Connection) => {
     if (!editar || !c.source || !c.target) return;
-    if (c.source === c.target) { toast.warning("Um componente nÃ£o se liga a si mesmo."); return; }
+    if (c.source === c.target) { toast.warning("Um componente não se liga a si mesmo."); return; }
     const igual = edges.some((e) =>
       (e.source === c.source && (e.sourceHandle ?? null) === (c.sourceHandle ?? null) && e.target === c.target && (e.targetHandle ?? null) === (c.targetHandle ?? null)) ||
       (e.source === c.target && (e.sourceHandle ?? null) === (c.targetHandle ?? null) && e.target === c.source && (e.targetHandle ?? null) === (c.sourceHandle ?? null)));
-    if (igual) { toast.warning("JÃ¡ existe uma ligaÃ§Ã£o idÃªntica entre estes terminais."); return; }
+    if (igual) { toast.warning("Já existe uma ligação idêntica entre estes terminais."); return; }
     const tipoNo = (no: string) => buscarTipo(nodes.find((n) => n.id === no)?.data.tipo ?? "").maxPorTerminal;
     if (grau(c.source, c.sourceHandle ?? null) >= tipoNo(c.source) || grau(c.target, c.targetHandle ?? null) >= tipoNo(c.target)) {
-      toast.warning("Terminal sem capacidade para outra ligaÃ§Ã£o.");
+      toast.warning("Terminal sem capacidade para outra ligação.");
       return;
     }
     setEdges((at) => addEdge({ ...c, type: "smoothstep", style: ESTILO }, at));
-    toast.success("LigaÃ§Ã£o criada.");
+    toast.success("Ligação criada.");
   }, [editar, edges, grau, nodes, setEdges]);
 
   const mudarNos = useCallback((ch: NodeChange<NoUnifilarType>[]) => {
@@ -373,15 +484,6 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
     if (!sel) return;
     setNodes((at) => at.map((n) => (n.id === sel.id ? { ...n, data: { ...n.data, [k]: v } } : n)));
   }, [sel, setNodes]);
-
-  const tecla = useCallback((e: React.KeyboardEvent) => {
-    if (!editar) return;
-    const ctrl = e.ctrlKey || e.metaKey;
-    if (ctrl && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? refazer() : desfazer(); }
-    else if (ctrl && e.key.toLowerCase() === "s") { e.preventDefault(); salvarAgora(); }
-    else if (ctrl && e.key.toLowerCase() === "d") { e.preventDefault(); duplicar(); }
-    else if (e.key === "r" && !ctrl && sel) { rotacionar(); }
-  }, [duplicar, desfazer, editar, refazer, rotacionar, salvarAgora, sel]);
 
   function salvarAgora() {
     const snapshot = normalizarSnapshot({ nodes, edges });
@@ -403,63 +505,22 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
       .finally(() => setSalvando(false));
   }
 
-  // posicao de terminal para overlay manual de conexoes
-  function posicaoTerminal(node: NoUnifilarType, terminal: string | null): { x: number; y: number } | null {
-    if (!node || !terminal) return null;
-    const rotacao = (node.data.rotacao ?? 0) % 360;
-    const w = node.width ?? node.data.largura ?? 40;
-    const h = node.height ?? node.data.altura ?? 40;
-    const x = node.position.x;
-    const y = node.position.y;
-    const barramento = ["BARRAMENTO", "CONEXAO", "ETIQUETA_VAO"].includes(node.data.tipo);
-    if (barramento) {
-      switch (terminal) {
-        case "B1": return { x, y: y + h / 2 };
-        case "B2": return { x: x + w, y: y + h / 2 };
-        case "B3": return { x: x + w / 2, y };
-        case "B4": return { x: x + w / 2, y: y + h };
-        default: return { x: x + w / 2, y: y + h / 2 };
-      }
-    }
-    // Equipamento: T1/T2 com rotacao
-    const posicoes: Record<number, [string, string]> = {
-      0: ["top", "bottom"], 90: ["right", "left"],
-      180: ["bottom", "top"], 270: ["left", "right"],
-    };
-    const [p1, p2] = posicoes[rotacao] ?? posicoes[0];
-    const terminalPos = terminal === "T1" ? p1 : p2;
-    switch (terminalPos) {
-      case "top": return { x: x + w / 2, y };
-      case "bottom": return { x: x + w / 2, y: y + h };
-      case "left": return { x, y: y + h / 2 };
-      case "right": return { x: x + w, y: y + h / 2 };
-      default: return { x: x + w / 2, y: y + h / 2 };
-    }
-  }
-
-  const linhasConexao = useMemo(() => {
-    const resultado: { id: string; x1: number; y1: number; x2: number; y2: number }[] = [];
-    const mapa = new Map(nodes.map((n) => [n.id, n]));
-    for (const edge of edges) {
-      const origem = mapa.get(edge.source);
-      const destino = mapa.get(edge.target);
-      if (!origem || !destino) continue;
-      const p1 = posicaoTerminal(origem, edge.sourceHandle ?? null);
-      const p2 = posicaoTerminal(destino, edge.targetHandle ?? null);
-      if (!p1 || !p2) continue;
-      resultado.push({ id: edge.id ?? `${edge.source}-${edge.target}`, x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y });
-    }
-    return resultado;
-  }, [nodes, edges]);
+  const tecla = useCallback((e: React.KeyboardEvent) => {
+    if (!editar) return;
+    const ctrl = e.ctrlKey || e.metaKey;
+    if (ctrl && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? refazer() : desfazer(); }
+    else if (ctrl && e.key.toLowerCase() === "s") { e.preventDefault(); salvarAgora(); }
+    else if (ctrl && e.key.toLowerCase() === "d") { e.preventDefault(); duplicar(); }
+    else if (e.key === "r" && !ctrl && sel) { rotacionar(); }
+  }, [duplicar, desfazer, editar, refazer, rotacionar, sel]);
 
   return (
     <div className="flex h-full min-h-0 flex-col" tabIndex={-1} onKeyDown={tecla}>
-      {/* barra de ferramentas */}
       <div className="z-10 flex items-center gap-1.5 border-b bg-white px-2 py-1.5">
         {podeEditar && (
           <Button variant={modoEdicao ? "default" : "outline"} size="sm" className="h-7 px-2 text-xs"
-            onClick={() => setModoEdicao((m) => !m)} title="Alternar entre modo de navegaÃ§Ã£o e ediÃ§Ã£o">
-            {modoEdicao ? <><Pencil className="mr-1 h-3.5 w-3.5" />Editando</> : <><Eye className="mr-1 h-3.5 w-3.5" />NavegaÃ§Ã£o</>}
+            onClick={() => setModoEdicao((m) => !m)} title="Alternar entre modo de navegação e edição">
+            {modoEdicao ? <><Pencil className="mr-1 h-3.5 w-3.5" />Editando</> : <><Eye className="mr-1 h-3.5 w-3.5" />Navegação</>}
           </Button>
         )}
         <span className="mx-1 h-5 w-px bg-slate-200" />
@@ -470,16 +531,14 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
         <Button variant="ghost" size="sm" className="h-7" onClick={duplicar} disabled={!editar || !sel} title="Duplicar (Ctrl+D)"><Copy className="h-4 w-4" /></Button>
         <Button variant="ghost" size="sm" className="h-7 text-red-600" onClick={excluir} disabled={!editar || !sel} title="Excluir (Del)"><Trash2 className="h-4 w-4" /></Button>
         <span className="mx-1 h-5 w-px bg-slate-200" />
-        <Button variant="ghost" size="sm" className="h-7" onClick={() => fitView({ padding: 0.2, duration: 300 })} title="Ajustar visualizaÃ§Ã£o"><Maximize2 className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="sm" className="h-7" onClick={() => fitView({ padding: 0.2, duration: 300 })} title="Ajustar visualização"><Maximize2 className="h-4 w-4" /></Button>
         <div className="ml-auto flex items-center gap-1">
           {!editar && (
-            <span className="mr-1 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-              modo leitura
-            </span>
+            <span className="mr-1 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">modo leitura</span>
           )}
           {editar && (
             <span className="mr-1 hidden rounded bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 sm:inline">
-              Dica: arraste de um ponto azul (terminal) atÃ© outro
+              Dica: arraste de um ponto azul (terminal) até outro
             </span>
           )}
           {podeEditar && modoEdicao && (
@@ -491,8 +550,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
       </div>
 
       <div className="flex min-h-0 flex-1">
-        {/* biblioteca */}
-        <aside className="w-52 shrink-0 overflow-y-auto border-r bg-white p-2">
+        <aside className="w-44 shrink-0 overflow-y-auto border-r bg-white p-2">
           <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">Componentes</p>
           {CATEGORIAS.map((cat) => {
             const itens = CATALOGO.filter((t) => t.categoria === cat);
@@ -506,7 +564,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                       onDragStart={(e) => { e.dataTransfer.setData("text/unifilar", d.codigo); fonteArraste.current = d.codigo; }}
                       onDragEnd={() => { fonteArraste.current = null; }}
                       onClick={() => doCentro(d.codigo)}
-                      title={`${d.nome}${editar ? " â€” clique para inserir ou arraste" : ""}`}
+                      title={`${d.nome}${editar ? " — clique para inserir ou arraste" : ""}`}
                       className="flex flex-col items-center justify-center rounded border border-slate-300 bg-white p-1.5 hover:border-blue-500 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40">
                       <Miniatura tipoCodigo={d.codigo} w={26} h={28} />
                       <span className="line-clamp-2 text-center text-[9px] leading-tight text-slate-600">{d.nome}</span>
@@ -518,14 +576,14 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
           })}
         </aside>
 
-        {/* canvas */}
-        <div className="relative min-w-0 flex-1" onDrop={onDrop} onDragOver={(e) => editar && e.preventDefault()}>
+        <div ref={areaRef} className="relative min-w-0 flex-1" onDrop={onDrop} onDragOver={(e) => editar && e.preventDefault()}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
             onNodesChange={mudarNos}
             onConnect={onConnect}
+            onMove={(_, v) => setVista(v)}
             onNodeClick={(_, n) => setIdSel(n.id)}
             onPaneClick={() => setIdSel(null)}
             nodesConnectable={editar && pronto}
@@ -542,28 +600,25 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
           >
             <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#cbd5e1" />
             <Controls position="bottom-right" showInteractive={editar} />
-            {/* Overlay SVG: linhas de conexao manuais (garante visibilidade) */}
-            <svg className="pointer-events-none" style={{ position: "absolute", top: 0, left: 0, overflow: "visible" }}>
-              {linhasConexao.map((linha) => {
-                const midX = linha.x1 + (linha.x2 - linha.x1) / 2;
-                const d = `M ${linha.x1} ${linha.y1} L ${midX} ${linha.y1} L ${midX} ${linha.y2} L ${linha.x2} ${linha.y2}`;
-                return (
-                  <g key={linha.id}>
-                    <path d={d} stroke="#1e3a8a" strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                    <circle cx={linha.x1} cy={linha.y1} r={4} fill="#1e3a8a" />
-                    <circle cx={linha.x2} cy={linha.y2} r={4} fill="#1e3a8a" />
-                  </g>
-                );
-              })}
-            </svg>
           </ReactFlow>
+          <svg className="pointer-events-none absolute inset-0 z-[5] h-full w-full overflow-visible">
+            <g transform={`translate(${vista.x} ${vista.y}) scale(${vista.zoom})`}>
+              {linhas.map((linha) => (
+                <g key={linha.id}>
+                  <path d={caminho(linha.pontos)} fill="none" stroke={COR_LIGACAO} strokeWidth={2.5}
+                    strokeLinejoin="round" strokeLinecap="round" />
+                  <circle cx={linha.pontos[0].x} cy={linha.pontos[0].y} r={3} fill={COR_LIGACAO} />
+                  <circle cx={linha.pontos[linha.pontos.length - 1].x} cy={linha.pontos[linha.pontos.length - 1].y} r={3} fill={COR_LIGACAO} />
+                </g>
+              ))}
+            </g>
+          </svg>
         </div>
 
-        {/* painel de propriedades */}
-        <aside className="w-60 shrink-0 overflow-y-auto border-l bg-white p-3">
+        <aside className="w-56 shrink-0 overflow-y-auto border-l bg-white p-3">
           {!sel && (
             <p className="text-xs text-slate-500">
-              {editar ? "Selecione um componente ou insira um novo pela biblioteca." : "Clique em um componente para ver suas informaÃ§Ãµes."}
+              {editar ? "Selecione um componente ou insira um novo pela biblioteca." : "Clique em um componente para ver suas informações."}
             </p>
           )}
           {sel && defSel && (
@@ -574,7 +629,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                 <p className="text-[10px] text-slate-500">ID interno {sel.id.slice(0, 10)}</p>
               </div>
               <label className="grid gap-1 text-[11px] font-semibold text-slate-700">
-                CÃ³digo / identificaÃ§Ã£o
+                Código / identificação
                 <Input value={sel.data.codigo} disabled={!editar} onChange={(e) => campo("codigo", e.target.value)} className="h-8 text-xs" />
               </label>
               <label className="grid gap-1 text-[11px] font-semibold text-slate-700">
@@ -582,7 +637,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                 <Input value={sel.data.nome} disabled={!editar} placeholder={defSel.nome} onChange={(e) => campo("nome", e.target.value)} className="h-8 text-xs" />
               </label>
               <label className="grid gap-1 text-[11px] font-semibold text-slate-700">
-                VÃ£o
+                Vão
                 <Input value={sel.data.vao} disabled={!editar} placeholder="ex.: 15D7" onChange={(e) => campo("vao", e.target.value)} className="h-8 text-xs" />
               </label>
               {defSel.aceitaAtivo && (
@@ -594,16 +649,16 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                     onChange={(e) => campo("id_ativo", e.target.value ? Number(e.target.value) : null)}
                     className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs font-normal disabled:bg-slate-100"
                   >
-                    <option value="">Sem associaÃ§Ã£o</option>
+                    <option value="">Sem associação</option>
                     {ativos.map((ativo) => (
                       <option key={ativo.id_ativo} value={ativo.id_ativo}>
-                        {ativo.codigo_ativo}{ativo.bay ? ` â€” vÃ£o ${ativo.bay}` : ""}
+                        {ativo.codigo_ativo}{ativo.bay ? ` — vão ${ativo.bay}` : ""}
                       </option>
                     ))}
                   </select>
                   {sel.data.id_ativo != null && (
                     <span className="text-[10px] font-normal text-slate-500">
-                      {ativos.find((ativo) => ativo.id_ativo === sel.data.id_ativo)?.status ?? "Ativo da subestaÃ§Ã£o"}
+                      {ativos.find((ativo) => ativo.id_ativo === sel.data.id_ativo)?.status ?? "Ativo da subestação"}
                     </span>
                   )}
                   <button
@@ -616,7 +671,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                 </label>
               )}
               <div className="text-[11px] text-slate-600">
-                <p><strong className="text-slate-700">LigaÃ§Ãµes:</strong>{" "}
+                <p><strong className="text-slate-700">Ligações:</strong>{" "}
                   {edges.filter((e) => e.source === sel.id || e.target === sel.id).length}</p>
               </div>
             </div>
