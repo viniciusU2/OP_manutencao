@@ -3,7 +3,6 @@
  *
  * - Linhas pretas quando ambos os terminais estao energizados; cinza
  *   tracejado quando o trecho esta desenergizado.
- * - Etiquetas de tensao de barra em coordenadas de tela.
  * - Clique seleciona o equipamento (a operacao e feita no painel).
  */
 
@@ -262,18 +261,6 @@ function CanvasSage({
     return () => window.removeEventListener("resize", atualizarLinhas);
   }, [atualizarLinhas]);
 
-  const barras = useMemo(() => {
-    return nosBase
-      .filter((n) => n.data.tipo === "BARRAMENTO")
-      .map((n) => {
-        const barra = analise.barras.find((b) => b.id === n.id);
-        const w = n.width ?? n.data.largura ?? 0;
-        const x = (n.position.x + w / 2) * vista.zoom + vista.x;
-        const y = n.position.y * vista.zoom + vista.y - 44;
-        return { no: n, barra, x, y };
-      });
-  }, [nosBase, analise, vista]);
-
   const energiaPorAresta = useMemo(() => {
     const mapa = new Map<string, boolean>();
     for (const e of edges) {
@@ -356,32 +343,6 @@ function CanvasSage({
           ))}
         </g>
       </svg>
-
-      {barras.map(({ no, barra, x, y }) => (
-        <div
-          key={no.id}
-          className="pointer-events-none absolute z-[6] -translate-x-1/2"
-          style={{ left: x, top: y }}
-        >
-          <div
-            className="rounded-md border px-2 py-1 shadow-md"
-            style={{
-              borderColor: barra?.energizada ? "#dc2626" : "#16a34a",
-              background: "#0b1220",
-            }}
-          >
-            <div className="flex items-center gap-1.5">
-              <span className={`h-2 w-2 rounded-full ${barra?.energizada ? "bg-red-500" : "bg-emerald-500"}`} />
-              <span className="text-[9px] font-bold uppercase tracking-wide text-slate-300">
-                {barra?.codigo ?? no.data.codigo}
-              </span>
-            </div>
-            <div className={`font-mono text-[13px] font-bold leading-4 ${barra?.energizada ? "text-white" : "text-emerald-400"}`}>
-              {barra?.energizada ? `${barra.tensaoKv.toFixed(1).replace(".", ",")} kV` : "0,0 kV"}
-            </div>
-          </div>
-        </div>
-      ))}
 
       <div className="absolute bottom-2 right-2 z-[7] flex items-center gap-0.5 rounded-lg border border-slate-300 bg-white/95 p-1 shadow-sm">
         <button
