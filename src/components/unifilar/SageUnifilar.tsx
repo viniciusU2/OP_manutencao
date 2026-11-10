@@ -282,6 +282,28 @@ function CanvasSage({
     return mapa;
   }, [edges, analise]);
 
+  // Um unico ponto por conexao: agrupa extremos coincidentes e ignora os
+  // terminais das juncoes (o proprio no de conexao ja desenha o ponto).
+  const pontosConexao = useMemo(() => {
+    const mapa = new Map<string, { x: number; y: number; viva: boolean }>();
+    const tipoPorNo = new Map(nosBase.map((n) => [n.id, n.data.tipo]));
+    const arestaPorId = new Map(edges.map((e) => [e.id, e]));
+    const registrar = (p: Ponto, viva: boolean) => {
+      const chave = `${Math.round(p.x / 2)}:${Math.round(p.y / 2)}`;
+      const atual = mapa.get(chave);
+      if (atual) atual.viva = atual.viva || viva;
+      else mapa.set(chave, { x: p.x, y: p.y, viva });
+    };
+    for (const linha of linhas) {
+      const viva = energiaPorAresta.get(linha.id) ?? false;
+      const aresta = arestaPorId.get(linha.id);
+      if (!aresta) continue;
+      if (tipoPorNo.get(aresta.source) !== "CONEXAO") registrar(linha.pontos[0], viva);
+      if (tipoPorNo.get(aresta.target) !== "CONEXAO") registrar(linha.pontos[linha.pontos.length - 1], viva);
+    }
+    return [...mapa.values()];
+  }, [linhas, energiaPorAresta, edges, nosBase]);
+
   return (
     <div ref={areaRef} className="relative h-full w-full">
       <ReactFlow
@@ -306,25 +328,32 @@ function CanvasSage({
       <svg className="pointer-events-none absolute inset-0 z-[5] h-full w-full overflow-visible">
         <g transform={`translate(${vista.x} ${vista.y}) scale(${vista.zoom})`}>
           {linhas.map((linha) => {
-            const inicio = linha.pontos[0];
-            const fim = linha.pontos[linha.pontos.length - 1];
             const viva = energiaPorAresta.get(linha.id) ?? false;
             return (
-              <g key={linha.id}>
-                <path
-                  d={caminho(linha.pontos)}
-                  fill="none"
-                  stroke={viva ? "#0f172a" : "#94a3b8"}
-                  strokeWidth={viva ? 2.6 : 1.8}
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                  strokeDasharray={viva ? undefined : "7 5"}
-                />
-                <circle cx={inicio.x} cy={inicio.y} r={2.6} fill={viva ? "#0f172a" : "#94a3b8"} />
-                <circle cx={fim.x} cy={fim.y} r={2.6} fill={viva ? "#0f172a" : "#94a3b8"} />
-              </g>
+              <path
+                key={linha.id}
+                d={caminho(linha.pontos)}
+                fill="none"
+                stroke={viva ? "#0f172a" : "#94a3b8"}
+                strokeWidth={viva ? 2.6 : 1.8}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                strokeDasharray={viva ? undefined : "7 5"}
+              />
             );
           })}
+          {pontosConexao.map((ponto, indice) => (
+            <circle
+              key={`${indice}-${ponto.x}-${ponto.y}`}
+              cx={ponto.x}
+              cy={ponto.y}
+              r={2.2}
+              fill={ponto.viva ? "#0f172a" : "#94a3b8"}
+              stroke="#f8fafc"
+              strokeWidth={0.6}
+              shapeRendering="geometricPrecision"
+            />
+          ))}
         </g>
       </svg>
 

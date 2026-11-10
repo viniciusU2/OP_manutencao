@@ -76,6 +76,7 @@ export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
   const { w, h } = dimensoesRotacionadas(data.largura, data.altura, data.rotacao);
   const scada = data.sageEstado !== undefined;
   const desenergizado = scada && data.sageEnergizado === false;
+  const classeTerminal = scada ? `${CLASSE_TERMINAL} opacity-0` : CLASSE_TERMINAL;
   const contorno = selected
     ? "rounded-md ring-2 ring-blue-600"
     : data.sageSelecionado
@@ -108,7 +109,7 @@ export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
             id={t.id}
             type="source"
             position={posicoes[indice]}
-            className={CLASSE_TERMINAL}
+            className={classeTerminal}
             aria-label={`${t.label.toLowerCase()} de ${identificador || "barramento"}`}
             isConnectable
             isConnectableStart
@@ -128,8 +129,8 @@ export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
       title={data.id_ativo != null ? "Duplo clique abre o ativo vinculado" : undefined}
     >
       <div className="relative" style={{ width: w, height: h }}>
-        <Handle id="T1" type="source" position={t1} className={CLASSE_TERMINAL} aria-label={`topo de ${identificador || "equipamento"}`} isConnectable isConnectableStart isConnectableEnd />
-        <Handle id="T2" type="source" position={t2} className={CLASSE_TERMINAL} aria-label={`base de ${identificador || "equipamento"}`} isConnectable isConnectableStart isConnectableEnd />
+        <Handle id="T1" type="source" position={t1} className={classeTerminal} aria-label={`topo de ${identificador || "equipamento"}`} isConnectable isConnectableStart isConnectableEnd />
+        <Handle id="T2" type="source" position={t2} className={classeTerminal} aria-label={`base de ${identificador || "equipamento"}`} isConnectable isConnectableStart isConnectableEnd />
         <div
           className="absolute left-1/2 top-1/2"
           style={{
