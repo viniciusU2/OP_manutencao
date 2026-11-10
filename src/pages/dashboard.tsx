@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import {
   AlertTriangle,
+  ArrowRight,
   CalendarDays,
   ClipboardList,
   FileText,
   Loader2,
+  Network,
   RefreshCcw,
   Wrench,
 } from "lucide-react";
@@ -80,7 +82,32 @@ interface Subestacao {
   id_subestacao: number;
   nome: string;
   status?: string;
+  tipo_instalacao?: string;
 }
+interface DiagramaResumo {
+  id_subestacao: number;
+  nome: string;
+  tipo_instalacao?: string | null;
+  total_componentes: number;
+  total_ligacoes: number;
+  atualizado_em: string | null;
+}
+
+/** Linha de transmissao nao tem patio proprio, portanto nao tem unifilar. */
+const ehLinhaInstalacao = (tipo?: string) => (tipo ?? "").toUpperCase().startsWith("LINHA");
+
+const formatarAtualizacao = (valor?: string | null) => {
+  if (!valor) return "";
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return "";
+  return data.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 const Page = styled.div`
   display: grid;
@@ -195,6 +222,120 @@ const Select = styled.select`
   @media (max-width: 640px) {
     width: 100%;
     min-width: 0;
+  }
+`;
+
+const UnifilarBand = styled.section`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 65%);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+  @media (max-width: 820px) {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+`;
+
+const UnifilarIcone = styled.div`
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+`;
+
+const UnifilarTexto = styled.div`
+  flex: 1 1 240px;
+  min-width: 0;
+
+  span {
+    display: inline-block;
+    margin-bottom: 2px;
+    color: #2563eb;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  p {
+    margin: 3px 0 0;
+    color: #64748b;
+    font-size: 12px;
+  }
+`;
+
+const UnifilarAcoes = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    width: 100%;
+
+    button {
+      flex: 1 1 140px;
+    }
+  }
+`;
+
+const UnifilarPrimario = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+  }
+`;
+
+const UnifilarSecundario = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #ffffff;
+    border-color: #cbd5e1;
   }
 `;
 
@@ -620,6 +761,7 @@ export function Dashboard() {
   const [inspecoes, setInspecoes] = useState<Inspecao[]>([]);
   const [relatorios, setRelatorios] = useState<RelatorioManutencao[]>([]);
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
+  const [diagramasUnifilar, setDiagramasUnifilar] = useState<DiagramaResumo[]>([]);
   const [filtroSubestacao, setFiltroSubestacao] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -635,7 +777,7 @@ export function Dashboard() {
     setError("");
 
     try {
-      const [ativosRes, osRes, ssRes, siRes, subRes, inspecoesRes, relatoriosRes] = await Promise.all([
+      const [ativosRes, osRes, ssRes, siRes, subRes, inspecoesRes, relatoriosRes, diagramasRes] = await Promise.all([
         api.get("/ativo"),
         api.get("/os"),
         api.get("/ss"),
@@ -643,6 +785,7 @@ export function Dashboard() {
         api.get("/subestacao"),
         api.get("/inspecoes", { params: { limit: 5000 } }),
         api.get("/relatorios-manutencao", { params: { page: 1, page_size: 5000 } }),
+        api.get("/unifilar/diagramas").catch(() => ({ data: [] })),
       ]);
 
       setAtivos(asArray<Ativo>(ativosRes.data));
@@ -652,6 +795,7 @@ export function Dashboard() {
       setSubestacoes(asArray<Subestacao>(subRes.data));
       setInspecoes(asArray<Inspecao>(inspecoesRes.data));
       setRelatorios(asArray<RelatorioManutencao>(relatoriosRes.data));
+      setDiagramasUnifilar(asArray<DiagramaResumo>(diagramasRes.data));
 
     } catch {
       setError("Nao foi possivel carregar todos os indicadores.");
@@ -675,6 +819,13 @@ export function Dashboard() {
       return acc;
     }, {});
   }, [subestacoes]);
+
+  const subestacaoSelecionada = filtroSubestacao
+    ? subestacaoById[Number(filtroSubestacao)]
+    : undefined;
+  const diagramaSelecionado = filtroSubestacao
+    ? diagramasUnifilar.find((d) => Number(d.id_subestacao) === Number(filtroSubestacao))
+    : undefined;
 
   const filtered = useMemo(() => {
     const bySub = (item: { id_subestacao?: number | null; instalacao?: string }) => {
@@ -957,6 +1108,39 @@ export function Dashboard() {
           ))}
         </Select>
       </FilterBand>
+
+      {subestacaoSelecionada && !ehLinhaInstalacao(subestacaoSelecionada.tipo_instalacao) && (
+        <UnifilarBand>
+          <UnifilarIcone>
+            <Network size={22} />
+          </UnifilarIcone>
+          <UnifilarTexto>
+            <span>Diagrama unifilar</span>
+            <h2>{subestacaoSelecionada.nome}</h2>
+            <p>
+              {diagramaSelecionado
+                ? `${diagramaSelecionado.total_componentes} componentes · ${diagramaSelecionado.total_ligacoes} ligações${
+                    formatarAtualizacao(diagramaSelecionado.atualizado_em)
+                      ? ` · atualizado em ${formatarAtualizacao(diagramaSelecionado.atualizado_em)}`
+                      : ""
+                  } · clique em um equipamento para abrir o ativo`
+                : "Nenhum diagrama salvo para esta instalação ainda."}
+            </p>
+          </UnifilarTexto>
+          <UnifilarAcoes>
+            <UnifilarPrimario
+              type="button"
+              onClick={() => navigate(`/subestacoes/${subestacaoSelecionada.id_subestacao}/unifilar`)}
+            >
+              {diagramaSelecionado ? "Abrir unifilar" : "Criar unifilar"}
+              <ArrowRight size={16} />
+            </UnifilarPrimario>
+            <UnifilarSecundario type="button" onClick={() => navigate("/unifilar")}>
+              Todos os diagramas
+            </UnifilarSecundario>
+          </UnifilarAcoes>
+        </UnifilarBand>
+      )}
 
       {/* Galeria de fotos de inspeção removida do dashboard.
         {fotoAtual && !fotoAtualComErro ? (
