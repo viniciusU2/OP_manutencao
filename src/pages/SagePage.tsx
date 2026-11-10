@@ -416,9 +416,6 @@ export function SagePage() {
               Nenhum diagrama salvo para esta instalacao. Monte o arranjo no editor unifilar.
             </div>
           )}
-          <div className="pointer-events-none absolute left-2 top-2 z-[7] rounded-md border border-slate-200 bg-white/95 px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm">
-            Legenda · <span className="text-red-600">vermelho = energizado</span> · <span className="text-emerald-600">verde = desenergizado/aberto</span>
-          </div>
         </section>
 
         <aside className="flex min-h-0 flex-col gap-3">
