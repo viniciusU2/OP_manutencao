@@ -1251,13 +1251,15 @@ export function Dashboard() {
 
           <UnifilarRodape>
             <span>
-              Desenho real ampliado no topo do arranjo · arraste para explorar · use “Ver tudo” para o diagrama completo · clique no equipamento para abrir o ativo
+              {diagramaSelecionado
+                ? "Desenho real ampliado no topo do arranjo · arraste para explorar · use “Ver tudo” para o diagrama completo · clique no equipamento para abrir o ativo"
+                : "Nenhum diagrama salvo. Use “Criar unifilar” para montar o arranjo no editor."}
             </span>
             <button
               type="button"
               onClick={() => navigate(`/subestacoes/${subestacaoSelecionada.id_subestacao}/unifilar`)}
             >
-              Editar diagrama
+              {diagramaSelecionado ? "Editar diagrama" : "Criar diagrama"}
               <ArrowRight size={14} />
             </button>
           </UnifilarRodape>
