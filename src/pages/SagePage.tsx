@@ -383,7 +383,8 @@ export function SagePage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1600px] space-y-3 p-3 sm:p-4">
+    <div className="min-h-[calc(100vh-72px)] bg-[#d3d3d3] p-3 sm:p-4">
+      <div className="mx-auto max-w-[1600px] space-y-3">
 
       {erro && (
         <div className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-300">
@@ -393,7 +394,7 @@ export function SagePage() {
       )}
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="relative min-h-[460px] overflow-hidden rounded-xl border border-slate-700 bg-slate-100 shadow-lg lg:min-h-[68vh]">
+        <section className="relative min-h-[460px] overflow-hidden rounded-xl border border-slate-300 bg-[#d3d3d3] shadow-lg lg:min-h-[68vh]">
           {carregando ? (
             <div className="grid h-full min-h-[460px] place-items-center text-sm text-slate-500">
               Carregando diagrama...
@@ -640,6 +641,7 @@ export function SagePage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

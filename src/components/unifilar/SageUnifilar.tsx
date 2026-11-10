@@ -300,7 +300,7 @@ function CanvasSage({
         maxZoom={2.5}
         proOptions={{ hideAttribution: true }}
       >
-        <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="#cbd5e1" />
+        <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="#b3b3b3" />
       </ReactFlow>
 
       <svg className="pointer-events-none absolute inset-0 z-[5] h-full w-full overflow-visible">
