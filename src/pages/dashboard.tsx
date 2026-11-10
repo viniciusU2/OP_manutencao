@@ -18,7 +18,6 @@ import {
 import api from "../api/api";
 import EditorUnifilar from "../components/unifilar/EditorUnifilar";
 import { StatsCard } from "../components/StatsCard";
-import PlanoExecucoesDashboardChart from "../components/PlanoExecucoesDashboardChart";
 import { useAuth } from "../context/AuthContext";
 import { filtroInicialInstalacao } from "../lib/instalacaoPreferida";
 
@@ -1859,8 +1858,6 @@ export function Dashboard() {
           </List>
         </Panel>
       </ContentGrid> */}
-
-      <PlanoExecucoesDashboardChart key={filtroSubestacao} idSubestacao={filtroSubestacao} />
     </Page>
   );
 }
