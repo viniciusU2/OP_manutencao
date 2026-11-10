@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Activity } from "lucide-react";
 
 import api from "../api/api";
 import { Button } from "../components/ui/button";
@@ -70,6 +70,18 @@ export default function UnifilarPage() {
               ? "Diagrama da linha de transmissão"
               : "Diagrama unifilar interativo da subestação"}
           </p>
+        </div>
+        <div className="ml-auto flex items-center gap-1.5">
+          <Link to={`/subestacoes/${idSubestacao}/sage`}>
+            <Button
+              size="sm"
+              className="h-8 bg-slate-900 text-xs text-white hover:bg-slate-800"
+              title="Supervisão e manobras em modo simulação (SAGE)"
+            >
+              <Activity className="mr-1 h-4 w-4" />
+              Modo SAGE
+            </Button>
+          </Link>
         </div>
       </header>
       <main className="min-h-0 flex-1">

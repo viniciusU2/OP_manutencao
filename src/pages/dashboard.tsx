@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import {
+  Activity,
   AlertTriangle,
   ArrowRight,
   CalendarDays,
@@ -1240,13 +1241,22 @@ export function Dashboard() {
                 ? "Desenho real ampliado no topo do arranjo · arraste para explorar · use “Ver tudo” para o diagrama completo · clique no equipamento para abrir o ativo"
                 : "Nenhum diagrama salvo. Use “Criar unifilar” para montar o arranjo no editor."}
             </span>
-            <button
-              type="button"
-              onClick={() => navigate(`/subestacoes/${subestacaoSelecionada.id_subestacao}/unifilar`)}
-            >
-              {diagramaSelecionado ? "Editar diagrama" : "Criar diagrama"}
-              <ArrowRight size={14} />
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => navigate(`/subestacoes/${subestacaoSelecionada.id_subestacao}/sage`)}
+              >
+                <Activity size={14} />
+                Modo SAGE
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(`/subestacoes/${subestacaoSelecionada.id_subestacao}/unifilar`)}
+              >
+                {diagramaSelecionado ? "Editar diagrama" : "Criar diagrama"}
+                <ArrowRight size={14} />
+              </button>
+            </div>
           </UnifilarRodape>
         </UnifilarCard>
       )}

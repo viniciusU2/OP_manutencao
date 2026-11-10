@@ -24,6 +24,10 @@ export type DadosComponente = {
   largura: number;
   altura: number;
   id_ativo?: number | null;
+  /** Campos usados apenas pelo modo SAGE (supervisao). */
+  sageEstado?: "ABERTO" | "FECHADO" | null;
+  sageEnergizado?: boolean;
+  sageSelecionado?: boolean;
 };
 
 export type NoUnifilarType = Node<DadosComponente, "noUnifilar">;
@@ -70,7 +74,13 @@ export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
   const identificador = data.codigo?.trim();
   const etiquetaVao = data.vao?.trim();
   const { w, h } = dimensoesRotacionadas(data.largura, data.altura, data.rotacao);
-  const contorno = selected ? "rounded-md ring-2 ring-blue-600" : "";
+  const scada = data.sageEstado !== undefined;
+  const desenergizado = scada && data.sageEnergizado === false;
+  const contorno = selected
+    ? "rounded-md ring-2 ring-blue-600"
+    : data.sageSelecionado
+      ? "rounded-md ring-2 ring-amber-500"
+      : "";
   const vertical = rotacaoNormalizada(data.rotacao) % 180 === 90;
 
   if (TIPOS_BARRAMENTO.has(definicao.codigo)) {
@@ -78,7 +88,9 @@ export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
     const posicoes = [esq, dir, topo, base];
     return (
       <div className={`relative ${contorno}`} style={{ width: w, height: h }}>
-        <SimboloUnifilar tipo={definicao.codigo} largura={w} altura={h} />
+        <span style={{ opacity: desenergizado ? 0.4 : 1 }}>
+          <SimboloUnifilar tipo={definicao.codigo} largura={w} altura={h} modoScada={scada} energizado={!desenergizado} />
+        </span>
         {identificador && definicao.codigo !== "ETIQUETA_VAO" ? (
           <span
             className={
@@ -126,10 +138,30 @@ export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
             marginLeft: -data.largura / 2,
             marginTop: -data.altura / 2,
             transform: `rotate(${rotacaoNormalizada(data.rotacao)}deg)`,
+            opacity: desenergizado ? 0.45 : 1,
           }}
         >
-          <SimboloUnifilar tipo={definicao.codigo} largura={data.largura} altura={data.altura} />
+          <SimboloUnifilar
+            tipo={definicao.codigo}
+            largura={data.largura}
+            altura={data.altura}
+            modoScada={scada}
+            aberto={data.sageEstado === "ABERTO"}
+            energizado={!desenergizado}
+          />
         </div>
+        {scada && data.sageEstado && (
+          <span
+            className={`absolute -left-1.5 -top-1.5 z-10 h-2.5 w-2.5 rounded-full border border-white shadow-sm ${
+              data.sageEstado === "ABERTO"
+                ? "bg-emerald-500"
+                : desenergizado
+                  ? "bg-slate-400"
+                  : "bg-red-600"
+            }`}
+            title={`${data.sageEstado === "ABERTO" ? "Aberto" : "Fechado"}${desenergizado ? " (desenergizado)" : " (energizado)"}`}
+          />
+        )}
         {data.id_ativo != null && (
           <span
             className="absolute -right-1.5 -top-1.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm"

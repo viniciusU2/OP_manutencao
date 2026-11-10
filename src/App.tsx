@@ -21,6 +21,7 @@ import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import UnifilarPage from "./pages/UnifilarPage";
 import UnifilarSelecaoPage from "./pages/UnifilarSelecaoPage";
+import { SagePage } from "./pages/SagePage";
 
 import Layout from "./components/Layout";
 
@@ -156,6 +157,7 @@ function AppContent() {
         {/* UNIFILAR — navegação para todos; edição interna para admin/mantenedor */}
         <Route path="/unifilar" element={<UnifilarSelecaoPage />} />
         <Route path="/subestacoes/:id/unifilar" element={<UnifilarPage />} />
+        <Route path="/subestacoes/:id/sage" element={<SagePage />} />
 
         {/* 🔒 ADMIN */}
         <Route

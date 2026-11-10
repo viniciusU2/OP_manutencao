@@ -8,6 +8,9 @@
  */
 
 const COR = "#0f172a";
+const COR_VERMELHO = "#dc2626";
+const COR_VERDE = "#16a34a";
+const COR_MORTO = "#94a3b8";
 const traço = { stroke: COR, strokeWidth: 2, fill: "none" } as const;
 
 import type { ReactNode } from "react";
@@ -23,13 +26,17 @@ function Frame(svg: ReactNode, w: number, h: number) {
 /** Tramos de condutor com o terminal no topo (T1) e na base (T2). */
 
 
-function AterramentoSimbolo(x: number, y: number) {
+function AterramentoSimbolo(
+  x: number,
+  y: number,
+  estilo: { stroke: string; strokeWidth: number; fill: string } = traço,
+) {
   return (
     <g>
-      <line x1={x} y1={y} x2={x} y2={y + 8} {...traço} />
-      <line x1={x - 8} y1={y + 8} x2={x + 8} y2={y + 8} {...traço} />
-      <line x1={x - 5} y1={y + 12} x2={x + 5} y2={y + 12} {...traço} />
-      <line x1={x - 2} y1={y + 16} x2={x + 2} y2={y + 16} {...traço} />
+      <line x1={x} y1={y} x2={x} y2={y + 8} {...estilo} />
+      <line x1={x - 8} y1={y + 8} x2={x + 8} y2={y + 8} {...estilo} />
+      <line x1={x - 5} y1={y + 12} x2={x + 5} y2={y + 12} {...estilo} />
+      <line x1={x - 2} y1={y + 16} x2={x + 2} y2={y + 16} {...estilo} />
     </g>
   );
 }
@@ -38,11 +45,30 @@ export function SimboloUnifilar({
   tipo,
   largura,
   altura,
+  aberto = false,
+  energizado = true,
+  modoScada = false,
 }: {
   tipo: string;
   largura: number;
   altura: number;
+  aberto?: boolean;
+  energizado?: boolean;
+  modoScada?: boolean;
 }) {
+  // Cores de supervisao: disjuntor fechado e energizado em vermelho, chave
+  // aberta em verde e equipamento desenergizado em cinza.
+  const corDisjuntor = !modoScada
+    ? COR
+    : aberto
+      ? COR_VERDE
+      : energizado
+        ? COR_VERMELHO
+        : COR_MORTO;
+  const corChave = !modoScada ? COR : aberto ? COR_VERDE : energizado ? COR : COR_MORTO;
+  const tracoDisjuntor = { stroke: corDisjuntor, strokeWidth: 2, fill: "none" } as const;
+  const tracoChave = { stroke: corChave, strokeWidth: 2, fill: "none" } as const;
+
   switch (tipo) {
     case "BARRAMENTO": {
       return Frame(
@@ -53,17 +79,32 @@ export function SimboloUnifilar({
     }
 
     case "DISJUNTOR": {
-      // ANSI 52: contato aberto quadrado entre os tramos.
+      // ANSI 52: quadrado com X quando fechado; contato aberto quando aberto.
       const lado = Math.min(34, largura - 10);
       const cx = largura / 2;
       const topoCaixa = (altura - lado) / 2;
       return Frame(
         <g>
-          <line x1={cx} y1={0} x2={cx} y2={topoCaixa} {...traço} />
-          <rect x={cx - lado / 2} y={topoCaixa} width={lado} height={lado} {...traço} />
-          <line x1={cx - lado / 2} y1={topoCaixa} x2={cx + lado / 2} y2={topoCaixa + lado} {...traço} />
-          <line x1={cx + lado / 2} y1={topoCaixa} x2={cx - lado / 2} y2={topoCaixa + lado} {...traço} />
-          <line x1={cx} y1={topoCaixa + lado} x2={cx} y2={altura} {...traço} />
+          <line x1={cx} y1={0} x2={cx} y2={topoCaixa} {...tracoDisjuntor} />
+          <rect x={cx - lado / 2} y={topoCaixa} width={lado} height={lado} {...tracoDisjuntor} />
+          {aberto ? (
+            <>
+              <circle cx={cx - lado / 2 + 3} cy={topoCaixa + lado / 2} r={2} fill={corDisjuntor} />
+              <line
+                x1={cx - lado / 2 + 3}
+                y1={topoCaixa + lado / 2}
+                x2={cx + lado / 2 - 1}
+                y2={topoCaixa + 2}
+                {...tracoDisjuntor}
+              />
+            </>
+          ) : (
+            <>
+              <line x1={cx - lado / 2} y1={topoCaixa} x2={cx + lado / 2} y2={topoCaixa + lado} {...tracoDisjuntor} />
+              <line x1={cx + lado / 2} y1={topoCaixa} x2={cx - lado / 2} y2={topoCaixa + lado} {...tracoDisjuntor} />
+            </>
+          )}
+          <line x1={cx} y1={topoCaixa + lado} x2={cx} y2={altura} {...tracoDisjuntor} />
         </g>,
         largura,
         altura,
@@ -71,17 +112,21 @@ export function SimboloUnifilar({
     }
 
     case "SECCIONADORA": {
-      // ANSI 29: lâmina aberta em diagonal.
+      // Lâmina vertical quando fechada; lâmina em diagonal quando aberta.
       const cx = largura / 2;
       const meio = altura * 0.62;
       const abertura = Math.min(22, altura * 0.28);
       return Frame(
         <g>
-          <line x1={cx} y1={0} x2={cx} y2={meio - abertura} {...traço} />
-          <circle cx={cx} cy={meio - abertura} r={3} {...traço} />
-          <line x1={cx} y1={meio + abertura} x2={cx} y2={altura} {...traço} />
-          <circle cx={cx} cy={meio + abertura} r={3} {...traço} />
-      <line x1={cx} y1={meio - abertura} x2={cx - 26} y2={meio + abertura + 14} {...traço} />
+          <line x1={cx} y1={0} x2={cx} y2={meio - abertura} {...tracoChave} />
+          <circle cx={cx} cy={meio - abertura} r={3} {...tracoChave} />
+          <line x1={cx} y1={meio + abertura} x2={cx} y2={altura} {...tracoChave} />
+          <circle cx={cx} cy={meio + abertura} r={3} {...tracoChave} />
+          {modoScada && !aberto ? (
+            <line x1={cx} y1={meio - abertura} x2={cx} y2={meio + abertura} {...tracoChave} />
+          ) : (
+            <line x1={cx} y1={meio - abertura} x2={cx - 26} y2={meio + abertura + 14} {...tracoChave} />
+          )}
         </g>,
         largura,
         altura,
@@ -89,17 +134,21 @@ export function SimboloUnifilar({
     }
 
     case "SECCIONADORA_ATERRAMENTO": {
-      // Seccionadora com lâmina para o aterramento.
+      // Lâmina para o aterramento: conectada a terra quando fechada.
       const cx = largura / 2;
       const meio = altura * 0.5;
       const abertura = Math.min(20, altura * 0.22);
       return Frame(
         <g>
-          <line x1={cx} y1={0} x2={cx} y2={meio - abertura} {...traço} />
-          <circle cx={cx} cy={meio - abertura} r={3} {...traço} />
-          <line x1={cx} y1={meio + abertura} x2={cx} y2={altura} {...traço} />
-          <line x1={cx} y1={meio - abertura} x2={cx - 24} y2={meio + abertura + 12} {...traço} />
-          {AterramentoSimbolo(cx, altura - 30)}
+          <line x1={cx} y1={0} x2={cx} y2={meio - abertura} {...tracoChave} />
+          <circle cx={cx} cy={meio - abertura} r={3} {...tracoChave} />
+          <line x1={cx} y1={meio + abertura} x2={cx} y2={altura} {...tracoChave} />
+          {modoScada && !aberto ? (
+            <line x1={cx} y1={meio - abertura} x2={cx} y2={altura - 30} {...tracoChave} />
+          ) : (
+            <line x1={cx} y1={meio - abertura} x2={cx - 24} y2={meio + abertura + 12} {...tracoChave} />
+          )}
+          {AterramentoSimbolo(cx, altura - 30, tracoChave)}
         </g>,
         largura,
         altura,
