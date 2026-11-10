@@ -56,8 +56,8 @@ export default function UnifilarPage() {
   return (
     <div className="flex h-screen flex-col bg-slate-100">
       <header className="flex items-center gap-3 border-b bg-white px-3 py-2 shadow-sm">
-        <Link to="/subestacaoPage">
-          <Button variant="ghost" size="sm" className="h-8 px-2" title="Voltar às subestações">
+        <Link to="/unifilar">
+          <Button variant="ghost" size="sm" className="h-8 px-2" title="Todos os unifilares">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>

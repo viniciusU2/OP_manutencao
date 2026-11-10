@@ -23,6 +23,7 @@ import {
   ,ChevronDown
   ,BrainCircuit
   ,Images
+  ,Network
 } from "lucide-react"
 
 import { useAuth } from "../context/AuthContext"
@@ -387,6 +388,7 @@ const CollapseButton = styled.button`
 const menu = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard, restricted: false },
   { name: "Instalações", path: "/subestacaoPage", icon: Building2, restricted: true },
+  { name: "Unifilar", path: "/unifilar", icon: Network, restricted: false },
   { name: "Ativos", path: "/ativo", icon: Zap, restricted: true, adminOnly: true },
   { name: "FT", path: "/funcoes-operacao", icon: Workflow, restricted: true, adminOnly: true },
   { name: "Problemas", path: "/problemas-tipicos", icon: BrainCircuit, restricted: true, adminOnly: true },
@@ -408,7 +410,7 @@ const menu = [
 ]
 
 const menuGroups = [
-  { name: "Cadastros", paths: ["/subestacaoPage", "/ativo", "/funcoes-operacao", "/problemas-tipicos"] },
+  { name: "Cadastros", paths: ["/subestacaoPage", "/unifilar", "/ativo", "/funcoes-operacao", "/problemas-tipicos"] },
   { name: "OS-SS-SI", paths: ["/controle", "/ss", "/si", "/rdo", "/sobreaviso"] },
   { name: "Plano manutenção", paths: ["/planos-manutencao", "/planos-manutencao/dashboard", "/planos-manutencao/simulacao-anual", "/planos-manutencao/execucoes", "/inspecoes", "/relatorios-manutencao"] },
   { name: "Administração", paths: ["/downloads", "/perfis"] },

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/api";
 
-import { Plus, Search, Pencil, Trash2, Building2, MapPin } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Building2, MapPin, Network } from "lucide-react";
 
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -176,6 +176,16 @@ export  function SubestacoesPage() {
 
 
             <div className="mt-4 pt-3 border-t flex justify-end gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(`/subestacoes/${sub.id_subestacao}/unifilar`)}
+                title="Abrir o diagrama unifilar desta subestação"
+              >
+                <Network className="w-4 h-4 mr-1" />
+                Unifilar
+              </Button>
+
                <OnlyMaintainerOrAdmin>
 
               <Button
