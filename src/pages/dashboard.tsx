@@ -8,9 +8,12 @@ import {
   ClipboardList,
   FileText,
   Loader2,
+  Maximize2,
   Network,
+  Pencil,
   RefreshCcw,
   Wrench,
+  X,
 } from "lucide-react";
 import api from "../api/api";
 import EditorUnifilar from "../components/unifilar/EditorUnifilar";
@@ -826,6 +829,7 @@ export function Dashboard() {
   const [subestacoes, setSubestacoes] = useState<Subestacao[]>([]);
   const [diagramasUnifilar, setDiagramasUnifilar] = useState<DiagramaResumo[]>([]);
   const [filtroSubestacao, setFiltroSubestacao] = useState("");
+  const [unifilarTelaCheia, setUnifilarTelaCheia] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [periodoInspecoes, setPeriodoInspecoes] = useState(3);
@@ -889,6 +893,25 @@ export function Dashboard() {
   const diagramaSelecionado = filtroSubestacao
     ? diagramasUnifilar.find((d) => Number(d.id_subestacao) === Number(filtroSubestacao))
     : undefined;
+
+  // Fecha a modal ao trocar a instalacao e trava o scroll do fundo enquanto aberta.
+  useEffect(() => {
+    setUnifilarTelaCheia(false);
+  }, [filtroSubestacao]);
+
+  useEffect(() => {
+    if (!unifilarTelaCheia) return;
+    const overflowOriginal = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const aoTeclar = (evento: KeyboardEvent) => {
+      if (evento.key === "Escape") setUnifilarTelaCheia(false);
+    };
+    window.addEventListener("keydown", aoTeclar);
+    return () => {
+      document.body.style.overflow = overflowOriginal;
+      window.removeEventListener("keydown", aoTeclar);
+    };
+  }, [unifilarTelaCheia]);
 
   const filtered = useMemo(() => {
     const bySub = (item: { id_subestacao?: number | null; instalacao?: string }) => {
@@ -1192,13 +1215,24 @@ export function Dashboard() {
               </p>
             </UnifilarTexto>
             <UnifilarAcoes>
-              <UnifilarPrimario
-                type="button"
-                onClick={() => navigate(`/subestacoes/${subestacaoSelecionada.id_subestacao}/unifilar`)}
-              >
-                {diagramaSelecionado ? "Abrir no editor" : "Criar unifilar"}
-                <ArrowRight size={16} />
-              </UnifilarPrimario>
+              {diagramaSelecionado ? (
+                <UnifilarPrimario
+                  type="button"
+                  onClick={() => setUnifilarTelaCheia(true)}
+                  title="Abre o diagrama em uma modal ocupando a tela inteira"
+                >
+                  <Maximize2 size={16} />
+                  Abrir em tela cheia
+                </UnifilarPrimario>
+              ) : (
+                <UnifilarPrimario
+                  type="button"
+                  onClick={() => navigate(`/subestacoes/${subestacaoSelecionada.id_subestacao}/unifilar`)}
+                >
+                  Criar unifilar
+                  <ArrowRight size={16} />
+                </UnifilarPrimario>
+              )}
               <UnifilarSecundario type="button" onClick={() => navigate("/unifilar")}>
                 Todos os diagramas
               </UnifilarSecundario>
@@ -1228,6 +1262,68 @@ export function Dashboard() {
             </button>
           </UnifilarRodape>
         </UnifilarCard>
+      )}
+
+      {unifilarTelaCheia && subestacaoSelecionada && !ehLinhaInstalacao(subestacaoSelecionada.tipo_instalacao) && (
+        <div
+          className="fixed inset-0 z-[100] flex bg-slate-950/85 sm:p-3"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Diagrama unifilar ${subestacaoSelecionada.nome}`}
+          onMouseDown={(evento) => {
+            if (evento.target === evento.currentTarget) setUnifilarTelaCheia(false);
+          }}
+        >
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white shadow-2xl sm:rounded-xl">
+            <header className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-3 py-2 sm:px-4">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-blue-600 text-white">
+                <Network size={16} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-blue-700">
+                  Diagrama unifilar
+                </p>
+                <h2 className="truncate text-sm font-bold text-slate-900">
+                  {subestacaoSelecionada.nome}
+                </h2>
+              </div>
+              <span className="hidden text-[11px] text-slate-500 md:block">
+                {diagramaSelecionado
+                  ? `${diagramaSelecionado.total_componentes} componentes · ${diagramaSelecionado.total_ligacoes} ligações · clique no equipamento para abrir o ativo`
+                  : "Sem diagrama salvo para esta instalação"}
+              </span>
+              <div className="ml-auto flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => navigate(`/subestacoes/${subestacaoSelecionada.id_subestacao}/unifilar`)}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  title="Abre o diagrama no editor completo"
+                >
+                  <Pencil size={14} />
+                  Abrir no editor
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUnifilarTelaCheia(false)}
+                  aria-label="Fechar tela cheia"
+                  title="Fechar (Esc)"
+                  className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </header>
+            <div className="relative min-h-0 flex-1 bg-slate-50">
+              <EditorUnifilar
+                key={`tela-cheia-${subestacaoSelecionada.id_subestacao}`}
+                idSubestacao={subestacaoSelecionada.id_subestacao}
+                nomeSubestacao={subestacaoSelecionada.nome}
+                podeEditar={false}
+                compacto
+              />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Galeria de fotos de inspeção removida do dashboard.
