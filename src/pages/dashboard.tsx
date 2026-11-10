@@ -347,7 +347,7 @@ const UnifilarSecundario = styled.button`
 
 const UnifilarCanvas = styled.div`
   position: relative;
-  height: clamp(300px, 46vh, 460px);
+  height: clamp(380px, 60vh, 640px);
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
   border-bottom: 1px solid #e2e8f0;
@@ -357,7 +357,7 @@ const UnifilarCanvas = styled.div`
   }
 
   @media (max-width: 640px) {
-    height: 300px;
+    height: 340px;
   }
 `;
 

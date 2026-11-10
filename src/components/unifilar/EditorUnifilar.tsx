@@ -262,7 +262,7 @@ function medirLigacoes(wrap: HTMLElement, arestas: Edge[], nos: NoUnifilarType[]
 function Canvas({ idSubestacao, nomeSubestacao, podeEditar, compacto = false }: {
   idSubestacao: number; nomeSubestacao: string; podeEditar: boolean; compacto?: boolean;
 }) {
-  const { screenToFlowPosition, fitView } = useReactFlow();
+  const { screenToFlowPosition, setViewport } = useReactFlow();
   const atualizarInternos = useUpdateNodeInternals();
   const navigate = useNavigate();
 
@@ -282,15 +282,67 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar, compacto = false }: 
   const ultimaAssinaturaServidor = useRef("");
   const avisoFalhaAutosave = useRef(false);
   const areaRef = useRef<HTMLDivElement>(null);
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
   const editar = modoEdicao && podeEditar && !compacto;
 
   useEffect(() => setModoEdicao(podeEditar && !compacto), [podeEditar, compacto]);
 
+  /** Enquadra todo o diagrama na area visivel (independe da medicao interna do React Flow). */
+  const ajustarVista = useCallback((folgaTela = 16) => {
+    const el = areaRef.current;
+    const atuais = nodesRef.current;
+    if (!el || !atuais.length) return;
+    const larguraTela = el.clientWidth;
+    const alturaTela = el.clientHeight;
+    if (larguraTela < 20 || alturaTela < 20) return;
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const n of atuais) {
+      const w = n.width ?? n.data.largura ?? 0;
+      const h = n.height ?? n.data.altura ?? 0;
+      minX = Math.min(minX, n.position.x);
+      minY = Math.min(minY, n.position.y);
+      maxX = Math.max(maxX, n.position.x + w);
+      maxY = Math.max(maxY, n.position.y + h);
+    }
+    // Rotulos ficam fora da caixa do no (a direita), por isso a folga extra.
+    maxX += 60;
+    maxY += 12;
+    const larg = Math.max(1, maxX - minX);
+    const alt = Math.max(1, maxY - minY);
+    const zoom = Math.max(0.05, Math.min(2.5, Math.min(
+      (larguraTela - folgaTela * 2) / larg,
+      (alturaTela - folgaTela * 2) / alt,
+    )));
+    void setViewport({
+      x: (larguraTela - larg * zoom) / 2 - minX * zoom,
+      y: (alturaTela - alt * zoom) / 2 - minY * zoom,
+      zoom,
+    }, { duration: 0 });
+  }, [setViewport]);
+
   useEffect(() => {
     if (!pronto) return;
-    const t = window.setTimeout(() => fitView({ padding: compacto ? 0.08 : 0.12, duration: 200 }), 350);
+    const t = window.setTimeout(() => ajustarVista(compacto ? 10 : 24), compacto ? 120 : 250);
     return () => clearTimeout(t);
-  }, [pronto, fitView, compacto]);
+  }, [pronto, ajustarVista, compacto]);
+
+  // No cartao o tamanho muda com o layout/responsividade: reenquadra ao redimensionar.
+  useEffect(() => {
+    if (!compacto || !pronto) return;
+    const el = areaRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    let ultima = "";
+    const ro = new ResizeObserver(() => {
+      const chave = `${el.clientWidth}x${el.clientHeight}`;
+      if (chave === ultima) return;
+      ultima = chave;
+      ajustarVista(10);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ajustarVista, compacto, pronto]);
 
   const atualizarLinhas = useCallback(() => {
     if (areaRef.current) setLinhas(medirLigacoes(areaRef.current, edges, nodes));
@@ -585,7 +637,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar, compacto = false }: 
         <Button variant="ghost" size="sm" className="h-7 text-red-600" onClick={excluir} disabled={!editar || (!sel && !idLigSel)}
           title={idLigSel ? "Excluir ligação (Del)" : "Excluir componente (Del)"}><Trash2 className="h-4 w-4" /></Button>
         <span className="mx-1 h-5 w-px bg-slate-200" />
-        <Button variant="ghost" size="sm" className="h-7" onClick={() => fitView({ padding: 0.2, duration: 300 })} title="Ajustar visualização"><Maximize2 className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="sm" className="h-7" onClick={() => ajustarVista(20)} title="Ajustar visualização"><Maximize2 className="h-4 w-4" /></Button>
         <div className="ml-auto flex items-center gap-1">
           {!editar && (
             <span className="mr-1 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">modo leitura</span>
@@ -667,15 +719,13 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar, compacto = false }: 
             preventScrolling={!compacto}
             connectionMode={ConnectionMode.Loose}
             connectionRadius={40}
-            minZoom={0.08}
+            minZoom={compacto ? 0.04 : 0.08}
             maxZoom={2.5}
             snapToGrid={editar}
             snapGrid={[10, 10]}
             deleteKeyCode={editar ? ["Backspace", "Delete"] : null}
             defaultEdgeOptions={{ type: "smoothstep", style: ESTILO }}
             connectionLineStyle={ESTILO}
-            fitView
-            fitViewOptions={{ padding: compacto ? 0.06 : 0.12 }}
             proOptions={{ hideAttribution: true }}
           >
             <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#cbd5e1" />
