@@ -137,21 +137,33 @@ export function SimboloUnifilar({
     }
 
     case "TPC": {
-      // Capacitor de acoplamento + divisor capacitivo (duas placas em serie).
-      const cx = largura / 2;
-      const metade = altura * 0.42;
-      const larguraPlaca = Math.min(largura * 0.86, 24);
-      return Frame(
-        <g>
-          <line x1={cx} y1={0} x2={cx} y2={metade} {...traço} />
-          <line x1={cx - larguraPlaca / 2} y1={metade} x2={cx + larguraPlaca / 2} y2={metade} {...traço} strokeWidth={3} />
-          <line x1={cx - larguraPlaca / 2} y1={metade + 8} x2={cx + larguraPlaca / 2} y2={metade + 8} {...traço} strokeWidth={3} />
-          <line x1={cx} y1={metade + 8} x2={cx} y2={metade + 22} {...traço} />
-          <circle cx={cx} cy={metade + 30} r={8} {...traço} />
-          <line x1={cx} y1={metade + 38} x2={cx} y2={altura} {...traço} />
-        </g>,
-        largura,
-        altura,
+      // TPC conforme o desenho de referencia: coluna de unidades capacitivas
+      // ligada por tracejado ao divisor, capacitor em serie, bobina e terra.
+      const unidade = (y: number) => (
+        <g key={y}>
+          <path d={`M16 ${y} A6 6 0 0 0 16 ${y + 12}`} stroke={COR} strokeWidth={2} fill="none" />
+          <path d={`M22 ${y} A6 6 0 0 1 22 ${y + 12}`} stroke={COR} strokeWidth={2} fill="none" />
+          <line x1={22} y1={y + 6} x2={34} y2={y + 6} stroke={COR} strokeWidth={2} />
+          <circle cx={37} cy={y + 6} r={2.5} stroke={COR} strokeWidth={2} fill="none" />
+        </g>
+      );
+      return (
+        <svg viewBox="0 0 44 96" width={largura} height={altura} fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+          {unidade(8)}
+          {unidade(28)}
+          {unidade(48)}
+          <line x1={8} y1={14} x2={8} y2={72} stroke={COR} strokeWidth={1.5} strokeDasharray="4 3" />
+          <line x1={8} y1={34} x2={16} y2={34} stroke={COR} strokeWidth={1.5} strokeDasharray="3 2" />
+          <line x1={8} y1={54} x2={16} y2={54} stroke={COR} strokeWidth={1.5} strokeDasharray="3 2" />
+          <line x1={0} y1={72} x2={44} y2={72} stroke={COR} strokeWidth={2} />
+          <circle cx={8} cy={72} r={2} fill={COR} />
+          <line x1={18} y1={64} x2={18} y2={80} stroke={COR} strokeWidth={2.5} />
+          <line x1={23} y1={64} x2={23} y2={80} stroke={COR} strokeWidth={2.5} />
+          <path d="M28 72 q2 -6 4 0 q2 -6 4 0 q2 -6 4 0" stroke={COR} strokeWidth={2} fill="none" />
+          <line x1={40} y1={72} x2={40} y2={78} stroke={COR} strokeWidth={2} />
+          <line x1={35} y1={78} x2={45} y2={78} stroke={COR} strokeWidth={2} />
+          <line x1={37} y1={83} x2={43} y2={83} stroke={COR} strokeWidth={2} />
+        </svg>
       );
     }
 
