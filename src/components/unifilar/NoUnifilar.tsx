@@ -7,7 +7,8 @@
  * pontas do condutor quando o equipamento gira.
  */
 
-import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
+import { useEffect } from "react";
+import { Handle, Position, useNodeId, useUpdateNodeInternals, type NodeProps, type Node } from "@xyflow/react";
 import { SimboloUnifilar } from "./SimboloUnifilar";
 import { TERMINAIS_BARRAMENTO, tipo } from "./catalogo";
 
@@ -49,6 +50,14 @@ function bordasBarramento(rotacao: number): [Position, Position, Position, Posit
 
 export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
   const definicao = tipo(data.tipo);
+  const updateNodeInternals = useUpdateNodeInternals();
+  const nodeId = useNodeId();
+
+  useEffect(() => {
+    if (nodeId) {
+      updateNodeInternals([nodeId]);
+    }
+  }, [nodeId, updateNodeInternals]);
 
   const identificador = data.codigo?.trim();
   const etiquetaVao = data.vao?.trim();
