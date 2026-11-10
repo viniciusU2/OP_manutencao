@@ -71,8 +71,17 @@ export function SimboloUnifilar({
 
   switch (tipo) {
     case "BARRAMENTO": {
+      // Barra mais espessa para leitura clara no diagrama e no SAGE.
+      const margem = 1;
       return Frame(
-        <rect x={4} y={4} width={largura - 8} height={altura - 8} fill={COR} rx={1} />,
+        <rect
+          x={margem}
+          y={margem}
+          width={Math.max(1, largura - margem * 2)}
+          height={Math.max(1, altura - margem * 2)}
+          fill={COR}
+          rx={1.5}
+        />,
         largura,
         altura,
       );
