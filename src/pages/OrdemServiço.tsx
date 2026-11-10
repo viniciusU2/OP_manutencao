@@ -3,10 +3,11 @@ import styled from "styled-components";
 import api from "../api/api";
 import Container from "../components/Container";
 import type { OrdemServico } from "../types/OrdemServico";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import type {Ativo} from "../types/Ativo"
 import { SelecaoHierarquicaAtivo } from "../components/SelecaoHierarquicaAtivo";
 import { listarFuncoesOperacao } from "../services/funcaoOperacaoService";
+import { carregarPrefillDocumentoAtivo } from "../lib/prefillDocumentoAtivo";
 import type {Subestacao} from "../types/Subestacao"
 import type { TipoAtivo } from "../types/TipoAtivo";
 import type { FuncaoOperacao } from "../types/FuncaoOperacao";
@@ -151,6 +152,8 @@ const ESQUEMAS_SERVICO = [
 export  function OrdemServicoPage() {
 
   const { id} = useParams();
+  const [searchParams] = useSearchParams();
+  const idAtivoPrefill = Number(searchParams.get("id_ativo") ?? "");
 
   const isEdicao = Boolean(id);
 
@@ -291,6 +294,33 @@ export  function OrdemServicoPage() {
       });
     }
   }, [id, isEdicao]);
+
+  /* ===============================
+     PREFILL A PARTIR DO ATIVO (NOVA OS)
+  =============================== */
+  useEffect(() => {
+    if (isEdicao || !idAtivoPrefill) return;
+    let vivo = true;
+
+    carregarPrefillDocumentoAtivo(idAtivoPrefill)
+      .then((dados) => {
+        if (!vivo) return;
+        setForm((atual) => ({
+          ...atual,
+          id_subestacao: dados.id_subestacao ?? atual.id_subestacao ?? null,
+          id_funcao_operacao: dados.id_funcao_operacao ?? atual.id_funcao_operacao ?? null,
+          id_grupo_ativo: dados.id_grupo_ativo,
+          id_tipo_ativo: dados.id_tipo_ativo,
+          escopo_ativo: dados.escopo_ativo,
+          id_ativo: dados.id_ativo,
+          codigo_ativo: dados.codigo_ativo ?? atual.codigo_ativo,
+          fase: dados.fase ?? atual.fase,
+        }));
+      })
+      .catch(() => toast.error("Nao foi possivel carregar o ativo selecionado."));
+
+    return () => { vivo = false; };
+  }, [idAtivoPrefill, isEdicao]);
 
   useEffect(() => {
     if (!form.id_ativo) {

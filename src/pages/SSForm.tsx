@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import styled from "styled-components";
 import api from "../api/api";
 import Container from "../components/Container";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import type { SolicitacaoServico } from "../types/solicitacaoServico";
@@ -11,6 +11,7 @@ import { SelecaoHierarquicaAtivo } from "../components/SelecaoHierarquicaAtivo";
 import type { Subestacao } from "../types/Subestacao";
 import type { TipoAtivo } from "../types/TipoAtivo";
 import { especiePorAtivo } from "../lib/documentosOperacao";
+import { carregarPrefillDocumentoAtivo } from "../lib/prefillDocumentoAtivo";
 import { useAuth } from "../context/AuthContext";
 import { DocumentBackButton } from "../components/DocumentBackButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
@@ -151,6 +152,8 @@ const Button = styled.button`
 export function SSForm() {
 
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const idAtivoPrefill = Number(searchParams.get("id_ativo") ?? "");
   const isEdicao = Boolean(id);
   const { usuario } = useAuth();
 
@@ -234,6 +237,31 @@ export function SSForm() {
       .then((res) => setAtivoSelecionadoDetalhes(res.data))
       .catch(() => setAtivoSelecionadoDetalhes(null));
   }, [form.id_ativo]);
+
+  /* ===============================
+     PREFILL A PARTIR DO ATIVO (NOVA SS)
+  =============================== */
+  useEffect(() => {
+    if (isEdicao || !idAtivoPrefill) return;
+    let vivo = true;
+
+    carregarPrefillDocumentoAtivo(idAtivoPrefill)
+      .then((dados) => {
+        if (!vivo) return;
+        setForm((atual) => ({
+          ...atual,
+          id_subestacao: dados.id_subestacao ?? atual.id_subestacao ?? null,
+          id_funcao_operacao: dados.id_funcao_operacao ?? atual.id_funcao_operacao ?? null,
+          id_grupo_ativo: dados.id_grupo_ativo,
+          id_tipo_ativo: dados.id_tipo_ativo,
+          escopo_ativo: dados.escopo_ativo,
+          id_ativo: dados.id_ativo,
+        }));
+      })
+      .catch(() => toast.error("Nao foi possivel carregar o ativo selecionado."));
+
+    return () => { vivo = false; };
+  }, [idAtivoPrefill, isEdicao]);
 
   useEffect(() => {
     if (form.id_subestacao) {

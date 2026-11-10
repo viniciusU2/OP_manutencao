@@ -8,7 +8,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  ClipboardPlus,
   ExternalLink,
+  FilePlus2,
   Gauge,
   ImageIcon,
   Layers,
@@ -323,6 +325,24 @@ export function AtivoDetalhe() {
             <Link to={`/ativo/${ativo.id_ativo}/editar`}>
               <PenLine />
               Editar cadastro
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link
+              to={`/os?id_ativo=${ativo.id_ativo}`}
+              title="Criar uma Ordem de Servico com instalacao, funcao de transmissao e ativo ja preenchidos"
+            >
+              <FilePlus2 />
+              Nova OS
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link
+              to={`/ss/nova?id_ativo=${ativo.id_ativo}`}
+              title="Criar uma Solicitacao de Servico com instalacao, funcao de transmissao e ativo ja preenchidos"
+            >
+              <ClipboardPlus />
+              Nova SS
             </Link>
           </Button>
           <Button size="sm" asChild>
