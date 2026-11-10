@@ -16,10 +16,14 @@ interface Subestacao {
   id_subestacao: number;
   nome: string;
   codigo: string;
+  tipo_instalacao?: string;
   tensao?: string;
   localizacao?: string;
   status: string;
 }
+
+/** Linha de transmissao nao tem patio, portanto nao tem unifilar proprio. */
+const ehLinha = (tipo?: string) => (tipo ?? "").toUpperCase().startsWith("LINHA");
 
 export  function SubestacoesPage() {
 
@@ -176,15 +180,17 @@ export  function SubestacoesPage() {
 
 
             <div className="mt-4 pt-3 border-t flex justify-end gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`/subestacoes/${sub.id_subestacao}/unifilar`)}
-                title="Abrir o diagrama unifilar desta subestação"
-              >
-                <Network className="w-4 h-4 mr-1" />
-                Unifilar
-              </Button>
+              {!ehLinha(sub.tipo_instalacao) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(`/subestacoes/${sub.id_subestacao}/unifilar`)}
+                  title="Abrir o diagrama unifilar desta subestação"
+                >
+                  <Network className="w-4 h-4 mr-1" />
+                  Unifilar
+                </Button>
+              )}
 
                <OnlyMaintainerOrAdmin>
 

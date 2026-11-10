@@ -19,10 +19,28 @@ import { Input } from "../components/ui/input";
 type ResumoDiagrama = {
   id_subestacao: number;
   nome: string;
+  tipo_instalacao?: string | null;
   total_componentes: number;
   total_ligacoes: number;
   atualizado_em: string | null;
 };
+
+type Filtro = "SUBESTACAO" | "LINHA_TRANSMISSAO" | "TODAS";
+
+const TIPO_ROTULO: Record<string, string> = {
+  SUBESTACAO: "Subestação",
+  LINHA_TRANSMISSAO: "Linha de transmissão",
+};
+
+function ehLinha(tipo?: string | null) {
+  return (tipo ?? "").toUpperCase().startsWith("LINHA");
+}
+
+function rotuloTipo(tipo?: string | null) {
+  const chave = (tipo ?? "SUBESTACAO").toUpperCase();
+  if (ehLinha(chave)) return TIPO_ROTULO.LINHA_TRANSMISSAO;
+  return TIPO_ROTULO[chave] ?? chave;
+}
 
 function dataCurta(iso: string | null) {
   if (!iso) return "sem data";
@@ -38,6 +56,7 @@ export default function UnifilarSelecaoPage() {
   const [diagramas, setDiagramas] = useState<ResumoDiagrama[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState("");
+  const [filtro, setFiltro] = useState<Filtro>("SUBESTACAO");
 
   useEffect(() => {
     let ativo = true;
@@ -50,10 +69,22 @@ export default function UnifilarSelecaoPage() {
 
   const filtrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    if (!termo) return diagramas;
-    return diagramas.filter((d) =>
-      d.nome?.toLowerCase().includes(termo) || String(d.id_subestacao) === termo);
-  }, [busca, diagramas]);
+    return diagramas.filter((d) => {
+      const combinaTipo = filtro === "TODAS" ||
+        (filtro === "LINHA_TRANSMISSAO" ? ehLinha(d.tipo_instalacao) : !ehLinha(d.tipo_instalacao));
+      if (!combinaTipo) return false;
+      if (!termo) return true;
+      return d.nome?.toLowerCase().includes(termo) || String(d.id_subestacao) === termo;
+    });
+  }, [busca, diagramas, filtro]);
+
+  const totalSubestacoes = diagramas.filter((d) => !ehLinha(d.tipo_instalacao)).length;
+  const totalLinhas = diagramas.length - totalSubestacoes;
+  const opcoes: { chave: Filtro; rotulo: string; total: number }[] = [
+    { chave: "SUBESTACAO", rotulo: "Subestações", total: totalSubestacoes },
+    { chave: "LINHA_TRANSMISSAO", rotulo: "Linhas", total: totalLinhas },
+    { chave: "TODAS", rotulo: "Todas", total: diagramas.length },
+  ];
 
   return (
     <div className="space-y-6 p-6">
@@ -67,7 +98,7 @@ export default function UnifilarSelecaoPage() {
             <p className="text-sm text-gray-500">
               {carregando
                 ? "Carregando diagramas…"
-                : `${diagramas.length} ${diagramas.length === 1 ? "subestação com diagrama" : "subestações com diagrama"}`}
+                : `${totalSubestacoes} ${totalSubestacoes === 1 ? "subestação" : "subestações"} · ${totalLinhas} ${totalLinhas === 1 ? "linha" : "linhas"} com diagrama`}
             </p>
           </div>
         </div>
@@ -85,6 +116,25 @@ export default function UnifilarSelecaoPage() {
         </div>
       </Card>
 
+      {!carregando && (
+        <div className="flex flex-wrap gap-1.5">
+          {opcoes.map((o) => (
+            <Button
+              key={o.chave}
+              size="sm"
+              variant={filtro === o.chave ? "default" : "outline"}
+              className="h-7 px-2.5 text-xs"
+              onClick={() => setFiltro(o.chave)}
+            >
+              {o.rotulo}
+              <span className={`ml-1.5 rounded px-1 text-[10px] font-semibold ${filtro === o.chave ? "bg-white/20" : "bg-slate-100 text-slate-600"}`}>
+                {o.total}
+              </span>
+            </Button>
+          ))}
+        </div>
+      )}
+
       {!carregando && !diagramas.length && (
         <Card className="p-8 text-center">
           <Network className="mx-auto mb-3 h-8 w-8 text-slate-300" />
@@ -100,7 +150,13 @@ export default function UnifilarSelecaoPage() {
       )}
 
       {!carregando && !!diagramas.length && !filtrados.length && (
-        <p className="text-sm text-slate-500">Nenhuma subestação encontrada para “{busca}”.</p>
+        <p className="text-sm text-slate-500">
+          {busca.trim()
+            ? `Nenhuma instalação encontrada para “${busca}”.`
+            : filtro === "LINHA_TRANSMISSAO"
+              ? "Nenhuma linha de transmissão com diagrama salvo."
+              : "Nenhuma subestação com diagrama salvo neste filtro."}
+        </p>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -113,7 +169,12 @@ export default function UnifilarSelecaoPage() {
                 </div>
                 <div className="min-w-0">
                   <h3 className="truncate text-sm font-semibold">{d.nome}</h3>
-                  <p className="font-mono text-xs text-gray-400">SE #{d.id_subestacao}</p>
+                  <p className="flex items-center gap-1.5 font-mono text-xs text-gray-400">
+                    <span>#{d.id_subestacao}</span>
+                    <span className={`rounded px-1.5 py-0.5 font-sans text-[10px] font-semibold ${ehLinha(d.tipo_instalacao) ? "bg-amber-50 text-amber-700" : "bg-blue-50 text-blue-700"}`}>
+                      {rotuloTipo(d.tipo_instalacao)}
+                    </span>
+                  </p>
                 </div>
               </div>
             </div>

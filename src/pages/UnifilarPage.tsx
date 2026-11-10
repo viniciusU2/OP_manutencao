@@ -29,6 +29,7 @@ export default function UnifilarPage() {
   const { id } = useParams();
   const idSubestacao = Number(id);
   const [nome, setNome] = useState("");
+  const [tipo, setTipo] = useState("");
   const [papel, setPapel] = useState<string>("usuario");
 
   useEffect(() => {
@@ -40,10 +41,11 @@ export default function UnifilarPage() {
 
   useEffect(() => {
     api.get("/subestacao").then(({ data }) => {
-      const alvo = (data as Array<{ id_subestacao: number; nome: string }>).find(
+      const alvo = (data as Array<{ id_subestacao: number; nome: string; tipo_instalacao?: string }>).find(
         (s) => Number(s.id_subestacao) === idSubestacao,
       );
       setNome(alvo?.nome ?? `Subestação #${idSubestacao}`);
+      setTipo(alvo?.tipo_instalacao ?? "");
     }).catch((err) => toast.error(textoErro(err, "Não foi possível carregar a subestação.")));
   }, [idSubestacao]);
 
@@ -63,7 +65,11 @@ export default function UnifilarPage() {
         </Link>
         <div className="min-w-0">
           <h1 className="truncate text-base font-bold text-slate-900">Unifilar — {nome || "carregando…"}</h1>
-          <p className="text-[11px] text-slate-500">Diagrama unifilar interativo da subestação</p>
+          <p className="text-[11px] text-slate-500">
+            {tipo.toUpperCase().startsWith("LINHA")
+              ? "Diagrama da linha de transmissão"
+              : "Diagrama unifilar interativo da subestação"}
+          </p>
         </div>
       </header>
       <main className="min-h-0 flex-1">
