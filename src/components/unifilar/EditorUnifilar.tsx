@@ -596,6 +596,8 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
             nodesDraggable={editar && pronto}
             connectionMode={ConnectionMode.Loose}
             connectionRadius={40}
+            minZoom={0.08}
+            maxZoom={2.5}
             snapToGrid={editar}
             snapGrid={[10, 10]}
             deleteKeyCode={editar ? ["Backspace", "Delete"] : null}
