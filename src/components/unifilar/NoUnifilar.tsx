@@ -9,6 +9,7 @@
 
 import { useEffect } from "react";
 import { Handle, Position, useNodeId, useUpdateNodeInternals, type NodeProps, type Node } from "@xyflow/react";
+import { Link2 } from "lucide-react";
 import { SimboloUnifilar } from "./SimboloUnifilar";
 import { TERMINAIS_BARRAMENTO, tipo } from "./catalogo";
 
@@ -109,7 +110,11 @@ export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
   const [t1, t2] = bordasTerminais(data.rotacao);
 
   return (
-    <div className={`relative flex flex-col items-center ${contorno}`} style={{ width: w }}>
+    <div
+      className={`relative flex flex-col items-center ${contorno}`}
+      style={{ width: w }}
+      title={data.id_ativo != null ? "Duplo clique abre o ativo vinculado" : undefined}
+    >
       <div className="relative" style={{ width: w, height: h }}>
         <Handle id="T1" type="source" position={t1} className={CLASSE_TERMINAL} aria-label={`topo de ${identificador || "equipamento"}`} isConnectable isConnectableStart isConnectableEnd />
         <Handle id="T2" type="source" position={t2} className={CLASSE_TERMINAL} aria-label={`base de ${identificador || "equipamento"}`} isConnectable isConnectableStart isConnectableEnd />
@@ -125,6 +130,14 @@ export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
         >
           <SimboloUnifilar tipo={definicao.codigo} largura={data.largura} altura={data.altura} />
         </div>
+        {data.id_ativo != null && (
+          <span
+            className="absolute -right-1.5 -top-1.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm"
+            title={`Ativo #${data.id_ativo}`}
+          >
+            <Link2 className="h-2.5 w-2.5" />
+          </span>
+        )}
       </div>
 
       <div className="absolute left-full top-1/2 ml-2 flex -translate-y-1/2 flex-col whitespace-nowrap">

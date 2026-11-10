@@ -18,7 +18,7 @@ import type { Connection, Edge, NodeChange, Viewport } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { toast } from "sonner";
 import {
-  Copy, Eye, Maximize2, Pencil, Redo2, RotateCw, Save, Trash2, Undo2, Unlink,
+  Copy, ExternalLink, Eye, Maximize2, Pencil, Redo2, RotateCw, Save, Trash2, Undo2, Unlink,
 } from "lucide-react";
 
 import { Button } from "../ui/button";
@@ -637,7 +637,22 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
             onNodesChange={mudarNos}
             onConnect={onConnect}
             onMove={(_, v) => setVista(v)}
-            onNodeClick={(_, n) => { setIdSel(n.id); setIdLigSel(null); }}
+            onNodeClick={(_, n) => {
+              setIdSel(n.id);
+              setIdLigSel(null);
+              // Modo navegacao: clique no componente abre direto a tela do ativo.
+              if (!editar && typeof n.data.id_ativo === "number") {
+                navigate(`/ativo/${n.data.id_ativo}`);
+              }
+            }}
+            onNodeDoubleClick={(_, n) => {
+              const alvo = n.data.id_ativo;
+              if (typeof alvo === "number") {
+                navigate(`/ativo/${alvo}`);
+              } else if (buscarTipo(n.data.tipo).aceitaAtivo) {
+                toast.info("Este componente ainda não tem ativo associado.");
+              }
+            }}
             onPaneClick={() => { setIdSel(null); setIdLigSel(null); }}
             nodesConnectable={editar && pronto}
             nodesDraggable={editar && pronto}
@@ -749,7 +764,9 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
           )}
           {!sel && !ligSel && (
             <p className="text-xs text-slate-500">
-              {editar ? "Selecione um componente ou insira um novo pela biblioteca." : "Clique em um componente para ver suas informações."}
+              {editar
+                ? "Selecione um componente ou insira um novo pela biblioteca. Duplo clique abre o ativo vinculado."
+                : "Clique em um componente com selo azul para abrir o ativo vinculado."}
             </p>
           )}
           {sel && defSel && (
@@ -774,36 +791,60 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                 Vão
                 <Input value={sel.data.vao} disabled={!editar} placeholder="ex.: 15D7" onChange={(e) => campo("vao", e.target.value)} className="h-8 text-xs" />
               </label>
-              {defSel.aceitaAtivo && (
-                <label className="grid gap-1 text-[11px] font-semibold text-slate-700">
-                  Ativo associado
-                  <select
-                    value={sel.data.id_ativo ?? ""}
-                    disabled={!editar}
-                    onChange={(e) => campo("id_ativo", e.target.value ? Number(e.target.value) : null)}
-                    className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs font-normal disabled:bg-slate-100"
-                  >
-                    <option value="">Sem associação</option>
-                    {ativos.map((ativo) => (
-                      <option key={ativo.id_ativo} value={ativo.id_ativo}>
-                        {ativo.codigo_ativo}{ativo.bay ? ` — vão ${ativo.bay}` : ""}
-                      </option>
-                    ))}
-                  </select>
-                  {sel.data.id_ativo != null && (
-                    <span className="text-[10px] font-normal text-slate-500">
-                      {ativos.find((ativo) => ativo.id_ativo === sel.data.id_ativo)?.status ?? "Ativo da subestação"}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/ativo/${sel.data.id_ativo}`)}
-                    className="mt-1 inline-flex items-center gap-1 rounded border border-blue-300 bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700 hover:bg-blue-100"
-                  >
-                    Ver ativo #{sel.data.id_ativo}
-                  </button>
-                </label>
-              )}
+              {defSel.aceitaAtivo && (() => {
+                const ativo = ativos.find((a) => a.id_ativo === sel.data.id_ativo);
+                const operando = (ativo?.status ?? "").toLowerCase().includes("opera");
+                return (
+                  <div className="grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-2.5">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Ativo associado</p>
+                    {ativo ? (
+                      <>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono text-xs font-semibold text-slate-800">{ativo.codigo_ativo}</span>
+                          {ativo.status && (
+                            <span className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${operando ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+                              {ativo.status}
+                            </span>
+                          )}
+                        </div>
+                        {ativo.bay ? <p className="text-[10px] text-slate-500">Vão {ativo.bay}</p> : null}
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="h-8 w-full text-xs"
+                          onClick={() => navigate(`/ativo/${sel.data.id_ativo}`)}
+                          title="Abre a tela do ativo (também com duplo clique no componente)"
+                        >
+                          <ExternalLink className="mr-1 h-3.5 w-3.5" />
+                          Abrir ativo
+                        </Button>
+                      </>
+                    ) : (
+                      <p className="text-[10px] text-slate-500">
+                        {sel.data.id_ativo == null
+                          ? "Sem ativo associado — escolha abaixo (ou duplo clique avisa)."
+                          : `Ativo #${sel.data.id_ativo} não está na lista desta subestação.`}
+                      </p>
+                    )}
+                    <label className="grid gap-1 text-[11px] font-semibold text-slate-700">
+                      {ativo ? "Trocar associação" : "Associar ativo"}
+                      <select
+                        value={sel.data.id_ativo ?? ""}
+                        disabled={!editar}
+                        onChange={(e) => campo("id_ativo", e.target.value ? Number(e.target.value) : null)}
+                        className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs font-normal disabled:bg-slate-100"
+                      >
+                        <option value="">Sem associação</option>
+                        {ativos.map((a) => (
+                          <option key={a.id_ativo} value={a.id_ativo}>
+                            {a.codigo_ativo}{a.bay ? ` — vão ${a.bay}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                );
+              })()}
               <div className="text-[11px] text-slate-600">
                 <p><strong className="text-slate-700">Ligações:</strong>{" "}
                   {edges.filter((e) => e.source === sel.id || e.target === sel.id).length}</p>
