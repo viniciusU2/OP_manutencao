@@ -11,7 +11,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  Activity,
   AlertTriangle,
   ArrowLeft,
   ExternalLink,
@@ -20,7 +19,6 @@ import {
   RefreshCcw,
   RotateCcw,
   X,
-  Zap,
 } from "lucide-react";
 
 import api from "../api/api";
@@ -117,9 +115,15 @@ function normalizarNos(nodes: DiagramaApi["nodes"]): SageNode[] {
 }
 
 function classeSeveridade(sev: Severidade) {
-  if (sev === "ALARME") return "text-red-400";
-  if (sev === "ATENCAO") return "text-amber-300";
-  return "text-slate-300";
+  if (sev === "ALARME") return "text-red-600";
+  if (sev === "ATENCAO") return "text-amber-700";
+  return "text-slate-700";
+}
+
+function classePonto(sev: Severidade) {
+  if (sev === "ALARME") return "bg-red-500";
+  if (sev === "ATENCAO") return "bg-amber-500";
+  return "bg-blue-400";
 }
 
 export function SagePage() {
@@ -380,59 +384,6 @@ export function SagePage() {
 
   return (
     <div className="mx-auto max-w-[1600px] space-y-3 p-3 sm:p-4">
-      <header className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-slate-100 shadow-lg">
-        <div className="flex items-center gap-2.5">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-400/40">
-            <Activity size={18} />
-          </span>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300">SAGE · Supervisao</p>
-            <h1 className="text-sm font-bold leading-5">{nome || "Carregando instalacao..."}</h1>
-          </div>
-        </div>
-
-        <span className="rounded border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300">
-          Simulacao
-        </span>
-        {fonte && (
-          <span className="hidden items-center gap-1 text-[11px] text-slate-400 md:flex">
-            <Zap size={12} className="text-cyan-300" />
-            Fonte: <strong className="font-mono text-slate-200">{fonte.codigo}</strong>
-          </span>
-        )}
-
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <span className="font-mono text-sm tabular-nums text-slate-300">
-            {agora.toLocaleTimeString("pt-BR")}
-          </span>
-          <span className="hidden text-[11px] text-slate-500 lg:block">{usuario?.nome ?? "Operador"}</span>
-          <button
-            type="button"
-            onClick={() => navigate(`/subestacoes/${idSubestacao}/unifilar`)}
-            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-700 px-2.5 text-xs font-semibold text-slate-300 hover:bg-slate-800"
-          >
-            <ArrowLeft size={14} />
-            Unifilar
-          </button>
-          <button
-            type="button"
-            onClick={restaurar}
-            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-700 px-2.5 text-xs font-semibold text-slate-300 hover:bg-slate-800"
-            disabled={!componentes.length}
-          >
-            <RotateCcw size={14} />
-            Restaurar
-          </button>
-          <button
-            type="button"
-            onClick={() => setVersao((v) => v + 1)}
-            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-700 px-2.5 text-xs font-semibold text-slate-300 hover:bg-slate-800"
-          >
-            <RefreshCcw size={14} />
-            Atualizar
-          </button>
-        </div>
-      </header>
 
       {erro && (
         <div className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-300">
@@ -464,74 +415,99 @@ export function SagePage() {
               Nenhum diagrama salvo para esta instalacao. Monte o arranjo no editor unifilar.
             </div>
           )}
-          <div className="pointer-events-none absolute left-2 top-2 z-[7] rounded-md border border-red-200 bg-white/95 px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm">
+          <div className="pointer-events-none absolute left-2 top-2 z-[7] rounded-md border border-slate-200 bg-white/95 px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm">
             Tensao de barra · <span className="text-red-600">vermelho = energizado</span> · <span className="text-emerald-600">verde = desenergizado/aberto</span>
           </div>
         </section>
 
         <aside className="flex min-h-0 flex-col gap-3">
-          <section className="rounded-xl border border-slate-800 bg-slate-900 p-3 text-slate-100 shadow-lg">
-            <h2 className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400">
-              <Zap size={14} className="text-cyan-300" />
-              Tensoes de barra
-            </h2>
-            <div className="grid gap-1.5">
-              {analise.barras.length === 0 && (
-                <p className="text-xs text-slate-500">Nenhum barramento no diagrama.</p>
-              )}
-              {analise.barras.map((barra) => (
-                <div key={barra.id} className="flex items-center justify-between gap-2 rounded-md border border-slate-800 bg-slate-950/60 px-2.5 py-1.5">
-                  <div className="min-w-0">
-                    <p className="truncate font-mono text-[11px] font-semibold text-slate-200">{barra.codigo}</p>
-                    <p className="truncate text-[10px] text-slate-500">{barra.nome}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className={`font-mono text-sm font-bold tabular-nums ${barra.energizada ? "text-red-400" : "text-emerald-400"}`}>
-                      {barra.energizada ? `${barra.tensaoKv.toFixed(1).replace(".", ",")} kV` : "0,0 kV"}
-                    </p>
-                    <p className="text-[9px] uppercase tracking-wide text-slate-500">
-                      {barra.energizada ? "Energizado" : "Desenergizado"}
-                    </p>
-                  </div>
+          <section className="rounded-xl border border-blue-100 bg-white px-3 py-2.5 shadow-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5 shrink-0">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <p className="truncate text-sm font-bold text-slate-900">{nome || "Carregando..."}</p>
+                  <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700">
+                    Simulacao
+                  </span>
                 </div>
-              ))}
-            </div>
-
-            {analise.cargas.length > 0 && (
-              <div className="mt-3 border-t border-slate-800 pt-2">
-                <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">Cargas</p>
-                <div className="grid gap-1">
-                  {analise.cargas.map((carga) => (
-                    <div key={carga.id} className="flex items-center justify-between text-[11px]">
-                      <span className="font-mono text-slate-300">{carga.codigo}</span>
-                      <span className={carga.energizada ? "text-slate-300" : "text-emerald-400"}>
-                        {carga.energizada ? `${carga.correnteA} A` : "desenergizada"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <p className="mt-0.5 truncate text-[10px] text-slate-500">
+                  {fonte ? (
+                    <>Fonte <span className="font-mono font-semibold text-slate-700">{fonte.codigo}</span></>
+                  ) : (
+                    "Sem fonte"
+                  )}
+                  <span className="mx-1.5 text-slate-300">|</span>
+                  {usuario?.nome ?? "Operador"}
+                </p>
               </div>
-            )}
+              <div className="flex items-center gap-1">
+                <span className="mr-1 font-mono text-[11px] tabular-nums text-slate-500">
+                  {agora.toLocaleTimeString("pt-BR")}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/subestacoes/${idSubestacao}/unifilar`)}
+                  className="grid h-8 w-8 place-items-center rounded-md border border-slate-300 text-slate-500 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                  title="Voltar ao unifilar"
+                >
+                  <ArrowLeft size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={restaurar}
+                  disabled={!componentes.length}
+                  className="grid h-8 w-8 place-items-center rounded-md border border-slate-300 text-slate-500 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-40"
+                  title="Restaurar estado inicial"
+                >
+                  <RotateCcw size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVersao((v) => v + 1)}
+                  className="grid h-8 w-8 place-items-center rounded-md border border-slate-300 text-slate-500 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                  title="Atualizar diagrama"
+                >
+                  <RefreshCcw size={14} />
+                </button>
+              </div>
+            </div>
+            <p className="mt-2 border-t border-slate-100 pt-2 text-[10px] text-slate-400">
+              Clique em um equipamento no diagrama para supervisionar e manobrar.
+            </p>
           </section>
 
-
-          <section className="flex min-h-[180px] flex-1 flex-col rounded-xl border border-slate-800 bg-slate-900 p-3 text-slate-100 shadow-lg">
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400">
-                <AlertTriangle size={14} className="text-cyan-300" />
+          <section className="flex min-h-[180px] flex-1 flex-col overflow-hidden rounded-xl border border-blue-100 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-blue-100 bg-blue-50/70 px-3 py-2">
+              <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-blue-700">
+                <AlertTriangle size={14} className="text-blue-600" />
                 Eventos
               </h2>
-              <span className="text-[10px] text-slate-500">{eventos.length} registros</span>
+              <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
+                {eventos.length}
+              </span>
             </div>
-            <div className="max-h-[42vh] min-h-[120px] flex-1 space-y-1 overflow-y-auto pr-1 font-mono text-[10px] leading-relaxed">
-              {eventos.map((evento) => (
-                <p key={evento.id} className={classeSeveridade(evento.severidade)}>
-                  <span className="text-slate-500">[{evento.hora.toLocaleTimeString("pt-BR")}]</span>{" "}
-                  {evento.texto}
-                </p>
-              ))}
+            <div className="max-h-[42vh] min-h-[120px] flex-1 overflow-y-auto px-3">
+              <ul className="divide-y divide-blue-50">
+                {eventos.map((evento) => (
+                  <li key={evento.id} className="flex gap-2 py-2 transition hover:bg-blue-50/40">
+                    <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${classePonto(evento.severidade)}`} />
+                    <div className="min-w-0">
+                      <p className={`text-[11px] leading-snug ${classeSeveridade(evento.severidade)}`}>
+                        {evento.texto}
+                      </p>
+                      <p className="font-mono text-[9px] text-slate-500">
+                        {evento.hora.toLocaleTimeString("pt-BR")}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <p className="mt-2 border-t border-slate-800 pt-1.5 text-[9px] leading-relaxed text-slate-500">
+            <p className="border-t border-blue-50 bg-slate-50/60 px-3 py-2 text-[9px] leading-relaxed text-slate-500">
               Ambiente de simulacao. Nenhum comando e transmitido ao sistema supervisado.
             </p>
           </section>
@@ -545,14 +521,14 @@ export function SagePage() {
           className="fixed z-[90] w-[330px] max-w-[calc(100vw-24px)]"
           style={{ left: posicao.x, top: posicao.y }}
         >
-          <div className="overflow-hidden rounded-xl border border-cyan-500/30 bg-slate-900 text-slate-100 shadow-2xl ring-1 ring-black/30">
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
             <div
               onPointerDown={iniciarArraste}
-              className="flex cursor-move touch-none select-none items-center gap-2 border-b border-slate-800 bg-slate-800/80 px-3 py-2"
+              className="flex cursor-move touch-none select-none items-center gap-2 border-b border-slate-100 bg-slate-50 px-3 py-2"
               title="Arraste para reposicionar"
             >
-              <Move size={13} className="text-cyan-300" />
-              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-300">
+              <Move size={13} className="text-blue-600" />
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
                 Supervisao de equipamento
               </p>
               <button
@@ -562,7 +538,7 @@ export function SagePage() {
                   setComando(null);
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
-                className="ml-auto grid h-6 w-6 place-items-center rounded text-slate-400 hover:bg-slate-700 hover:text-white"
+                className="ml-auto grid h-6 w-6 place-items-center rounded text-slate-400 hover:bg-slate-200 hover:text-slate-700"
                 aria-label="Fechar janela"
                 title="Fechar"
               >
@@ -573,14 +549,14 @@ export function SagePage() {
             <div className="space-y-2 p-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-mono text-base font-bold text-white">{selecionado.codigo}</p>
-                  <p className="text-[11px] text-slate-400">{NOME_TIPO[selecionado.tipo] ?? selecionado.tipo}</p>
+                  <p className="font-mono text-base font-bold text-slate-900">{selecionado.codigo}</p>
+                  <p className="text-[11px] text-slate-500">{NOME_TIPO[selecionado.tipo] ?? selecionado.tipo}</p>
                 </div>
                 {ehOperavel(selecionado.tipo) && (
-                  <span className={`rounded px-2 py-0.5 text-[10px] font-bold ${
+                  <span className={`rounded border px-2 py-0.5 text-[10px] font-bold ${
                     estados[selecionado.id] === "ABERTO"
-                      ? "bg-emerald-500/15 text-emerald-300"
-                      : "bg-red-500/15 text-red-300"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                      : "border-red-200 bg-red-50 text-red-700"
                   }`}>
                     {estados[selecionado.id] === "ABERTO" ? "ABERTO" : "FECHADO"}
                   </span>
@@ -590,7 +566,7 @@ export function SagePage() {
               {selecionado.id_ativo != null && (
                 <Link
                   to={`/ativo/${selecionado.id_ativo}`}
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-300 hover:underline"
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:underline"
                 >
                   <ExternalLink size={12} />
                   Abrir ativo #{selecionado.id_ativo}
@@ -599,8 +575,8 @@ export function SagePage() {
 
               {ehOperavel(selecionado.tipo) ? (
                 <>
-                  <div className="rounded-md border border-slate-800 bg-slate-950/60 px-2.5 py-2 text-[11px] leading-relaxed text-slate-400">
-                    <span className="font-semibold text-slate-300">Intertravamento: </span>
+                  <div className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] leading-relaxed text-slate-600">
+                    <span className="font-semibold text-slate-700">Intertravamento: </span>
                     {previa ? previa.motivo : "Sem analise."}
                   </div>
 
@@ -610,7 +586,7 @@ export function SagePage() {
                         type="button"
                         onClick={() => setComando({ id: selecionado.id, novo: "ABERTO" })}
                         disabled={estados[selecionado.id] === "ABERTO"}
-                        className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md border border-emerald-600/50 bg-emerald-600/10 text-xs font-bold text-emerald-300 hover:bg-emerald-600/20 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 text-xs font-bold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Power size={13} />
                         Abrir
@@ -619,7 +595,7 @@ export function SagePage() {
                         type="button"
                         onClick={() => setComando({ id: selecionado.id, novo: "FECHADO" })}
                         disabled={estados[selecionado.id] === "FECHADO"}
-                        className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md border border-red-600/50 bg-red-600/10 text-xs font-bold text-red-300 hover:bg-red-600/20 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md border border-red-300 bg-red-50 text-xs font-bold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Power size={13} />
                         Fechar
@@ -628,22 +604,22 @@ export function SagePage() {
                   )}
 
                   {comando && alvoComando && (
-                    <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5">
-                      <p className="text-[11px] font-semibold text-amber-200">
+                    <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-2.5">
+                      <p className="text-[11px] font-semibold text-amber-800">
                         Confirmar {comando.novo === "ABERTO" ? "abertura" : "fechamento"} de {alvoComando.codigo}?
                       </p>
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() => executar(comando.id, comando.novo)}
-                          className="inline-flex h-7 flex-1 items-center justify-center rounded bg-amber-500 text-[11px] font-bold text-slate-950 hover:bg-amber-400"
+                          className="inline-flex h-7 flex-1 items-center justify-center rounded bg-amber-500 text-[11px] font-bold text-white hover:bg-amber-600"
                         >
                           Executar
                         </button>
                         <button
                           type="button"
                           onClick={() => setComando(null)}
-                          className="inline-flex h-7 flex-1 items-center justify-center rounded border border-slate-700 text-[11px] font-semibold text-slate-300 hover:bg-slate-800"
+                          className="inline-flex h-7 flex-1 items-center justify-center rounded border border-slate-300 bg-white text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
                         >
                           Cancelar
                         </button>
@@ -657,7 +633,7 @@ export function SagePage() {
                 </p>
               )}
 
-              <p className="border-t border-slate-800 pt-1.5 text-[9px] text-slate-500">
+              <p className="border-t border-slate-100 pt-1.5 text-[9px] text-slate-400">
                 Arraste pelo titulo para mover a janela.
               </p>
             </div>
