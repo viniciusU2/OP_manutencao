@@ -1,10 +1,10 @@
 /**
  * No customizado do React Flow para componentes do unifilar.
  *
- * Renderiza o simbodo SVG (rotacionado), rotudos (codigo, nome, vao) e
- * os Handles (terminais) de que as conexoes dependem. Os terminais
- * trocam de borda conforme a rotacao para acompanhar fisicamente as
- * pontas do condutor quando o equipamento gira.
+ * A rotacao troca as dimensoes da caixa ocupada (90/270 graus invertem
+ * largura e altura). Equipamentos giram o simbolo em torno do centro da
+ * caixa; barramentos sao redesenhados na orientacao vertical. Os
+ * terminais acompanham as bordas da caixa.
  */
 
 import { useEffect } from "react";
@@ -27,6 +27,16 @@ export type DadosComponente = {
 
 export type NoUnifilarType = Node<DadosComponente, "noUnifilar">;
 
+function rotacaoNormalizada(rotacao: number): number {
+  return (((rotacao % 360) + 360) % 360);
+}
+
+/** Dimensoes da caixa ocupada pelo componente apos a rotacao. */
+export function dimensoesRotacionadas(largura: number, altura: number, rotacao: number): { w: number; h: number } {
+  const vertical = rotacaoNormalizada(rotacao) % 180 === 90;
+  return vertical ? { w: altura, h: largura } : { w: largura, h: altura };
+}
+
 function bordasTerminais(rotacao: number): [Position, Position] {
   const base: Record<number, [Position, Position]> = {
     0: [Position.Top, Position.Bottom],
@@ -34,45 +44,48 @@ function bordasTerminais(rotacao: number): [Position, Position] {
     180: [Position.Bottom, Position.Top],
     270: [Position.Left, Position.Right],
   };
-  return base[(((rotacao % 360) + 360) % 360) / 90] ?? base[0];
+  return base[rotacaoNormalizada(rotacao) / 90] ?? base[0];
 }
 
+/** Bordas de B1..B4 na orientacao atual (horizontal ou vertical). */
 function bordasBarramento(rotacao: number): [Position, Position, Position, Position] {
-  const base90 = [Position.Right, Position.Left, Position.Bottom, Position.Top] as [Position, Position, Position, Position];
-  const normal: [Position, Position, Position, Position] = [
-    Position.Left,
-    Position.Right,
-    Position.Top,
-    Position.Bottom,
-  ];
-  return Math.abs((rotacao % 180)) === 90 ? base90 : normal;
+  const vertical = rotacaoNormalizada(rotacao) % 180 === 90;
+  return vertical
+    ? [Position.Top, Position.Bottom, Position.Right, Position.Left]
+    : [Position.Left, Position.Right, Position.Top, Position.Bottom];
 }
+
+const TIPOS_BARRAMENTO = new Set(["BARRAMENTO", "CONEXAO", "ETIQUETA_VAO"]);
 
 export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
   const definicao = tipo(data.tipo);
-  const updateNodeInternals = useUpdateNodeInternals();
+  const atualizarInternos = useUpdateNodeInternals();
   const nodeId = useNodeId();
 
   useEffect(() => {
-    if (nodeId) {
-      updateNodeInternals([nodeId]);
-    }
-  }, [nodeId, updateNodeInternals]);
+    if (nodeId) atualizarInternos([nodeId]);
+  }, [nodeId, atualizarInternos, data.rotacao, data.largura, data.altura]);
 
   const identificador = data.codigo?.trim();
   const etiquetaVao = data.vao?.trim();
+  const { w, h } = dimensoesRotacionadas(data.largura, data.altura, data.rotacao);
+  const contorno = selected ? "rounded-md ring-2 ring-blue-600" : "";
+  const vertical = rotacaoNormalizada(data.rotacao) % 180 === 90;
 
-  if (definicao.codigo === "BARRAMENTO" || definicao.codigo === "CONEXAO" || definicao.codigo === "ETIQUETA_VAO") {
+  if (TIPOS_BARRAMENTO.has(definicao.codigo)) {
     const [esq, dir, topo, base] = bordasBarramento(data.rotacao);
     const posicoes = [esq, dir, topo, base];
     return (
-      <div
-        className={`relative flex items-center justify-center ${selected ? "rounded ring-2 ring-blue-600" : ""}`}
-        style={{ width: data.largura, height: data.altura }}
-      >
-        <SimboloUnifilar tipo={definicao.codigo} largura={data.largura} altura={data.altura} />
+      <div className={`relative ${contorno}`} style={{ width: w, height: h }}>
+        <SimboloUnifilar tipo={definicao.codigo} largura={w} altura={h} />
         {identificador && definicao.codigo !== "ETIQUETA_VAO" ? (
-          <span className="absolute left-2 top-1/2 -translate-y-1/2 whitespace-nowrap text-[10px] font-semibold text-slate-500">
+          <span
+            className={
+              vertical
+                ? "absolute left-full top-0 ml-1 whitespace-nowrap text-[10px] font-semibold text-slate-500"
+                : "absolute left-2 top-1/2 -translate-y-1/2 whitespace-nowrap text-[10px] font-semibold text-slate-500"
+            }
+          >
             {identificador}
           </span>
         ) : null}
@@ -96,15 +109,22 @@ export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
   const [t1, t2] = bordasTerminais(data.rotacao);
 
   return (
-    <div
-      className={`relative flex flex-col items-center ${selected ? "rounded-md ring-2 ring-blue-600" : ""}`}
-      style={{ width: data.largura, height: data.altura }}
-    >
-      <Handle id="T1" type="source" position={t1} className={CLASSE_TERMINAL} aria-label={`topo de ${identificador || "equipamento"}`} isConnectable isConnectableStart isConnectableEnd />
-      <Handle id="T2" type="source" position={t2} className={CLASSE_TERMINAL} aria-label={`base de ${identificador || "equipamento"}`} isConnectable isConnectableStart isConnectableEnd />
-
-      <div style={{ transform: `rotate(${data.rotacao}deg)` }}>
-        <SimboloUnifilar tipo={definicao.codigo} largura={data.largura} altura={data.altura} />
+    <div className={`relative flex flex-col items-center ${contorno}`} style={{ width: w }}>
+      <div className="relative" style={{ width: w, height: h }}>
+        <Handle id="T1" type="source" position={t1} className={CLASSE_TERMINAL} aria-label={`topo de ${identificador || "equipamento"}`} isConnectable isConnectableStart isConnectableEnd />
+        <Handle id="T2" type="source" position={t2} className={CLASSE_TERMINAL} aria-label={`base de ${identificador || "equipamento"}`} isConnectable isConnectableStart isConnectableEnd />
+        <div
+          className="absolute left-1/2 top-1/2"
+          style={{
+            width: data.largura,
+            height: data.altura,
+            marginLeft: -data.largura / 2,
+            marginTop: -data.altura / 2,
+            transform: `rotate(${rotacaoNormalizada(data.rotacao)}deg)`,
+          }}
+        >
+          <SimboloUnifilar tipo={definicao.codigo} largura={data.largura} altura={data.altura} />
+        </div>
       </div>
 
       {identificador ? (

@@ -26,7 +26,7 @@ import { Input } from "../ui/input";
 import api from "../../api/api";
 import { CATALOGO, CATEGORIAS, tipo as buscarTipo } from "./catalogo";
 import { SimboloUnifilar } from "./SimboloUnifilar";
-import { NoUnifilar, type NoUnifilarType } from "./NoUnifilar";
+import { NoUnifilar, dimensoesRotacionadas, type NoUnifilarType } from "./NoUnifilar";
 
 const nodeTypes = { noUnifilar: NoUnifilar } as const;
 const FORMATO = "diagrama-unifilar-v1";
@@ -39,6 +39,8 @@ const PREFIXO: Record<string, string> = {
   PARA_RAIOS: "PR", REATOR: "REA", TRANSFORMADOR: "TR",
   CONEXAO: "CX", ETIQUETA_VAO: "VAO",
 };
+
+const rotacaoNormalizada = (r: number) => ((r % 360) + 360) % 360;
 
 const ROTULO: Record<string, string> = {
   estrutura: "Estrutura", equipamento: "Equipamentos",
@@ -89,8 +91,11 @@ function normalizarSnapshot(valor: Partial<Snapshot> | null | undefined): Snapsh
     return {
       ...node,
       type: "noUnifilar" as const,
-      width: node.width ?? node.data?.largura ?? definicao.largura,
-      height: node.height ?? node.data?.altura ?? definicao.altura,
+      ...dimensoesRotacionadas(
+        node.data?.largura ?? definicao.largura,
+        node.data?.altura ?? definicao.altura,
+        node.data?.rotacao ?? 0,
+      ),
       data: {
         ...node.data,
         codigo: node.data?.codigo ?? "",
@@ -426,7 +431,8 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
     if (!sel) return;
     registrar();
     const nova = (((sel.data.rotacao ?? 0) + 90) % 360);
-    setNodes((at) => at.map((n) => (n.id === sel.id ? { ...n, data: { ...n.data, rotacao: nova } } : n)));
+    const { w, h } = dimensoesRotacionadas(sel.data.largura, sel.data.altura, nova);
+    setNodes((at) => at.map((n) => (n.id === sel.id ? { ...n, width: w, height: h, data: { ...n.data, rotacao: nova } } : n)));
     atualizarInternos(sel.id);
   }, [atualizarInternos, registrar, sel, setNodes]);
 
@@ -627,6 +633,9 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                 <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Componente</p>
                 <p className="text-sm font-semibold text-slate-900">{defSel.nome}</p>
                 <p className="text-[10px] text-slate-500">ID interno {sel.id.slice(0, 10)}</p>
+                <Button variant="outline" size="sm" className="mt-2 h-7 px-2 text-xs" onClick={rotacionar} disabled={!editar}>
+                  <RotateCw className="mr-1 h-3.5 w-3.5" />Girar 90° (atual: {rotacaoNormalizada(sel.data.rotacao)}°)
+                </Button>
               </div>
               <label className="grid gap-1 text-[11px] font-semibold text-slate-700">
                 Código / identificação
