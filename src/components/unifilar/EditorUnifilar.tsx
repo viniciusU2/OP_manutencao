@@ -157,10 +157,19 @@ function proxCodigo(nodes: NoUnifilarType[], tipoCod: string): string {
   return `${p}${String(n).padStart(2, "0")}`;
 }
 
+/** Recuo de saida limitado pelo espaco livre ate o outro terminal. */
+function recuoSeguro(origem: Ponto, direcao: Ponto, alvo: Ponto): number {
+  const distancia = direcao.x !== 0 ? Math.abs(alvo.x - origem.x) : Math.abs(alvo.y - origem.y);
+  // Metade do vao: as duas hastes se encontram sem uma passar por cima da outra.
+  return Math.max(1, Math.min(RECUO, distancia / 2));
+}
+
 /** Rota ortogonal entre dois terminais, saindo de cada um na sua direcao. */
 function rotaOrtogonal(p1: Ponto, d1: Ponto, p2: Ponto, d2: Ponto): Ponto[] {
-  const a = { x: p1.x + d1.x * RECUO, y: p1.y + d1.y * RECUO };
-  const b = { x: p2.x + d2.x * RECUO, y: p2.y + d2.y * RECUO };
+  // Terminais praticamente no mesmo ponto: liga direto, sem desvio.
+  if (Math.hypot(p2.x - p1.x, p2.y - p1.y) < 3) return [p1, p2];
+  const a = { x: p1.x + d1.x * recuoSeguro(p1, d1, p2), y: p1.y + d1.y * recuoSeguro(p1, d1, p2) };
+  const b = { x: p2.x + d2.x * recuoSeguro(p2, d2, p1), y: p2.y + d2.y * recuoSeguro(p2, d2, p1) };
   const verticalSaida = d1.x === 0;
   const verticalChegada = d2.x === 0;
   if (verticalSaida && verticalChegada) {
@@ -652,11 +661,23 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
               {linhas.map((linha) => {
                 const selecionada = linha.id === idLigSel;
                 const destacada = selecionada || linha.id === idLigHover;
+                const cor = selecionada ? "#dc2626" : COR_LIGACAO;
+                const inicio = linha.pontos[0];
+                const fim = linha.pontos[linha.pontos.length - 1];
+                // Terminais praticamente no mesmo ponto: um unico ponto de conexao.
+                const coincidentes = Math.hypot(fim.x - inicio.x, fim.y - inicio.y) < 10;
+                const coberto = (p: Ponto) => nodes.some((n) => {
+                  const w = n.width ?? n.data.largura;
+                  const h = n.height ?? n.data.altura;
+                  return p.x > n.position.x && p.x < n.position.x + w &&
+                    p.y > n.position.y && p.y < n.position.y + h;
+                });
                 return (
                   <g key={linha.id}>
                     {editar && pronto && (
                       <path
                         d={caminho(linha.pontos)}
+                        data-ligacao={linha.id}
                         fill="none"
                         stroke="transparent"
                         strokeWidth={Math.min(140, 16 / Math.max(vista.zoom, 0.08))}
@@ -674,6 +695,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                     )}
                     <path
                       d={caminho(linha.pontos)}
+                      data-ligacao={linha.id}
                       fill="none"
                       stroke={selecionada ? "#dc2626" : destacada ? "#2563eb" : COR_LIGACAO}
                       strokeWidth={selecionada ? 3.5 : destacada ? 3 : 2.5}
@@ -681,8 +703,19 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                       strokeLinecap="round"
                       style={{ pointerEvents: "none" }}
                     />
-                    <circle cx={linha.pontos[0].x} cy={linha.pontos[0].y} r={3} fill={selecionada ? "#dc2626" : COR_LIGACAO} style={{ pointerEvents: "none" }} />
-                    <circle cx={linha.pontos[linha.pontos.length - 1].x} cy={linha.pontos[linha.pontos.length - 1].y} r={3} fill={selecionada ? "#dc2626" : COR_LIGACAO} style={{ pointerEvents: "none" }} />
+                    {coincidentes ? (
+                      <circle cx={(inicio.x + fim.x) / 2} cy={(inicio.y + fim.y) / 2} r={3}
+                        fill={cor} style={{ pointerEvents: "none" }} />
+                    ) : (
+                      <>
+                        {!coberto(inicio) && (
+                          <circle cx={inicio.x} cy={inicio.y} r={3} fill={cor} style={{ pointerEvents: "none" }} />
+                        )}
+                        {!coberto(fim) && (
+                          <circle cx={fim.x} cy={fim.y} r={3} fill={cor} style={{ pointerEvents: "none" }} />
+                        )}
+                      </>
+                    )}
                   </g>
                 );
               })}
