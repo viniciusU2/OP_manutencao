@@ -1217,7 +1217,7 @@ export function Dashboard() {
 
           <UnifilarRodape>
             <span>
-              Desenho real do diagrama · arraste para navegar · clique em um equipamento com selo azul para abrir o ativo
+              Desenho real ampliado no topo do arranjo · arraste para explorar · use “Ver tudo” para o diagrama completo · clique no equipamento para abrir o ativo
             </span>
             <button
               type="button"

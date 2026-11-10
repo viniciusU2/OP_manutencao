@@ -18,7 +18,7 @@ import type { Connection, Edge, NodeChange, Viewport } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { toast } from "sonner";
 import {
-  Copy, ExternalLink, Eye, Loader2, Maximize2, Pencil, Redo2, RotateCw, Save, Trash2, Undo2, Unlink,
+  Copy, ExternalLink, Eye, Loader2, Maximize2, Minus, Pencil, Plus, Redo2, RotateCw, Save, Trash2, Undo2, Unlink,
 } from "lucide-react";
 
 import { Button } from "../ui/button";
@@ -262,7 +262,7 @@ function medirLigacoes(wrap: HTMLElement, arestas: Edge[], nos: NoUnifilarType[]
 function Canvas({ idSubestacao, nomeSubestacao, podeEditar, compacto = false }: {
   idSubestacao: number; nomeSubestacao: string; podeEditar: boolean; compacto?: boolean;
 }) {
-  const { screenToFlowPosition, setViewport } = useReactFlow();
+  const { screenToFlowPosition, setViewport, zoomIn, zoomOut } = useReactFlow();
   const atualizarInternos = useUpdateNodeInternals();
   const navigate = useNavigate();
 
@@ -288,15 +288,10 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar, compacto = false }: 
 
   useEffect(() => setModoEdicao(podeEditar && !compacto), [podeEditar, compacto]);
 
-  /** Enquadra todo o diagrama na area visivel (independe da medicao interna do React Flow). */
-  const ajustarVista = useCallback((folgaTela = 16) => {
-    const el = areaRef.current;
+  /** Limites do desenho: caixas dos nos + folga dos rotulos a direita. */
+  const limites = useCallback(() => {
     const atuais = nodesRef.current;
-    if (!el || !atuais.length) return;
-    const larguraTela = el.clientWidth;
-    const alturaTela = el.clientHeight;
-    if (larguraTela < 20 || alturaTela < 20) return;
-
+    if (!atuais.length) return null;
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const n of atuais) {
       const w = n.width ?? n.data.largura ?? 0;
@@ -306,27 +301,60 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar, compacto = false }: 
       maxX = Math.max(maxX, n.position.x + w);
       maxY = Math.max(maxY, n.position.y + h);
     }
-    // Rotulos ficam fora da caixa do no (a direita), por isso a folga extra.
     maxX += 60;
     maxY += 12;
-    const larg = Math.max(1, maxX - minX);
-    const alt = Math.max(1, maxY - minY);
+    return { minX, minY, maxX, maxY, larg: Math.max(1, maxX - minX), alt: Math.max(1, maxY - minY) };
+  }, []);
+
+  /** Enquadra todo o diagrama na area visivel (independe da medicao interna do React Flow). */
+  const enquadrarTudo = useCallback((folgaTela = 16) => {
+    const el = areaRef.current;
+    const b = limites();
+    if (!el || !b) return;
+    const larguraTela = el.clientWidth;
+    const alturaTela = el.clientHeight;
+    if (larguraTela < 20 || alturaTela < 20) return;
+
     const zoom = Math.max(0.05, Math.min(2.5, Math.min(
-      (larguraTela - folgaTela * 2) / larg,
-      (alturaTela - folgaTela * 2) / alt,
+      (larguraTela - folgaTela * 2) / b.larg,
+      (alturaTela - folgaTela * 2) / b.alt,
     )));
     void setViewport({
-      x: (larguraTela - larg * zoom) / 2 - minX * zoom,
-      y: (alturaTela - alt * zoom) / 2 - minY * zoom,
+      x: (larguraTela - b.larg * zoom) / 2 - b.minX * zoom,
+      y: (alturaTela - b.alt * zoom) / 2 - b.minY * zoom,
       zoom,
     }, { duration: 0 });
-  }, [setViewport]);
+  }, [limites, setViewport]);
+
+  /**
+   * Padrao do cartao: enquadra pela largura e ancora no topo, deixando os
+   * equipamentos ampliados e legiveis (o restante do arranjo fica para baixo).
+   */
+  const enquadrarTopo = useCallback((folgaTela = 14) => {
+    const el = areaRef.current;
+    const b = limites();
+    if (!el || !b) return;
+    const larguraTela = el.clientWidth;
+    const alturaTela = el.clientHeight;
+    if (larguraTela < 20 || alturaTela < 20) return;
+
+    const zoomPorLargura = (larguraTela - folgaTela * 2) / b.larg;
+    const zoom = Math.max(0.05, Math.min(1.05, zoomPorLargura, 2.5));
+    void setViewport({
+      x: (larguraTela - b.larg * zoom) / 2 - b.minX * zoom,
+      y: folgaTela - b.minY * zoom,
+      zoom,
+    }, { duration: 0 });
+  }, [limites, setViewport]);
 
   useEffect(() => {
     if (!pronto) return;
-    const t = window.setTimeout(() => ajustarVista(compacto ? 10 : 24), compacto ? 120 : 250);
+    const t = window.setTimeout(
+      () => (compacto ? enquadrarTopo() : enquadrarTudo(24)),
+      compacto ? 120 : 250,
+    );
     return () => clearTimeout(t);
-  }, [pronto, ajustarVista, compacto]);
+  }, [pronto, enquadrarTudo, enquadrarTopo, compacto]);
 
   // No cartao o tamanho muda com o layout/responsividade: reenquadra ao redimensionar.
   useEffect(() => {
@@ -338,11 +366,11 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar, compacto = false }: 
       const chave = `${el.clientWidth}x${el.clientHeight}`;
       if (chave === ultima) return;
       ultima = chave;
-      ajustarVista(10);
+      enquadrarTopo();
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, [ajustarVista, compacto, pronto]);
+  }, [compacto, enquadrarTopo, pronto]);
 
   const atualizarLinhas = useCallback(() => {
     if (areaRef.current) setLinhas(medirLigacoes(areaRef.current, edges, nodes));
@@ -637,7 +665,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar, compacto = false }: 
         <Button variant="ghost" size="sm" className="h-7 text-red-600" onClick={excluir} disabled={!editar || (!sel && !idLigSel)}
           title={idLigSel ? "Excluir ligação (Del)" : "Excluir componente (Del)"}><Trash2 className="h-4 w-4" /></Button>
         <span className="mx-1 h-5 w-px bg-slate-200" />
-        <Button variant="ghost" size="sm" className="h-7" onClick={() => ajustarVista(20)} title="Ajustar visualização"><Maximize2 className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="sm" className="h-7" onClick={() => enquadrarTudo(20)} title="Ajustar visualização"><Maximize2 className="h-4 w-4" /></Button>
         <div className="ml-auto flex items-center gap-1">
           {!editar && (
             <span className="mr-1 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">modo leitura</span>
@@ -808,6 +836,39 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar, compacto = false }: 
               <p className="text-xs font-medium text-slate-500">
                 Nenhum componente neste diagrama ainda.
               </p>
+            </div>
+          )}
+          {compacto && pronto && nodes.length > 0 && (
+            <div className="absolute bottom-2 right-2 z-[7] flex items-center gap-0.5 rounded-lg border border-slate-200 bg-white/95 p-1 shadow-sm">
+              <button
+                type="button"
+                onClick={() => void zoomOut({ duration: 0 })}
+                className="grid h-7 w-7 place-items-center rounded text-slate-600 hover:bg-slate-100"
+                title="Diminuir zoom"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <span className="min-w-10 text-center text-[10px] font-semibold tabular-nums text-slate-500">
+                {Math.round(vista.zoom * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={() => void zoomIn({ duration: 0 })}
+                className="grid h-7 w-7 place-items-center rounded text-slate-600 hover:bg-slate-100"
+                title="Aumentar zoom"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+              <span className="mx-0.5 h-4 w-px bg-slate-200" />
+              <button
+                type="button"
+                onClick={() => enquadrarTudo(12)}
+                className="flex h-7 items-center gap-1 rounded px-1.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-100"
+                title="Ver o diagrama inteiro"
+              >
+                <Maximize2 className="h-3.5 w-3.5" />
+                Ver tudo
+              </button>
             </div>
           )}
         </div>
