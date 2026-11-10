@@ -18,7 +18,7 @@ import type { Connection, Edge, NodeChange, Viewport } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { toast } from "sonner";
 import {
-  Copy, Eye, Maximize2, Pencil, Redo2, RotateCw, Save, Trash2, Undo2,
+  Copy, Eye, Maximize2, Pencil, Redo2, RotateCw, Save, Trash2, Undo2, Unlink,
 } from "lucide-react";
 
 import { Button } from "../ui/button";
@@ -262,6 +262,8 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
   const [edges, setEdges] = useEdgesState(inicial.edges);
   const [modoEdicao, setModoEdicao] = useState(podeEditar);
   const [idSel, setIdSel] = useState<string | null>(null);
+  const [idLigSel, setIdLigSel] = useState<string | null>(null);
+  const [idLigHover, setIdLigHover] = useState<string | null>(null);
   const [pronto, setPronto] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [ativos, setAtivos] = useState<AtivoAssociavel[]>([]);
@@ -426,6 +428,11 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
 
   const sel = useMemo(() => nodes.find((n) => n.id === idSel) ?? null, [idSel, nodes]);
   const defSel = sel ? buscarTipo(sel.data.tipo) : null;
+  const ligSel = useMemo(() => edges.find((e) => e.id === idLigSel) ?? null, [edges, idLigSel]);
+  const rotuloDe = useCallback((id: string) => {
+    const no = nodes.find((n) => n.id === id);
+    return no?.data.codigo || no?.data.nome || id;
+  }, [nodes]);
 
   const rotacionar = useCallback(() => {
     if (!sel) return;
@@ -450,14 +457,35 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
     setIdSel(copia.id);
   }, [nodes, registrar, sel, setNodes]);
 
+  const removerLigacao = useCallback((id: string) => {
+    registrar();
+    setEdges((at) => at.filter((e) => e.id !== id));
+    setIdLigSel(null);
+  }, [registrar, setEdges]);
+
+  const removerLigacoesDoComponente = useCallback(() => {
+    if (!sel) return;
+    const alvo = edges.filter((e) => e.source === sel.id || e.target === sel.id);
+    if (!alvo.length) return;
+    const nome = sel.data.codigo || sel.data.nome || sel.id;
+    if (!window.confirm(alvo.length > 1
+      ? `Remover as ${alvo.length} ligações de ${nome}?`
+      : `Remover a ligação de ${nome}?`)) return;
+    registrar();
+    const ids = new Set(alvo.map((e) => e.id));
+    setEdges((at) => at.filter((e) => !ids.has(e.id)));
+    setIdLigSel(null);
+  }, [edges, registrar, sel, setEdges]);
+
   const excluir = useCallback(() => {
+    if (idLigSel) { removerLigacao(idLigSel); return; }
     if (!sel) return;
     registrar();
     const lig = new Set(edges.filter((e) => e.source === sel.id || e.target === sel.id).map((e) => e.id));
     setEdges((at) => at.filter((e) => !lig.has(e.id)));
     setNodes((at) => at.filter((n) => n.id !== sel.id));
     setIdSel(null);
-  }, [edges, registrar, sel, setEdges, setNodes]);
+  }, [edges, idLigSel, registrar, removerLigacao, sel, setEdges, setNodes]);
 
   const grau = useCallback((no: string, term: string | null) =>
     edges.filter((e) => (e.source === no && e.sourceHandle === term) || (e.target === no && e.targetHandle === term)).length,
@@ -514,11 +542,20 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
   const tecla = useCallback((e: React.KeyboardEvent) => {
     if (!editar) return;
     const ctrl = e.ctrlKey || e.metaKey;
+    const alvo = e.target as HTMLElement | null;
+    const digitando = !!alvo && (
+      alvo.tagName === "INPUT" || alvo.tagName === "TEXTAREA" ||
+      alvo.tagName === "SELECT" || alvo.isContentEditable
+    );
+    if (digitando && !ctrl) return;
     if (ctrl && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? refazer() : desfazer(); }
     else if (ctrl && e.key.toLowerCase() === "s") { e.preventDefault(); salvarAgora(); }
     else if (ctrl && e.key.toLowerCase() === "d") { e.preventDefault(); duplicar(); }
+    else if ((e.key === "Delete" || e.key === "Backspace") && idLigSel) {
+      e.preventDefault(); removerLigacao(idLigSel);
+    }
     else if (e.key === "r" && !ctrl && sel) { rotacionar(); }
-  }, [duplicar, desfazer, editar, refazer, rotacionar, sel]);
+  }, [duplicar, desfazer, editar, idLigSel, refazer, removerLigacao, rotacionar, sel]);
 
   return (
     <div className="flex h-full min-h-0 flex-col" tabIndex={-1} onKeyDown={tecla}>
@@ -535,7 +572,8 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
         <span className="mx-1 h-5 w-px bg-slate-200" />
         <Button variant="ghost" size="sm" className="h-7" onClick={rotacionar} disabled={!editar || !sel} title="Rotacionar (R)"><RotateCw className="h-4 w-4" /></Button>
         <Button variant="ghost" size="sm" className="h-7" onClick={duplicar} disabled={!editar || !sel} title="Duplicar (Ctrl+D)"><Copy className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="sm" className="h-7 text-red-600" onClick={excluir} disabled={!editar || !sel} title="Excluir (Del)"><Trash2 className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="sm" className="h-7 text-red-600" onClick={excluir} disabled={!editar || (!sel && !idLigSel)}
+          title={idLigSel ? "Excluir ligação (Del)" : "Excluir componente (Del)"}><Trash2 className="h-4 w-4" /></Button>
         <span className="mx-1 h-5 w-px bg-slate-200" />
         <Button variant="ghost" size="sm" className="h-7" onClick={() => fitView({ padding: 0.2, duration: 300 })} title="Ajustar visualização"><Maximize2 className="h-4 w-4" /></Button>
         <div className="ml-auto flex items-center gap-1">
@@ -544,7 +582,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
           )}
           {editar && (
             <span className="mr-1 hidden rounded bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 sm:inline">
-              Dica: arraste de um ponto azul (terminal) até outro
+              Dica: arraste entre terminais para ligar; clique na linha para remover
             </span>
           )}
           {podeEditar && modoEdicao && (
@@ -590,8 +628,8 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
             onNodesChange={mudarNos}
             onConnect={onConnect}
             onMove={(_, v) => setVista(v)}
-            onNodeClick={(_, n) => setIdSel(n.id)}
-            onPaneClick={() => setIdSel(null)}
+            onNodeClick={(_, n) => { setIdSel(n.id); setIdLigSel(null); }}
+            onPaneClick={() => { setIdSel(null); setIdLigSel(null); }}
             nodesConnectable={editar && pronto}
             nodesDraggable={editar && pronto}
             connectionMode={ConnectionMode.Loose}
@@ -611,20 +649,72 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
           </ReactFlow>
           <svg className="pointer-events-none absolute inset-0 z-[5] h-full w-full overflow-visible">
             <g transform={`translate(${vista.x} ${vista.y}) scale(${vista.zoom})`}>
-              {linhas.map((linha) => (
-                <g key={linha.id}>
-                  <path d={caminho(linha.pontos)} fill="none" stroke={COR_LIGACAO} strokeWidth={2.5}
-                    strokeLinejoin="round" strokeLinecap="round" />
-                  <circle cx={linha.pontos[0].x} cy={linha.pontos[0].y} r={3} fill={COR_LIGACAO} />
-                  <circle cx={linha.pontos[linha.pontos.length - 1].x} cy={linha.pontos[linha.pontos.length - 1].y} r={3} fill={COR_LIGACAO} />
-                </g>
-              ))}
+              {linhas.map((linha) => {
+                const selecionada = linha.id === idLigSel;
+                const destacada = selecionada || linha.id === idLigHover;
+                return (
+                  <g key={linha.id}>
+                    {editar && pronto && (
+                      <path
+                        d={caminho(linha.pontos)}
+                        fill="none"
+                        stroke="transparent"
+                        strokeWidth={Math.min(140, 16 / Math.max(vista.zoom, 0.08))}
+                        style={{ pointerEvents: "stroke", cursor: "pointer" }}
+                        onMouseEnter={() => setIdLigHover(linha.id)}
+                        onMouseLeave={() => setIdLigHover((atual) => (atual === linha.id ? null : atual))}
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          setIdLigSel(linha.id);
+                          setIdSel(null);
+                        }}
+                      >
+                        <title>Clique para selecionar a ligação</title>
+                      </path>
+                    )}
+                    <path
+                      d={caminho(linha.pontos)}
+                      fill="none"
+                      stroke={selecionada ? "#dc2626" : destacada ? "#2563eb" : COR_LIGACAO}
+                      strokeWidth={selecionada ? 3.5 : destacada ? 3 : 2.5}
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                      style={{ pointerEvents: "none" }}
+                    />
+                    <circle cx={linha.pontos[0].x} cy={linha.pontos[0].y} r={3} fill={selecionada ? "#dc2626" : COR_LIGACAO} style={{ pointerEvents: "none" }} />
+                    <circle cx={linha.pontos[linha.pontos.length - 1].x} cy={linha.pontos[linha.pontos.length - 1].y} r={3} fill={selecionada ? "#dc2626" : COR_LIGACAO} style={{ pointerEvents: "none" }} />
+                  </g>
+                );
+              })}
             </g>
           </svg>
         </div>
 
         <aside className="w-56 shrink-0 overflow-y-auto border-l bg-white p-3">
-          {!sel && (
+          {ligSel && (
+            <div className="grid gap-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Ligação</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-slate-800">
+                  <strong>{rotuloDe(ligSel.source)}</strong>
+                  <span className="text-slate-400"> ({ligSel.sourceHandle})</span>
+                  <span className="mx-1 text-slate-400">→</span>
+                  <strong>{rotuloDe(ligSel.target)}</strong>
+                  <span className="text-slate-400"> ({ligSel.targetHandle})</span>
+                </p>
+                <p className="mt-1 text-[10px] text-slate-500">
+                  Clique em outra linha para trocar a seleção. Pressione Delete para remover.
+                </p>
+              </div>
+              <Button variant="destructive" size="sm" className="h-8 text-xs" onClick={() => removerLigacao(ligSel.id)} disabled={!editar}>
+                <Unlink className="mr-1 h-3.5 w-3.5" />Excluir ligação
+              </Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setIdLigSel(null)}>
+                Cancelar seleção
+              </Button>
+            </div>
+          )}
+          {!sel && !ligSel && (
             <p className="text-xs text-slate-500">
               {editar ? "Selecione um componente ou insira um novo pela biblioteca." : "Clique em um componente para ver suas informações."}
             </p>
@@ -684,6 +774,12 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
               <div className="text-[11px] text-slate-600">
                 <p><strong className="text-slate-700">Ligações:</strong>{" "}
                   {edges.filter((e) => e.source === sel.id || e.target === sel.id).length}</p>
+                <Button variant="outline" size="sm" className="mt-2 h-7 w-full px-2 text-[11px] text-red-600"
+                  onClick={removerLigacoesDoComponente}
+                  disabled={!editar || !edges.some((e) => e.source === sel.id || e.target === sel.id)}
+                  title="Remove todas as ligações deste componente">
+                  <Unlink className="mr-1 h-3.5 w-3.5" />Excluir as ligações
+                </Button>
               </div>
             </div>
           )}
