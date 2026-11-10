@@ -1,15 +1,12 @@
-﻿/**
- * EditorUnifilar â€” Etapa 1 (editor gráfico) sobre React Flow.
- * Biblioteca lateral + canvas + painel de propriedades.
- * Persistência: localStorage por subestação (banco na Etapa 2).
- * Modo: navegação (leitura) é o padrão; edição exige podeEditar.
+/**
+ * EditorUnifilar â€” Etapa 1 (editor grÃ¡fico) sobre React Flow.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Background, BackgroundVariant, ConnectionMode, Controls,
-  addEdge, applyEdgeChanges, applyNodeChanges, ReactFlow, ReactFlowProvider,
+  addEdge, applyNodeChanges, ReactFlow, ReactFlowProvider,
   useEdgesState, useNodesState, useReactFlow, useUpdateNodeInternals,
 } from "@xyflow/react";
 import type { Connection, Edge, NodeChange } from "@xyflow/react";
@@ -54,9 +51,7 @@ type AtivoAssociavel = {
 };
 const ESTILO = { strokeWidth: 3, stroke: "#1e3a8a" } as const;
 
-/** id unico seguro para contextos http (crypto.randomUUID exige https). */
 function idUnico() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
-
 function chave(idSubes: number) { return `unifilar:diagrama:${idSubes}`; }
 
 function salvarLocal(s: Snapshot, idSubes: number, nome: string) {
@@ -71,9 +66,6 @@ function carregarLocal(idSubes: number): Snapshot | null {
     if (!cru) return null;
     const d = JSON.parse(cru) as Snapshot & { formato?: string };
     if (d.formato === FORMATO && Array.isArray(d.nodes)) {
-      // descarta arestas legadas de versao com ponta indefinida ou no
-      // inexistente (compatibilidade com rascunhos salvos antes do
-      // modo Loose): ligacao sem terminal definido nao e confiavel
       const ids = new Set(d.nodes.map((n) => n.id));
       const boas = d.edges.filter(
         (e) =>
@@ -85,7 +77,7 @@ function carregarLocal(idSubes: number): Snapshot | null {
       );
       return { nodes: d.nodes, edges: boas };
     }
-  } catch { /* corrompido: vazio */ }
+  } catch { /* corrompido */ }
   return null;
 }
 
@@ -95,6 +87,8 @@ function normalizarSnapshot(valor: Partial<Snapshot> | null | undefined): Snapsh
     return {
       ...node,
       type: "noUnifilar" as const,
+      width: node.width ?? node.data?.largura ?? definicao.largura,
+      height: node.height ?? node.data?.altura ?? definicao.altura,
       data: {
         ...node.data,
         codigo: node.data?.codigo ?? "",
@@ -102,29 +96,26 @@ function normalizarSnapshot(valor: Partial<Snapshot> | null | undefined): Snapsh
         vao: node.data?.vao ?? "",
         rotacao: node.data?.rotacao ?? 0,
         largura: node.data?.largura ?? definicao.largura,
-        altura: node.data?.tipo === "REATOR" && node.data?.altura === 80
-          ? definicao.altura
-          : node.data?.altura ?? definicao.altura,
+        altura: node.data?.altura ?? definicao.altura,
       },
     };
   }) : [];
+  const ids = new Set(nodes.map((node) => node.id));
   const edges = Array.isArray(valor?.edges) ? valor.edges
     .filter((edge) => {
-      const nodes = Array.isArray(valor?.nodes) ? valor.nodes : [];
-      const ids = new Set(nodes.map((node) => node.id));
       return (
         ids.has(edge.source) &&
         ids.has(edge.target) &&
         edge.source !== edge.target &&
         typeof edge.sourceHandle === "string" &&
         typeof edge.targetHandle === "string" &&
-        edge.sourceHandle.length > 0 &&
-        edge.targetHandle.length > 0
+        (edge.sourceHandle as string).length > 0 &&
+        (edge.targetHandle as string).length > 0
       );
     })
     .map((edge) => ({
       ...edge,
-      type: undefined,
+      type: "smoothstep",
       style: ESTILO,
     })) : [];
   return { nodes, edges };
@@ -149,14 +140,6 @@ function assinatura(snapshot: Snapshot): string {
   });
 }
 
-function proxCodigo(nodes: NoUnifilarType[], tipoCod: string): string {
-  const p = PREFIXO[tipoCod] ?? tipoCod.slice(0, 3).toUpperCase();
-  const usados = new Set(nodes.map((n) => n.data.codigo).filter((c) => c.startsWith(p)));
-  let n = 1;
-  while (usados.has(`${p}${String(n).padStart(2, "0")}`)) n += 1;
-  return `${p}${String(n).padStart(2, "0")}`;
-}
-
 function Miniatura({ tipoCodigo, w, h }: { tipoCodigo: string; w: number; h: number }) {
   return (
     <span className="flex h-10 w-full items-center justify-center overflow-hidden">
@@ -165,12 +148,20 @@ function Miniatura({ tipoCodigo, w, h }: { tipoCodigo: string; w: number; h: num
   );
 }
 
+function proxCodigo(nodes: NoUnifilarType[], tipoCod: string): string {
+  const p = PREFIXO[tipoCod] ?? tipoCod.slice(0, 3).toUpperCase();
+  const usados = new Set(nodes.map((n) => n.data.codigo).filter((c) => c.startsWith(p)));
+  let n = 1;
+  while (usados.has(`${p}${String(n).padStart(2, "0")}`)) n += 1;
+  return `${p}${String(n).padStart(2, "0")}`;
+}
+
 function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
   idSubestacao: number; nomeSubestacao: string; podeEditar: boolean;
 }) {
   const { screenToFlowPosition, fitView } = useReactFlow();
-  const navigate = useNavigate();
   const atualizarInternos = useUpdateNodeInternals();
+  const navigate = useNavigate();
 
   const inicial = useMemo<Snapshot>(() => carregarLocal(idSubestacao) ?? { nodes: [], edges: [] }, [idSubestacao]);
   const [nodes, setNodes] = useNodesState<NoUnifilarType>(inicial.nodes);
@@ -185,35 +176,8 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
   const avisoFalhaAutosave = useRef(false);
   const editar = modoEdicao && podeEditar;
 
-  // quando o papel do usuario chega (carregamento async), o modo inicial acompanha
   useEffect(() => setModoEdicao(podeEditar), [podeEditar]);
 
-  useEffect(() => {
-    let ativo = true;
-    api.get<AtivoAssociavel[]>(`/ativos/${idSubestacao}`)
-      .then(({ data }) => { if (ativo) setAtivos(Array.isArray(data) ? data : []); })
-      .catch(() => { if (ativo) setAtivos([]); });
-    return () => { ativo = false; };
-  }, [idSubestacao]);
-
-  // histórico
-  const passado = useRef<Snapshot[]>([]);
-  const futuro = useRef<Snapshot[]>([]);
-  const [, tickHist] = useState(0);
-  const snap = useCallback<() => Snapshot>(() => ({ nodes: nodes.map((n) => ({ ...n })), edges: edges.map((e) => ({ ...e })) }), [edges, nodes]);
-  const registrar = useCallback(() => { passado.current.push(snap()); if (passado.current.length > 60) passado.current.shift(); futuro.current = []; tickHist((t) => t + 1); }, [snap]);
-  const desfazer = useCallback(() => {
-    const ant = passado.current.pop(); if (!ant) return;
-    futuro.current.push(snap()); setNodes(ant.nodes); setEdges(ant.edges); tickHist((t) => t + 1);
-  }, [snap, setEdges, setNodes]);
-  const refazer = useCallback(() => {
-    const seq = futuro.current.pop(); if (!seq) return;
-    passado.current.push(snap()); setNodes(seq.nodes); setEdges(seq.edges); tickHist((t) => t + 1);
-  }, [snap, setEdges, setNodes]);
-  const podeUndo = passado.current.length > 0, podeRedo = futuro.current.length > 0;
-
-  // Carrega do servidor; rascunho local so migra se o servidor nunca
-  // recebeu um diagrama para esta subestacao.
   useEffect(() => {
     let ativo = true;
     setPronto(false);
@@ -239,6 +203,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
 
         setNodes(snapshot.nodes);
         setEdges(snapshot.edges);
+        window.setTimeout(() => atualizarInternos(snapshot.nodes.map((node) => node.id)), 200);
         ultimaAssinaturaServidor.current = assinatura(snapshot);
         salvarLocal(snapshot, idSubestacao, nomeSubestacao);
         setPronto(true);
@@ -247,6 +212,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
         const fallback = normalizarSnapshot(carregarLocal(idSubestacao));
         setNodes(fallback.nodes);
         setEdges(fallback.edges);
+        window.setTimeout(() => atualizarInternos(fallback.nodes.map((node) => node.id)), 200);
         setPronto(true);
         toast.error("Nao foi possivel carregar o diagrama do servidor; exibindo o rascunho local.");
       }
@@ -256,7 +222,6 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
     return () => { ativo = false; };
   }, [idSubestacao, nomeSubestacao, podeEditar, setEdges, setNodes]);
 
-  // Mantem uma copia local de recuperacao; a persistencia oficial e remota.
   useEffect(() => {
     if (!pronto) return;
     const snapshot = normalizarSnapshot({ nodes, edges });
@@ -264,7 +229,6 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
     return () => clearTimeout(timer);
   }, [edges, idSubestacao, nomeSubestacao, nodes, pronto]);
 
-  // Autosave remoto com debounce, somente durante edicao autorizada.
   useEffect(() => {
     if (!pronto || !editar) return;
     const snapshot = normalizarSnapshot({ nodes, edges });
@@ -290,35 +254,38 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
     return () => clearTimeout(timer);
   }, [edges, editar, idSubestacao, nomeSubestacao, nodes, pronto]);
 
-  const salvarAgora = useCallback(() => {
-    const snapshot = normalizarSnapshot({ nodes, edges });
-    setSalvando(true);
-    void api.put<RespostaDiagrama>(`/unifilar/diagrama/${idSubestacao}`, snapshot)
-      .then(({ data }) => {
-        const salvo = normalizarSnapshot(data);
-        setNodes(salvo.nodes);
-        setEdges(salvo.edges);
-        ultimaAssinaturaServidor.current = assinatura(salvo);
-        salvarLocal(salvo, idSubestacao, nomeSubestacao);
-        avisoFalhaAutosave.current = false;
-        toast.success("Diagrama salvo no servidor.");
-      })
-      .catch(() => {
-        salvarLocal(snapshot, idSubestacao, nomeSubestacao);
-        toast.error("Falha ao salvar no servidor; o rascunho ficou neste navegador.");
-      })
-      .finally(() => setSalvando(false));
-  }, [edges, idSubestacao, nomeSubestacao, nodes, setEdges, setNodes]);
+  useEffect(() => {
+    let ativo = true;
+    api.get<AtivoAssociavel[]>(`/ativos/${idSubestacao}`)
+      .then(({ data }) => { if (ativo) setAtivos(Array.isArray(data) ? data : []); })
+      .catch(() => { if (ativo) setAtivos([]); });
+    return () => { ativo = false; };
+  }, [idSubestacao]);
 
-  // mutações
+  const passado = useRef<Snapshot[]>([]);
+  const futuro = useRef<Snapshot[]>([]);
+  const [, tickHist] = useState(0);
+  const snap = useCallback<() => Snapshot>(() => ({ nodes: nodes.map((n) => ({ ...n })), edges: edges.map((e) => ({ ...e })) }), [edges, nodes]);
+  const registrar = useCallback(() => { passado.current.push(snap()); if (passado.current.length > 60) passado.current.shift(); futuro.current = []; tickHist((t) => t + 1); }, [snap]);
+  const desfazer = useCallback(() => {
+    const ant = passado.current.pop(); if (!ant) return;
+    futuro.current.push(snap()); setNodes(ant.nodes); setEdges(ant.edges); tickHist((t) => t + 1);
+  }, [snap, setEdges, setNodes]);
+  const refazer = useCallback(() => {
+    const seq = futuro.current.pop(); if (!seq) return;
+    passado.current.push(snap()); setNodes(seq.nodes); setEdges(seq.edges); tickHist((t) => t + 1);
+  }, [snap, setEdges, setNodes]);
+  const podeUndo = passado.current.length > 0, podeRedo = futuro.current.length > 0;
+
   const inserir = useCallback((tipoCod: string, x: number, y: number) => {
     registrar();
     const def = buscarTipo(tipoCod);
     const novo: NoUnifilarType = {
       id: `c${idUnico()}`, type: "noUnifilar", position: { x, y },
+      width: def.largura, height: def.altura,
       data: {
         tipo: def.codigo, codigo: proxCodigo(nodes, def.codigo),
-        nome: def.codigo === "ETIQUETA_VAO" ? "Vão 1" : "", vao: "", rotacao: 0,
+        nome: def.codigo === "ETIQUETA_VAO" ? "VÃ£o 1" : "", vao: "", rotacao: 0,
         largura: def.largura, altura: def.altura,
       },
     };
@@ -342,6 +309,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
   }, [editar, inserir, screenToFlowPosition]);
 
   const sel = useMemo(() => nodes.find((n) => n.id === idSel) ?? null, [idSel, nodes]);
+  const defSel = sel ? buscarTipo(sel.data.tipo) : null;
 
   const rotacionar = useCallback(() => {
     if (!sel) return;
@@ -358,6 +326,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
     const copia: NoUnifilarType = {
       ...sel, id: `c${idUnico()}`,
       position: { x: sel.position.x + 30, y: sel.position.y + 30 },
+      width: sel.width, height: sel.height,
       data: { ...sel.data, codigo: proxCodigo(nodes, def.codigo) }, selected: false,
     };
     setNodes((at) => [...at, copia]);
@@ -373,28 +342,26 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
     setIdSel(null);
   }, [edges, registrar, sel, setEdges, setNodes]);
 
-  // conexões com validação por terminal
   const grau = useCallback((no: string, term: string | null) =>
     edges.filter((e) => (e.source === no && e.sourceHandle === term) || (e.target === no && e.targetHandle === term)).length,
   [edges]);
 
   const onConnect = useCallback((c: Connection) => {
     if (!editar || !c.source || !c.target) return;
-    if (c.source === c.target) { toast.warning("Um componente não se liga a si mesmo."); return; }
+    if (c.source === c.target) { toast.warning("Um componente nÃ£o se liga a si mesmo."); return; }
     const igual = edges.some((e) =>
       (e.source === c.source && (e.sourceHandle ?? null) === (c.sourceHandle ?? null) && e.target === c.target && (e.targetHandle ?? null) === (c.targetHandle ?? null)) ||
       (e.source === c.target && (e.sourceHandle ?? null) === (c.targetHandle ?? null) && e.target === c.source && (e.targetHandle ?? null) === (c.sourceHandle ?? null)));
-    if (igual) { toast.warning("Já existe uma ligação idêntica entre estes terminais."); return; }
+    if (igual) { toast.warning("JÃ¡ existe uma ligaÃ§Ã£o idÃªntica entre estes terminais."); return; }
     const tipoNo = (no: string) => buscarTipo(nodes.find((n) => n.id === no)?.data.tipo ?? "").maxPorTerminal;
     if (grau(c.source, c.sourceHandle ?? null) >= tipoNo(c.source) || grau(c.target, c.targetHandle ?? null) >= tipoNo(c.target)) {
-      toast.warning("Terminal sem capacidade para outra ligação.");
+      toast.warning("Terminal sem capacidade para outra ligaÃ§Ã£o.");
       return;
     }
-    setEdges((at) => addEdge({ ...c, style: ESTILO }, at));
-    toast.success("Ligação criada.");
+    setEdges((at) => addEdge({ ...c, type: "smoothstep", style: ESTILO }, at));
+    toast.success("LigaÃ§Ã£o criada.");
   }, [editar, edges, grau, nodes, setEdges]);
 
-  // mudanças de nós/arestas conforme o modo
   const mudarNos = useCallback((ch: NodeChange<NoUnifilarType>[]) => {
     const filtro = editar ? ch : ch.filter((m) => m.type === "select" || m.type === "dimensions");
     const fimArrasto = filtro.some((m) => m.type === "position" && (m as { dragging?: boolean }).dragging === false);
@@ -402,18 +369,11 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
     if (fimArrasto) registrar();
   }, [editar, nodes, registrar, setNodes]);
 
-  const mudarLig = useCallback((ch: Parameters<typeof applyEdgeChanges>[0]) => {
-    const filtro = editar ? ch.filter((m) => m.type !== "remove") : ch.filter((m) => m.type === "select");
-    setEdges(applyEdgeChanges(filtro, edges));
-  }, [editar, edges, setEdges]);
-
-  // propriedades
   const campo = useCallback((k: "codigo" | "nome" | "vao" | "id_ativo", v: string | number | null) => {
     if (!sel) return;
     setNodes((at) => at.map((n) => (n.id === sel.id ? { ...n, data: { ...n.data, [k]: v } } : n)));
   }, [sel, setNodes]);
 
-  // atalhos
   const tecla = useCallback((e: React.KeyboardEvent) => {
     if (!editar) return;
     const ctrl = e.ctrlKey || e.metaKey;
@@ -423,7 +383,74 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
     else if (e.key === "r" && !ctrl && sel) { rotacionar(); }
   }, [duplicar, desfazer, editar, refazer, rotacionar, salvarAgora, sel]);
 
-  const defSel = sel ? buscarTipo(sel.data.tipo) : null;
+  function salvarAgora() {
+    const snapshot = normalizarSnapshot({ nodes, edges });
+    setSalvando(true);
+    void api.put<RespostaDiagrama>(`/unifilar/diagrama/${idSubestacao}`, snapshot)
+      .then(({ data }) => {
+        const salvo = normalizarSnapshot(data);
+        setNodes(salvo.nodes);
+        setEdges(salvo.edges);
+        ultimaAssinaturaServidor.current = assinatura(salvo);
+        salvarLocal(salvo, idSubestacao, nomeSubestacao);
+        avisoFalhaAutosave.current = false;
+        toast.success("Diagrama salvo no servidor.");
+      })
+      .catch(() => {
+        salvarLocal(snapshot, idSubestacao, nomeSubestacao);
+        toast.error("Falha ao salvar no servidor; o rascunho ficou neste navegador.");
+      })
+      .finally(() => setSalvando(false));
+  }
+
+  // posicao de terminal para overlay manual de conexoes
+  function posicaoTerminal(node: NoUnifilarType, terminal: string | null): { x: number; y: number } | null {
+    if (!node || !terminal) return null;
+    const rotacao = (node.data.rotacao ?? 0) % 360;
+    const w = node.width ?? node.data.largura ?? 40;
+    const h = node.height ?? node.data.altura ?? 40;
+    const x = node.position.x;
+    const y = node.position.y;
+    const barramento = ["BARRAMENTO", "CONEXAO", "ETIQUETA_VAO"].includes(node.data.tipo);
+    if (barramento) {
+      switch (terminal) {
+        case "B1": return { x, y: y + h / 2 };
+        case "B2": return { x: x + w, y: y + h / 2 };
+        case "B3": return { x: x + w / 2, y };
+        case "B4": return { x: x + w / 2, y: y + h };
+        default: return { x: x + w / 2, y: y + h / 2 };
+      }
+    }
+    // Equipamento: T1/T2 com rotacao
+    const posicoes: Record<number, [string, string]> = {
+      0: ["top", "bottom"], 90: ["right", "left"],
+      180: ["bottom", "top"], 270: ["left", "right"],
+    };
+    const [p1, p2] = posicoes[rotacao] ?? posicoes[0];
+    const terminalPos = terminal === "T1" ? p1 : p2;
+    switch (terminalPos) {
+      case "top": return { x: x + w / 2, y };
+      case "bottom": return { x: x + w / 2, y: y + h };
+      case "left": return { x, y: y + h / 2 };
+      case "right": return { x: x + w, y: y + h / 2 };
+      default: return { x: x + w / 2, y: y + h / 2 };
+    }
+  }
+
+  const linhasConexao = useMemo(() => {
+    const resultado: { id: string; x1: number; y1: number; x2: number; y2: number }[] = [];
+    const mapa = new Map(nodes.map((n) => [n.id, n]));
+    for (const edge of edges) {
+      const origem = mapa.get(edge.source);
+      const destino = mapa.get(edge.target);
+      if (!origem || !destino) continue;
+      const p1 = posicaoTerminal(origem, edge.sourceHandle ?? null);
+      const p2 = posicaoTerminal(destino, edge.targetHandle ?? null);
+      if (!p1 || !p2) continue;
+      resultado.push({ id: edge.id ?? `${edge.source}-${edge.target}`, x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y });
+    }
+    return resultado;
+  }, [nodes, edges]);
 
   return (
     <div className="flex h-full min-h-0 flex-col" tabIndex={-1} onKeyDown={tecla}>
@@ -431,8 +458,8 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
       <div className="z-10 flex items-center gap-1.5 border-b bg-white px-2 py-1.5">
         {podeEditar && (
           <Button variant={modoEdicao ? "default" : "outline"} size="sm" className="h-7 px-2 text-xs"
-            onClick={() => setModoEdicao((m) => !m)} title="Alternar entre modo de navegação e edição">
-            {modoEdicao ? <><Pencil className="mr-1 h-3.5 w-3.5" />Editando</> : <><Eye className="mr-1 h-3.5 w-3.5" />Navegação</>}
+            onClick={() => setModoEdicao((m) => !m)} title="Alternar entre modo de navegaÃ§Ã£o e ediÃ§Ã£o">
+            {modoEdicao ? <><Pencil className="mr-1 h-3.5 w-3.5" />Editando</> : <><Eye className="mr-1 h-3.5 w-3.5" />NavegaÃ§Ã£o</>}
           </Button>
         )}
         <span className="mx-1 h-5 w-px bg-slate-200" />
@@ -443,7 +470,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
         <Button variant="ghost" size="sm" className="h-7" onClick={duplicar} disabled={!editar || !sel} title="Duplicar (Ctrl+D)"><Copy className="h-4 w-4" /></Button>
         <Button variant="ghost" size="sm" className="h-7 text-red-600" onClick={excluir} disabled={!editar || !sel} title="Excluir (Del)"><Trash2 className="h-4 w-4" /></Button>
         <span className="mx-1 h-5 w-px bg-slate-200" />
-        <Button variant="ghost" size="sm" className="h-7" onClick={() => fitView({ padding: 0.2, duration: 300 })} title="Ajustar visualização"><Maximize2 className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="sm" className="h-7" onClick={() => fitView({ padding: 0.2, duration: 300 })} title="Ajustar visualizaÃ§Ã£o"><Maximize2 className="h-4 w-4" /></Button>
         <div className="ml-auto flex items-center gap-1">
           {!editar && (
             <span className="mr-1 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
@@ -452,7 +479,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
           )}
           {editar && (
             <span className="mr-1 hidden rounded bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 sm:inline">
-              Dica: arraste de um ponto azul (terminal) até outro
+              Dica: arraste de um ponto azul (terminal) atÃ© outro
             </span>
           )}
           {podeEditar && modoEdicao && (
@@ -498,7 +525,6 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
             edges={edges}
             nodeTypes={nodeTypes}
             onNodesChange={mudarNos}
-            onEdgesChange={mudarLig}
             onConnect={onConnect}
             onNodeClick={(_, n) => setIdSel(n.id)}
             onPaneClick={() => setIdSel(null)}
@@ -506,17 +532,30 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
             nodesDraggable={editar && pronto}
             connectionMode={ConnectionMode.Loose}
             connectionRadius={40}
-            elementsSelectable
             snapToGrid={editar}
             snapGrid={[10, 10]}
             deleteKeyCode={editar ? ["Backspace", "Delete"] : null}
-            defaultEdgeOptions={{ style: ESTILO }}
+            defaultEdgeOptions={{ type: "smoothstep", style: ESTILO }}
             connectionLineStyle={ESTILO}
             fitView
             proOptions={{ hideAttribution: true }}
           >
             <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#cbd5e1" />
             <Controls position="bottom-right" showInteractive={editar} />
+            {/* Overlay SVG: linhas de conexao manuais (garante visibilidade) */}
+            <svg className="pointer-events-none" style={{ position: "absolute", top: 0, left: 0, overflow: "visible" }}>
+              {linhasConexao.map((linha) => {
+                const midX = linha.x1 + (linha.x2 - linha.x1) / 2;
+                const d = `M ${linha.x1} ${linha.y1} L ${midX} ${linha.y1} L ${midX} ${linha.y2} L ${linha.x2} ${linha.y2}`;
+                return (
+                  <g key={linha.id}>
+                    <path d={d} stroke="#1e3a8a" strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                    <circle cx={linha.x1} cy={linha.y1} r={4} fill="#1e3a8a" />
+                    <circle cx={linha.x2} cy={linha.y2} r={4} fill="#1e3a8a" />
+                  </g>
+                );
+              })}
+            </svg>
           </ReactFlow>
         </div>
 
@@ -524,7 +563,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
         <aside className="w-60 shrink-0 overflow-y-auto border-l bg-white p-3">
           {!sel && (
             <p className="text-xs text-slate-500">
-              {editar ? "Selecione um componente ou insira um novo pela biblioteca." : "Clique em um componente para ver suas informações."}
+              {editar ? "Selecione um componente ou insira um novo pela biblioteca." : "Clique em um componente para ver suas informaÃ§Ãµes."}
             </p>
           )}
           {sel && defSel && (
@@ -535,7 +574,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                 <p className="text-[10px] text-slate-500">ID interno {sel.id.slice(0, 10)}</p>
               </div>
               <label className="grid gap-1 text-[11px] font-semibold text-slate-700">
-                Código / identificação
+                CÃ³digo / identificaÃ§Ã£o
                 <Input value={sel.data.codigo} disabled={!editar} onChange={(e) => campo("codigo", e.target.value)} className="h-8 text-xs" />
               </label>
               <label className="grid gap-1 text-[11px] font-semibold text-slate-700">
@@ -543,7 +582,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                 <Input value={sel.data.nome} disabled={!editar} placeholder={defSel.nome} onChange={(e) => campo("nome", e.target.value)} className="h-8 text-xs" />
               </label>
               <label className="grid gap-1 text-[11px] font-semibold text-slate-700">
-                Vão
+                VÃ£o
                 <Input value={sel.data.vao} disabled={!editar} placeholder="ex.: 15D7" onChange={(e) => campo("vao", e.target.value)} className="h-8 text-xs" />
               </label>
               {defSel.aceitaAtivo && (
@@ -555,16 +594,16 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                     onChange={(e) => campo("id_ativo", e.target.value ? Number(e.target.value) : null)}
                     className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs font-normal disabled:bg-slate-100"
                   >
-                    <option value="">Sem associação</option>
+                    <option value="">Sem associaÃ§Ã£o</option>
                     {ativos.map((ativo) => (
                       <option key={ativo.id_ativo} value={ativo.id_ativo}>
-                        {ativo.codigo_ativo}{ativo.bay ? ` — vão ${ativo.bay}` : ""}
+                        {ativo.codigo_ativo}{ativo.bay ? ` â€” vÃ£o ${ativo.bay}` : ""}
                       </option>
                     ))}
                   </select>
                   {sel.data.id_ativo != null && (
                     <span className="text-[10px] font-normal text-slate-500">
-                      {ativos.find((ativo) => ativo.id_ativo === sel.data.id_ativo)?.status ?? "Ativo da subestação"}
+                      {ativos.find((ativo) => ativo.id_ativo === sel.data.id_ativo)?.status ?? "Ativo da subestaÃ§Ã£o"}
                     </span>
                   )}
                   <button
@@ -577,7 +616,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
                 </label>
               )}
               <div className="text-[11px] text-slate-600">
-                <p><strong className="text-slate-700">Ligações:</strong>{" "}
+                <p><strong className="text-slate-700">LigaÃ§Ãµes:</strong>{" "}
                   {edges.filter((e) => e.source === sel.id || e.target === sel.id).length}</p>
               </div>
             </div>
@@ -595,4 +634,3 @@ export default function EditorUnifilar(props: { idSubestacao: number; nomeSubest
     </ReactFlowProvider>
   );
 }
-

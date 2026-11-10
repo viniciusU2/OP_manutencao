@@ -1,7 +1,7 @@
 /**
  * No customizado do React Flow para componentes do unifilar.
  *
- * Renderiza o simbolo SVG (rotacionado), rotulos (codigo, nome, vao) e
+ * Renderiza o simbodo SVG (rotacionado), rotudos (codigo, nome, vao) e
  * os Handles (terminais) de que as conexoes dependem. Os terminais
  * trocam de borda conforme a rotacao para acompanhar fisicamente as
  * pontas do condutor quando o equipamento gira.
@@ -13,29 +13,12 @@ import { TERMINAIS_BARRAMENTO, tipo } from "./catalogo";
 
 const CLASSE_TERMINAL = "!h-3 !w-3 !min-h-0 !min-w-0 !border-2 !border-white bg-blue-600 shadow-sm";
 
-function Terminal({ id, position, rotulo }: { id: string; position: Position; rotulo: string }) {
-  return (
-    <Handle
-      id={id}
-      type="source"
-      position={position}
-      className={CLASSE_TERMINAL}
-      aria-label={rotulo}
-      // modo Loose: o mesmo terminal inicia (ponta de saida) e recebe
-      // (ponta de chegada) conexoes, sem handles ocultos duplicados.
-      isConnectable
-      isConnectableStart
-      isConnectableEnd
-    />
-  );
-}
-
 export type DadosComponente = {
   tipo: string;
   codigo: string;
   nome: string;
   vao: string;
-  rotacao: number; // 0 | 90 | 180 | 270
+  rotacao: number;
   largura: number;
   altura: number;
   id_ativo?: number | null;
@@ -43,7 +26,6 @@ export type DadosComponente = {
 
 export type NoUnifilarType = Node<DadosComponente, "noUnifilar">;
 
-/** Bordas ocupadas por (T1, T2) conforme a rotacao horaria. */
 function bordasTerminais(rotacao: number): [Position, Position] {
   const base: Record<number, [Position, Position]> = {
     0: [Position.Top, Position.Bottom],
@@ -72,6 +54,8 @@ export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
   const etiquetaVao = data.vao?.trim();
 
   if (definicao.codigo === "BARRAMENTO" || definicao.codigo === "CONEXAO" || definicao.codigo === "ETIQUETA_VAO") {
+    const [esq, dir, topo, base] = bordasBarramento(data.rotacao);
+    const posicoes = [esq, dir, topo, base];
     return (
       <div
         className={`relative flex items-center justify-center ${selected ? "rounded ring-2 ring-blue-600" : ""}`}
@@ -83,18 +67,19 @@ export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
             {identificador}
           </span>
         ) : null}
-        {TERMINAIS_BARRAMENTO.map((t, indice) => {
-          const [esq, dir, topo, base] = bordasBarramento(data.rotacao);
-          const posicoes = [esq, dir, topo, base];
-          return (
-            <Terminal
-              key={t.id}
-              id={t.id}
-              position={posicoes[indice]}
-              rotulo={`${t.label.toLowerCase()} de ${identificador || "barramento"}`}
-            />
-          );
-        })}
+        {TERMINAIS_BARRAMENTO.map((t, indice) => (
+          <Handle
+            key={t.id}
+            id={t.id}
+            type="source"
+            position={posicoes[indice]}
+            className={CLASSE_TERMINAL}
+            aria-label={`${t.label.toLowerCase()} de ${identificador || "barramento"}`}
+            isConnectable
+            isConnectableStart
+            isConnectableEnd
+          />
+        ))}
       </div>
     );
   }
@@ -104,10 +89,10 @@ export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
   return (
     <div
       className={`relative flex flex-col items-center ${selected ? "rounded-md ring-2 ring-blue-600" : ""}`}
-      style={{ width: data.largura, minHeight: data.altura }}
+      style={{ width: data.largura, height: data.altura }}
     >
-      <Terminal id="T1" position={t1} rotulo={`topo de ${identificador || "equipamento"}`} />
-      <Terminal id="T2" position={t2} rotulo={`base de ${identificador || "equipamento"}`} />
+      <Handle id="T1" type="source" position={t1} className={CLASSE_TERMINAL} aria-label={`topo de ${identificador || "equipamento"}`} isConnectable isConnectableStart isConnectableEnd />
+      <Handle id="T2" type="source" position={t2} className={CLASSE_TERMINAL} aria-label={`base de ${identificador || "equipamento"}`} isConnectable isConnectableStart isConnectableEnd />
 
       <div style={{ transform: `rotate(${data.rotacao}deg)` }}>
         <SimboloUnifilar tipo={definicao.codigo} largura={data.largura} altura={data.altura} />
