@@ -18,7 +18,7 @@ import type { Connection, Edge, NodeChange, Viewport } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { toast } from "sonner";
 import {
-  Copy, ExternalLink, Eye, Maximize2, Pencil, Redo2, RotateCw, Save, Trash2, Undo2, Unlink,
+  Copy, ExternalLink, Eye, Loader2, Maximize2, Pencil, Redo2, RotateCw, Save, Trash2, Undo2, Unlink,
 } from "lucide-react";
 
 import { Button } from "../ui/button";
@@ -259,8 +259,8 @@ function medirLigacoes(wrap: HTMLElement, arestas: Edge[], nos: NoUnifilarType[]
   return linhas;
 }
 
-function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
-  idSubestacao: number; nomeSubestacao: string; podeEditar: boolean;
+function Canvas({ idSubestacao, nomeSubestacao, podeEditar, compacto = false }: {
+  idSubestacao: number; nomeSubestacao: string; podeEditar: boolean; compacto?: boolean;
 }) {
   const { screenToFlowPosition, fitView } = useReactFlow();
   const atualizarInternos = useUpdateNodeInternals();
@@ -269,7 +269,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
   const inicial = useMemo<Snapshot>(() => carregarLocal(idSubestacao) ?? { nodes: [], edges: [] }, [idSubestacao]);
   const [nodes, setNodes] = useNodesState<NoUnifilarType>(inicial.nodes);
   const [edges, setEdges] = useEdgesState(inicial.edges);
-  const [modoEdicao, setModoEdicao] = useState(podeEditar);
+  const [modoEdicao, setModoEdicao] = useState(podeEditar && !compacto);
   const [idSel, setIdSel] = useState<string | null>(null);
   const [idLigSel, setIdLigSel] = useState<string | null>(null);
   const [idLigHover, setIdLigHover] = useState<string | null>(null);
@@ -282,15 +282,15 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
   const ultimaAssinaturaServidor = useRef("");
   const avisoFalhaAutosave = useRef(false);
   const areaRef = useRef<HTMLDivElement>(null);
-  const editar = modoEdicao && podeEditar;
+  const editar = modoEdicao && podeEditar && !compacto;
 
-  useEffect(() => setModoEdicao(podeEditar), [podeEditar]);
+  useEffect(() => setModoEdicao(podeEditar && !compacto), [podeEditar, compacto]);
 
   useEffect(() => {
     if (!pronto) return;
-    const t = window.setTimeout(() => fitView({ padding: 0.12, duration: 200 }), 350);
+    const t = window.setTimeout(() => fitView({ padding: compacto ? 0.08 : 0.12, duration: 200 }), 350);
     return () => clearTimeout(t);
-  }, [pronto, fitView]);
+  }, [pronto, fitView, compacto]);
 
   const atualizarLinhas = useCallback(() => {
     if (areaRef.current) setLinhas(medirLigacoes(areaRef.current, edges, nodes));
@@ -568,6 +568,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
 
   return (
     <div className="flex h-full min-h-0 flex-col" tabIndex={-1} onKeyDown={tecla}>
+      {!compacto && (
       <div className="z-10 flex items-center gap-1.5 border-b bg-white px-2 py-1.5">
         {podeEditar && (
           <Button variant={modoEdicao ? "default" : "outline"} size="sm" className="h-7 px-2 text-xs"
@@ -601,8 +602,10 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
           )}
         </div>
       </div>
+      )}
 
       <div className="flex min-h-0 flex-1">
+        {!compacto && (
         <aside className="w-44 shrink-0 overflow-y-auto border-r bg-white p-2">
           <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">Componentes</p>
           {CATEGORIAS.map((cat) => {
@@ -628,6 +631,7 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
             );
           })}
         </aside>
+        )}
 
         <div ref={areaRef} className="relative min-w-0 flex-1" onDrop={onDrop} onDragOver={(e) => editar && e.preventDefault()}>
           <ReactFlow
@@ -656,6 +660,11 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
             onPaneClick={() => { setIdSel(null); setIdLigSel(null); }}
             nodesConnectable={editar && pronto}
             nodesDraggable={editar && pronto}
+            nodesFocusable={!compacto}
+            elementsSelectable={!compacto}
+            zoomOnScroll={!compacto}
+            zoomOnDoubleClick={!compacto}
+            preventScrolling={!compacto}
             connectionMode={ConnectionMode.Loose}
             connectionRadius={40}
             minZoom={0.08}
@@ -666,10 +675,11 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
             defaultEdgeOptions={{ type: "smoothstep", style: ESTILO }}
             connectionLineStyle={ESTILO}
             fitView
+            fitViewOptions={{ padding: compacto ? 0.06 : 0.12 }}
             proOptions={{ hideAttribution: true }}
           >
             <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#cbd5e1" />
-            <Controls position="bottom-right" showInteractive={editar} />
+            {!compacto && <Controls position="bottom-right" showInteractive={editar} />}
           </ReactFlow>
           <svg className="pointer-events-none absolute inset-0 z-[5] h-full w-full overflow-visible">
             <g transform={`translate(${vista.x} ${vista.y}) scale(${vista.zoom})`}>
@@ -736,8 +746,23 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
               })}
             </g>
           </svg>
+          {compacto && !pronto && (
+            <div className="absolute inset-0 z-[6] grid place-items-center bg-white/70">
+              <span className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                <Loader2 className="h-4 w-4 animate-spin" />Carregando diagrama…
+              </span>
+            </div>
+          )}
+          {compacto && pronto && !nodes.length && (
+            <div className="absolute inset-0 z-[6] grid place-items-center bg-slate-50/85 p-4 text-center">
+              <p className="text-xs font-medium text-slate-500">
+                Nenhum componente neste diagrama ainda.
+              </p>
+            </div>
+          )}
         </div>
 
+        {!compacto && (
         <aside className="w-56 shrink-0 overflow-y-auto border-l bg-white p-3">
           {ligSel && (
             <div className="grid gap-3">
@@ -858,12 +883,18 @@ function Canvas({ idSubestacao, nomeSubestacao, podeEditar }: {
             </div>
           )}
         </aside>
+        )}
       </div>
     </div>
   );
 }
 
-export default function EditorUnifilar(props: { idSubestacao: number; nomeSubestacao: string; podeEditar: boolean }) {
+export default function EditorUnifilar(props: {
+  idSubestacao: number;
+  nomeSubestacao: string;
+  podeEditar: boolean;
+  compacto?: boolean;
+}) {
   return (
     <ReactFlowProvider>
       <Canvas {...props} />

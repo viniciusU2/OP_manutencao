@@ -13,6 +13,7 @@ import {
   Wrench,
 } from "lucide-react";
 import api from "../api/api";
+import EditorUnifilar from "../components/unifilar/EditorUnifilar";
 import { StatsCard } from "../components/StatsCard";
 import PlanoExecucoesDashboardChart from "../components/PlanoExecucoesDashboardChart";
 import { useAuth } from "../context/AuthContext";
@@ -225,15 +226,20 @@ const Select = styled.select`
   }
 `;
 
-const UnifilarBand = styled.section`
+const UnifilarCard = styled.section`
+  overflow: hidden;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+`;
+
+const UnifilarBand = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px 18px;
-  border: 1px solid #bfdbfe;
-  border-radius: 10px;
+  padding: 14px 18px;
   background: linear-gradient(135deg, #eff6ff 0%, #ffffff 65%);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 
   @media (max-width: 820px) {
     align-items: flex-start;
@@ -336,6 +342,63 @@ const UnifilarSecundario = styled.button`
   &:hover {
     background: #ffffff;
     border-color: #cbd5e1;
+  }
+`;
+
+const UnifilarCanvas = styled.div`
+  position: relative;
+  height: clamp(300px, 46vh, 460px);
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+
+  .react-flow__node {
+    cursor: pointer;
+  }
+
+  @media (max-width: 640px) {
+    height: 300px;
+  }
+`;
+
+const UnifilarRodape = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 18px;
+  background: #ffffff;
+
+  span {
+    color: #64748b;
+    font-size: 11px;
+  }
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex: 0 0 auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #1d4ed8;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 640px) {
+    align-items: flex-start;
+    flex-direction: column;
+
+    span {
+      line-height: 1.4;
+    }
   }
 `;
 
@@ -1110,36 +1173,61 @@ export function Dashboard() {
       </FilterBand>
 
       {subestacaoSelecionada && !ehLinhaInstalacao(subestacaoSelecionada.tipo_instalacao) && (
-        <UnifilarBand>
-          <UnifilarIcone>
-            <Network size={22} />
-          </UnifilarIcone>
-          <UnifilarTexto>
-            <span>Diagrama unifilar</span>
-            <h2>{subestacaoSelecionada.nome}</h2>
-            <p>
-              {diagramaSelecionado
-                ? `${diagramaSelecionado.total_componentes} componentes · ${diagramaSelecionado.total_ligacoes} ligações${
-                    formatarAtualizacao(diagramaSelecionado.atualizado_em)
-                      ? ` · atualizado em ${formatarAtualizacao(diagramaSelecionado.atualizado_em)}`
-                      : ""
-                  } · clique em um equipamento para abrir o ativo`
-                : "Nenhum diagrama salvo para esta instalação ainda."}
-            </p>
-          </UnifilarTexto>
-          <UnifilarAcoes>
-            <UnifilarPrimario
+        <UnifilarCard>
+          <UnifilarBand>
+            <UnifilarIcone>
+              <Network size={22} />
+            </UnifilarIcone>
+            <UnifilarTexto>
+              <span>Diagrama unifilar</span>
+              <h2>{subestacaoSelecionada.nome}</h2>
+              <p>
+                {diagramaSelecionado
+                  ? `${diagramaSelecionado.total_componentes} componentes · ${diagramaSelecionado.total_ligacoes} ligações${
+                      formatarAtualizacao(diagramaSelecionado.atualizado_em)
+                        ? ` · atualizado em ${formatarAtualizacao(diagramaSelecionado.atualizado_em)}`
+                        : ""
+                    }`
+                  : "Nenhum diagrama salvo para esta instalação ainda."}
+              </p>
+            </UnifilarTexto>
+            <UnifilarAcoes>
+              <UnifilarPrimario
+                type="button"
+                onClick={() => navigate(`/subestacoes/${subestacaoSelecionada.id_subestacao}/unifilar`)}
+              >
+                {diagramaSelecionado ? "Abrir no editor" : "Criar unifilar"}
+                <ArrowRight size={16} />
+              </UnifilarPrimario>
+              <UnifilarSecundario type="button" onClick={() => navigate("/unifilar")}>
+                Todos os diagramas
+              </UnifilarSecundario>
+            </UnifilarAcoes>
+          </UnifilarBand>
+
+          <UnifilarCanvas>
+            <EditorUnifilar
+              key={subestacaoSelecionada.id_subestacao}
+              idSubestacao={subestacaoSelecionada.id_subestacao}
+              nomeSubestacao={subestacaoSelecionada.nome}
+              podeEditar={false}
+              compacto
+            />
+          </UnifilarCanvas>
+
+          <UnifilarRodape>
+            <span>
+              Desenho real do diagrama · arraste para navegar · clique em um equipamento com selo azul para abrir o ativo
+            </span>
+            <button
               type="button"
               onClick={() => navigate(`/subestacoes/${subestacaoSelecionada.id_subestacao}/unifilar`)}
             >
-              {diagramaSelecionado ? "Abrir unifilar" : "Criar unifilar"}
-              <ArrowRight size={16} />
-            </UnifilarPrimario>
-            <UnifilarSecundario type="button" onClick={() => navigate("/unifilar")}>
-              Todos os diagramas
-            </UnifilarSecundario>
-          </UnifilarAcoes>
-        </UnifilarBand>
+              Editar diagrama
+              <ArrowRight size={14} />
+            </button>
+          </UnifilarRodape>
+        </UnifilarCard>
       )}
 
       {/* Galeria de fotos de inspeção removida do dashboard.
