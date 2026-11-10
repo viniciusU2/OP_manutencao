@@ -89,28 +89,40 @@ export function SimboloUnifilar({
 
     case "DISJUNTOR": {
       // ANSI 52: quadrado com X quando fechado; contato aberto quando aberto.
+      // No SAGE o interior e preenchido com a cor do estado (vermelho/verde).
       const lado = Math.min(34, largura - 10);
       const cx = largura / 2;
       const topoCaixa = (altura - lado) / 2;
+      const corInterna = modoScada ? "#ffffff" : corDisjuntor;
+      const tracoInterno = { stroke: corInterna, strokeWidth: 2, fill: "none" } as const;
       return Frame(
         <g>
           <line x1={cx} y1={0} x2={cx} y2={topoCaixa} {...tracoDisjuntor} />
-          <rect x={cx - lado / 2} y={topoCaixa} width={lado} height={lado} {...tracoDisjuntor} />
+          <rect
+            x={cx - lado / 2}
+            y={topoCaixa}
+            width={lado}
+            height={lado}
+            stroke={corDisjuntor}
+            strokeWidth={2}
+            fill={modoScada ? corDisjuntor : "none"}
+            rx={1.5}
+          />
           {aberto ? (
             <>
-              <circle cx={cx - lado / 2 + 3} cy={topoCaixa + lado / 2} r={2} fill={corDisjuntor} />
+              <circle cx={cx - lado / 2 + 3} cy={topoCaixa + lado / 2} r={2} fill={corInterna} />
               <line
                 x1={cx - lado / 2 + 3}
                 y1={topoCaixa + lado / 2}
                 x2={cx + lado / 2 - 1}
                 y2={topoCaixa + 2}
-                {...tracoDisjuntor}
+                {...tracoInterno}
               />
             </>
           ) : (
             <>
-              <line x1={cx - lado / 2} y1={topoCaixa} x2={cx + lado / 2} y2={topoCaixa + lado} {...tracoDisjuntor} />
-              <line x1={cx + lado / 2} y1={topoCaixa} x2={cx - lado / 2} y2={topoCaixa + lado} {...tracoDisjuntor} />
+              <line x1={cx - lado / 2} y1={topoCaixa} x2={cx + lado / 2} y2={topoCaixa + lado} {...tracoInterno} />
+              <line x1={cx + lado / 2} y1={topoCaixa} x2={cx - lado / 2} y2={topoCaixa + lado} {...tracoInterno} />
             </>
           )}
           <line x1={cx} y1={topoCaixa + lado} x2={cx} y2={altura} {...tracoDisjuntor} />
