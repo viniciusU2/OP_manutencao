@@ -156,20 +156,19 @@ export function SimboloUnifilar({
     }
 
     case "PARA_RAIOS": {
-      // Desvio de surto com seta descendente para o aterramento.
-      const cx = largura / 2;
-      const meio = altura * 0.5;
-      return Frame(
-        <g>
-      <line x1={cx} y1={0} x2={cx} y2={meio - 14} {...traço} />
-          <line x1={cx} y1={meio - 14} x2={cx} y2={altura} {...traço} />
-          <line x1={cx - 6} y1={meio - 14} x2={cx + 6} y2={meio - 14} {...traço} strokeWidth={3} />
-          <line x1={cx - 9} y1={meio - 9} x2={cx + 9} y2={meio + 12} {...traço} />
-          <polygon points={`${cx + 9},${meio + 12} ${cx + 1},${meio + 6} ${cx + 3},${meio + 12} `} fill={COR} />
-          {AterramentoSimbolo(cx, altura - 30)}
-        </g>,
-        largura,
-        altura,
+      // Para-raios conforme o desenho de referencia: condutor, bloco do
+      // varistor com seta diagonal de descarga e ligacao ao aterramento.
+      return (
+        <svg viewBox="0 0 40 96" width={largura} height={altura} fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+          <line x1={20} y1={0} x2={20} y2={22} stroke={COR} strokeWidth={2} />
+          <rect x={12} y={22} width={16} height={30} stroke={COR} strokeWidth={2} />
+          <line x1={9} y1={18} x2={28} y2={50} stroke={COR} strokeWidth={2} />
+          <polygon points="28,50 19,48 24,42" fill={COR} />
+          <line x1={20} y1={52} x2={20} y2={68} stroke={COR} strokeWidth={2} />
+          <line x1={10} y1={68} x2={30} y2={68} stroke={COR} strokeWidth={2} />
+          <line x1={14} y1={74} x2={26} y2={74} stroke={COR} strokeWidth={2} />
+          <line x1={17} y1={80} x2={23} y2={80} stroke={COR} strokeWidth={2} />
+        </svg>
       );
     }
 

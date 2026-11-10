@@ -127,17 +127,17 @@ export function NoUnifilar({ data, selected }: NodeProps<NoUnifilarType>) {
         </div>
       </div>
 
-      {identificador ? (
-        <span className="mt-0.5 select-none text-center text-[11px] font-bold leading-tight text-slate-900">
-          {identificador}
-        </span>
-      ) : null}
-      {data.nome && data.nome !== definicao.nome ? (
-        <span className="select-none text-center text-[9px] leading-tight text-slate-500">{data.nome}</span>
-      ) : null}
-      {etiquetaVao ? (
-        <span className="rounded bg-slate-200 px-1 text-[9px] font-semibold leading-4 text-slate-600">{etiquetaVao}</span>
-      ) : null}
+      <div className="absolute left-full top-1/2 ml-2 flex -translate-y-1/2 flex-col whitespace-nowrap">
+        {identificador ? (
+          <span className="select-none text-[11px] font-bold leading-tight text-slate-900">{identificador}</span>
+        ) : null}
+        {data.nome && data.nome !== definicao.nome && data.nome !== identificador ? (
+          <span className="select-none text-[9px] leading-tight text-slate-500">{data.nome}</span>
+        ) : null}
+        {etiquetaVao ? (
+          <span className="mt-0.5 w-fit rounded bg-slate-200 px-1 text-[9px] font-semibold leading-4 text-slate-600">{etiquetaVao}</span>
+        ) : null}
+      </div>
     </div>
   );
 }
