@@ -43,5 +43,6 @@ status: string
 emissor?: string
 editado_por?: string
 problemas?: SSProblema[]
+fotos?: string[]
 
 }

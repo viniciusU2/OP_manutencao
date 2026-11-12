@@ -13,7 +13,7 @@ export function resolveMediaUrl(url?: string | null) {
 
   if (/^(data:image\/|blob:)/i.test(value)) return value;
 
-  if (value.startsWith("/inspecoes/fotos/")) {
+  if (value.startsWith("/inspecoes/fotos/") || value.startsWith("/ss/fotos/")) {
     return `${API_BASE}${value}`;
   }
 

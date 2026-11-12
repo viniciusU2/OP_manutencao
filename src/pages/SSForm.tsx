@@ -16,6 +16,8 @@ import { useAuth } from "../context/AuthContext";
 import { DocumentBackButton } from "../components/DocumentBackButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import ProblemasSS from "../components/ProblemasSS";
+import { ImagePlus, Loader2, X } from "lucide-react";
+import { resolveMediaUrl } from "../lib/media";
 
 const PRIORIDADES_SS = [
   { value: "NIVEL_1", label: "Nivel 1 - Emergencial: 0 a 24h" },
@@ -133,6 +135,88 @@ const Actions = styled.div`
   justify-content: flex-end;
 `;
 
+const FotoUploadArea = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+`;
+
+const FotoUploadLabel = styled.label<{ $disabled?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px dashed ${({ $disabled }) => ($disabled ? "#cbd5e1" : "#93c5fd")};
+  background: ${({ $disabled }) => ($disabled ? "#f8fafc" : "#eff6ff")};
+  color: ${({ $disabled }) => ($disabled ? "#94a3b8" : "#1d4ed8")};
+  font-size: 13px;
+  font-weight: 600;
+  cursor: ${({ $disabled }) => ($disabled ? "not-allowed" : "pointer")};
+
+  input {
+    display: none;
+  }
+
+  &:hover {
+    border-color: ${({ $disabled }) => ($disabled ? "#cbd5e1" : "#2563eb")};
+  }
+`;
+
+const FotoContador = styled.span`
+  color: #64748b;
+  font-size: 12px;
+`;
+
+const FotoDica = styled.p`
+  margin: 6px 0 0;
+  color: #94a3b8;
+  font-size: 11px;
+`;
+
+const FotoGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+`;
+
+const FotoCard = styled.div`
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  button {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.72);
+    color: #ffffff;
+    cursor: pointer;
+
+    &:hover {
+      background: #dc2626;
+    }
+  }
+`;
+
 const Button = styled.button`
   background: #2563eb;
   color: #ffffff;
@@ -161,6 +245,7 @@ export function SSForm() {
   const [ativos, setAtivos] = useState<Ativo[]>([]);
   const [ativoSelecionadoDetalhes, setAtivoSelecionadoDetalhes] = useState<Ativo | null>(null);
   const [tiposAtivo, setTiposAtivo] = useState<TipoAtivo[]>([]);
+  const [enviandoFotos, setEnviandoFotos] = useState(false);
 
   const [form, setForm] = useState<SolicitacaoServico>({
     numero_ss: "",
@@ -199,12 +284,14 @@ export function SSForm() {
     emissor: "",
     editado_por: "",
     problemas: [],
+    fotos: [],
   });
 
   const ativoSelecionadoLista = ativos.find(
     (ativo) => Number(ativo.id_ativo) === Number(form.id_ativo)
   );
   const ativoSelecionado = ativoSelecionadoDetalhes ?? ativoSelecionadoLista;
+  const fotos = form.fotos ?? [];
 
 
   /* ===============================
@@ -274,8 +361,112 @@ export function SSForm() {
 
 
   /* ===============================
-     CARREGAR SS (EDIÇÃO)
+     PREFILL DO SOLICITANTE (NOVA SS)
   =============================== */
+  useEffect(() => {
+    if (isEdicao) return;
+    let vivo = true;
+
+    api.get<{
+      nome: string;
+      matricula: string;
+      funcao: string;
+      telefone: string;
+      email: string;
+    }>("/ss/solicitante")
+      .then(({ data }) => {
+        if (!vivo) return;
+        setForm((atual) => ({
+          ...atual,
+          solicitante: atual.solicitante || data.nome || "",
+          matricula: atual.matricula || data.matricula || "",
+          funcao: atual.funcao || data.funcao || "",
+          telefone: atual.telefone || data.telefone || "",
+          email: atual.email || data.email || "",
+        }));
+      })
+      .catch(() => {
+        /* mantem os campos digitados */
+      });
+
+    return () => { vivo = false; };
+  }, [isEdicao]);
+
+  async function adicionarFotos(arquivos: FileList | null) {
+    if (!arquivos?.length) return;
+
+    const atuais = form.fotos ?? [];
+    const disponiveis = 5 - atuais.length;
+    if (disponiveis <= 0) {
+      toast.error("A SS aceita no maximo 5 fotos.");
+      return;
+    }
+
+    const selecionadas = Array.from(arquivos).slice(0, disponiveis);
+    if (arquivos.length > disponiveis) {
+      toast.info(`Enviando ${disponiveis} de ${arquivos.length} fotos (limite de 5).`);
+    }
+
+    setEnviandoFotos(true);
+    const novas: string[] = [];
+
+    try {
+      for (const arquivo of selecionadas) {
+        const tipo = (arquivo.type || "").toLowerCase();
+        if (tipo && !tipo.startsWith("image/") && tipo !== "application/octet-stream") {
+          toast.error(`${arquivo.name}: selecione um arquivo de imagem.`);
+          continue;
+        }
+        if (arquivo.size > 20 * 1024 * 1024) {
+          toast.error(`${arquivo.name}: a imagem deve ter no maximo 20 MB.`);
+          continue;
+        }
+
+        const dados = new FormData();
+        dados.append("arquivo", arquivo);
+
+        try {
+          const { data } = await api.post<{ url: string }>("/ss/fotos", dados);
+          if (data?.url) novas.push(data.url);
+        } catch (erro: unknown) {
+          const detalhe = (erro as { response?: { data?: { detail?: unknown } } })
+            ?.response?.data?.detail;
+          toast.error(
+            typeof detalhe === "string"
+              ? detalhe
+              : `Nao foi possivel enviar ${arquivo.name}.`
+          );
+        }
+      }
+
+      if (novas.length) {
+        setForm((atual) => ({
+          ...atual,
+          fotos: [...(atual.fotos ?? []), ...novas].slice(0, 5),
+        }));
+        toast.success(`${novas.length} foto(s) enviada(s).`);
+      }
+    } finally {
+      setEnviandoFotos(false);
+    }
+  }
+
+  async function removerFoto(url: string) {
+    setForm((atual) => ({
+      ...atual,
+      fotos: (atual.fotos ?? []).filter((foto) => foto !== url),
+    }));
+
+    if (!url.startsWith("/ss/fotos/")) return;
+    try {
+      await api.delete(url);
+    } catch {
+      // 409: foto vinculada a uma SS salva. O backend remove o arquivo
+      // quando a SS e atualizada sem ela.
+    }
+  }
+
+
   useEffect(() => {
     if (isEdicao) {
       api.get(`/ss/${id}`).then(async res => {
@@ -291,6 +482,7 @@ export function SSForm() {
           ...ss,
           id_subestacao: idSubestacao,
           prioridade: normalizarPrioridadeSS(ss.prioridade),
+          fotos: ss.fotos ?? [],
         });
       });
     }
@@ -382,6 +574,9 @@ async function salvarOuEditar() {
     const payload = {
       ...dadosEnvio,
       id_ativo: dadosEnvio.id_ativo ? Number(dadosEnvio.id_ativo) : null,
+      data_hora_solicitacao: dadosEnvio.data_hora_solicitacao || null,
+      data_hora_limite: dadosEnvio.data_hora_limite || null,
+      fotos: form.fotos ?? [],
       ...(isEdicao
         ? { emissor: form.emissor, editado_por: usuario?.nome }
         : { emissor: usuario?.nome }),
@@ -456,6 +651,25 @@ async function salvarOuEditar() {
             <input
               name="funcao"
               value={form.funcao}
+              onChange={handleChange}
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <label>Telefone</label>
+            <input
+              name="telefone"
+              value={form.telefone}
+              onChange={handleChange}
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <label>E-mail</label>
+            <input
+              name="email"
+              type="email"
+              value={form.email}
               onChange={handleChange}
             />
           </FormGroup>
@@ -586,6 +800,54 @@ async function salvarOuEditar() {
           </FormGroup>
 
         </FormGrid>
+
+        {/* FOTOS */}
+        <SectionTitle>Fotos</SectionTitle>
+
+        <FormGroup>
+          <FotoUploadArea>
+            <FotoUploadLabel $disabled={enviandoFotos || fotos.length >= 5}>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                disabled={enviandoFotos || fotos.length >= 5}
+                onChange={(evento) => {
+                  void adicionarFotos(evento.target.files);
+                  evento.target.value = "";
+                }}
+              />
+              {enviandoFotos ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <ImagePlus size={16} />
+              )}
+              {enviandoFotos ? "Enviando fotos..." : "Adicionar fotos"}
+            </FotoUploadLabel>
+            <FotoContador>{fotos.length} de 5 fotos</FotoContador>
+          </FotoUploadArea>
+          <FotoDica>
+            JPG/PNG, até 20 MB por foto. As imagens são enviadas ao servidor ao selecionar.
+          </FotoDica>
+
+          {fotos.length > 0 && (
+            <FotoGrid>
+              {fotos.map((url) => (
+                <FotoCard key={url}>
+                  <img src={resolveMediaUrl(url)} alt="Foto da SS" />
+                  <button
+                    type="button"
+                    onClick={() => void removerFoto(url)}
+                    title="Remover foto"
+                    aria-label="Remover foto"
+                  >
+                    <X size={13} />
+                  </button>
+                </FotoCard>
+              ))}
+            </FotoGrid>
+          )}
+        </FormGroup>
 
 
         {/* CLASSIFICAÇÃO */}
