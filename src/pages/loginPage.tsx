@@ -303,24 +303,24 @@ interface SlideApp {
 const slidesApp: SlideApp[] = [
   {
     imagem: "01-dashboard.webp",
-    tag: "Visão geral",
-    titulo: "Toda a operação em um só lugar",
+    tag: "VisÃ£o geral",
+    titulo: "Toda a operaÃ§Ã£o em um sÃ³ lugar",
     descricao:
-      "Acompanhe OS abertas, execuções, solicitações, ativos e inspeções em um painel atualizado em tempo real.",
+      "Acompanhe OS abertas, execuÃ§Ãµes, solicitaÃ§Ãµes, ativos e inspeÃ§Ãµes em um painel atualizado em tempo real.",
     destaques: [
-      "Indicadores da operação",
-      "Atalhos rápidos",
-      "Últimas OS",
+      "Indicadores da operaÃ§Ã£o",
+      "Atalhos rÃ¡pidos",
+      "Ãšltimas OS",
     ],
   },
   {
     imagem: "02-ordens-servico.webp",
-    tag: "Ordens de serviço",
+    tag: "Ordens de serviÃ§o",
     titulo: "Da abertura ao encerramento",
     descricao:
-      "Consulte, filtre e acompanhe ordens de serviço com prioridade, responsáveis, prazos e histórico completo.",
+      "Consulte, filtre e acompanhe ordens de serviÃ§o com prioridade, responsÃ¡veis, prazos e histÃ³rico completo.",
     destaques: [
-      "Busca por nº, ativo ou instalação",
+      "Busca por nÂº, ativo ou instalaÃ§Ã£o",
       "Filtros por status",
       "Detalhe da OS",
     ],
@@ -330,47 +330,47 @@ const slidesApp: SlideApp[] = [
     tag: "Em campo",
     titulo: "Cada etapa documentada",
     descricao:
-      "Veja a identificação, a descrição dos serviços e o esquema de manutenção. Tudo o que a equipe precisa para executar.",
+      "Veja a identificaÃ§Ã£o, a descriÃ§Ã£o dos serviÃ§os e o esquema de manutenÃ§Ã£o. Tudo o que a equipe precisa para executar.",
     destaques: [
       "Dados da OS",
-      "Localização e ativo",
-      "Esquema de serviços",
+      "LocalizaÃ§Ã£o e ativo",
+      "Esquema de serviÃ§os",
     ],
   },
   {
     imagem: "04-solicitacoes.webp",
-    tag: "Solicitações",
-    titulo: "Problemas relatados, solução acompanhada",
+    tag: "SolicitaÃ§Ãµes",
+    titulo: "Problemas relatados, soluÃ§Ã£o acompanhada",
     descricao:
-      "Registre SS e intervenções, acompanhe o status e consulte o histórico com filtros por instalação e prioridade.",
+      "Registre SS e intervenÃ§Ãµes, acompanhe o status e consulte o histÃ³rico com filtros por instalaÃ§Ã£o e prioridade.",
     destaques: [
       "SS e SI",
       "Filtros e busca",
-      "Nova solicitação",
+      "Nova solicitaÃ§Ã£o",
     ],
   },
   {
     imagem: "05-ativos.webp",
     tag: "Ativos",
-    titulo: "Todos os ativos na palma da mão",
+    titulo: "Todos os ativos na palma da mÃ£o",
     descricao:
-      "Consulte código, tipo, fabricante, modelo, número de série e localização de cada equipamento.",
+      "Consulte cÃ³digo, tipo, fabricante, modelo, nÃºmero de sÃ©rie e localizaÃ§Ã£o de cada equipamento.",
     destaques: [
       "207 ativos",
-      "Filtro por subestação",
-      "Detalhe técnico",
+      "Filtro por subestaÃ§Ã£o",
+      "Detalhe tÃ©cnico",
     ],
   },
   {
     imagem: "06-inspecoes.webp",
-    tag: "Inspeções",
+    tag: "InspeÃ§Ãµes",
     titulo: "Checklists de campo",
     descricao:
-      "Realize inspeções com itens OK, NOK e N/A, fotos e observações — mesmo sem conexão com a internet.",
+      "Realize inspeÃ§Ãµes com itens OK, NOK e N/A, fotos e observaÃ§Ãµes â€” mesmo sem conexÃ£o com a internet.",
     destaques: [
       "Funciona offline",
       "Fotos no aparelho",
-      "Sincronização automática",
+      "SincronizaÃ§Ã£o automÃ¡tica",
     ],
   },
   {
@@ -378,34 +378,34 @@ const slidesApp: SlideApp[] = [
     tag: "Offline",
     titulo: "Preencha agora, sincronize depois",
     descricao:
-      "Selecione o ativo, responda o checklist e salve. Sem internet, os dados ficam no aparelho e são enviados quando a rede voltar.",
+      "Selecione o ativo, responda o checklist e salve. Sem internet, os dados ficam no aparelho e sÃ£o enviados quando a rede voltar.",
     destaques: [
       "Checklist por ativo",
-      "Observação geral",
-      "Envio automático",
+      "ObservaÃ§Ã£o geral",
+      "Envio automÃ¡tico",
     ],
   },
   {
     imagem: "08-sobreaviso.webp",
     tag: "Sobreaviso",
-    titulo: "Escala e aprovações sem papel",
+    titulo: "Escala e aprovaÃ§Ãµes sem papel",
     descricao:
-      "Consulte a escala, acompanhe solicitações de ajuste e aprove ou reprove tudo pelo celular.",
+      "Consulte a escala, acompanhe solicitaÃ§Ãµes de ajuste e aprove ou reprove tudo pelo celular.",
     destaques: [
-      "Escala e períodos",
+      "Escala e perÃ­odos",
       "Ajustes pendentes",
-      "Aprovação do gestor",
+      "AprovaÃ§Ã£o do gestor",
     ],
   },
   {
     imagem: "09-notificacoes.webp",
-    tag: "Perfil e notificações",
+    tag: "Perfil e notificaÃ§Ãµes",
     titulo: "Do seu jeito, com os avisos certos",
     descricao:
-      "Defina a instalação padrão e receba lembretes de sobreaviso, OS, preventivas, SS e inspeções offline — com controle anti-spam.",
+      "Defina a instalaÃ§Ã£o padrÃ£o e receba lembretes de sobreaviso, OS, preventivas, SS e inspeÃ§Ãµes offline â€” com controle anti-spam.",
     destaques: [
-      "Instalação padrão",
-      "Notificações inteligentes",
+      "InstalaÃ§Ã£o padrÃ£o",
+      "NotificaÃ§Ãµes inteligentes",
       "Controle anti-spam",
     ],
   },
@@ -917,7 +917,7 @@ function FeatureCarousel() {
           <ArrowButton
             type="button"
             onClick={() => irPara(slideAtivo + 1)}
-            aria-label="Próximo slide"
+            aria-label="PrÃ³ximo slide"
           >
             <ChevronRight size={16} />
           </ArrowButton>
@@ -1143,12 +1143,12 @@ export function LoginPage() {
 
       if (!error?.response) {
         setErro(
-          "Não foi possível conectar ao backend. Verifique a API e o CORS.",
+          "NÃ£o foi possÃ­vel conectar ao backend. Verifique a API e o CORS.",
         );
         return;
       }
 
-      setErro("E-mail ou senha inválidos.");
+      setErro("E-mail ou senha invÃ¡lidos.");
     }
   }
 
@@ -1165,11 +1165,11 @@ export function LoginPage() {
             <strong>ENGVI</strong>
 
             <span>
-              Gestão da Vida e Integridade dos Ativos
+              GestÃ£o da Vida e Integridade dos Ativos
             </span>
           </BrandText>
 
-          <BrandLogin href="#login" aria-label="Ir para o formulário de login">
+          <BrandLogin href="#login" aria-label="Ir para o formulÃ¡rio de login">
             Entrar
           </BrandLogin>
         </Brand>
@@ -1185,7 +1185,7 @@ export function LoginPage() {
               <h1>ENGVI Mobile</h1>
 
               <Tagline>
-                Novas oportunidades se abrem, agora o Engvi está na sua mão!
+                Novas oportunidades se abrem, agora o Engvi estÃ¡ na sua mÃ£o!
               </Tagline>
 
               <FeatureCarousel />
@@ -1200,8 +1200,8 @@ export function LoginPage() {
               </HeroDownloadButton>
 
               <HeroDownloadMeta>
-                Android 7.0 ou superior · Vers?o 1.0.0.9 ? 8,9 MB · 
-                Atualizado em 28/10/2026
+                Android 7.0 ou superior â€¢ VersÃ£o 1.0.0.9 â€¢ 10,1 MB â€¢ 
+                Atualizado em 16/11/2026
               </HeroDownloadMeta>
             </HeroFace>
           </Hero>
@@ -1216,7 +1216,7 @@ export function LoginPage() {
         <FormWrap>
           <Title>
             <h2>Entrar</h2>
-            <p>Acesse sua área de trabalho.</p>
+            <p>Acesse sua Ã¡rea de trabalho.</p>
           </Title>
 
           <form onSubmit={handleLogin}>
@@ -1274,7 +1274,7 @@ export function LoginPage() {
           </form>
 
           <RegisterText>
-            Não tem uma conta?{" "}
+            NÃ£o tem uma conta?{" "}
             <button
               type="button"
               onClick={() => navigate("/register")}
