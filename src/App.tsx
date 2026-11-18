@@ -210,10 +210,14 @@ function AppContent() {
           <Route path="/downloads" element={<DownloadsPage />} />
         </Route>
 
+        {/* ATIVO — detalhe liberado para admin/mantenedor; cadastro (lista e edição) é só admin */}
+        <Route element={<RoleRoute allowedRoles={FULL_ACCESS_ROLES} />}>
+          <Route path="/ativo/:id" element={<AtivoDetalhe />} />
+        </Route>
+
         <Route element={<RoleRoute allowedRoles={["admin"]} />}>
           <Route path="/ativo" element={<Ativo />} />
           <Route path="/ativo/:id/editar" element={<Ativo />} />
-          <Route path="/ativo/:id" element={<AtivoDetalhe />} />
           <Route path="/funcoes-operacao" element={<FuncoesOperacaoPage />} />
           <Route path="/problemas-tipicos" element={<ProblemasTipicosPage />} />
           <Route path="/importar-ativos" element={<ImportarAtivos />} />

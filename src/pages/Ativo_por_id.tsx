@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   Activity,
   AlertTriangle,
@@ -23,6 +23,8 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Separator } from "../components/ui/separator";
+import { useAuth } from "../context/AuthContext";
+import { canDelete } from "../lib/permissions";
 import { resolveMediaUrl as normalizePhotoUrl } from "../lib/media";
 import {
   Table,
@@ -141,6 +143,19 @@ function paginateItems<T>(items: T[], page: number) {
 
 export function AtivoDetalhe() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { usuario } = useAuth();
+  const podeEditarCadastro = canDelete(usuario?.role);
+
+  const voltar = () => {
+    if (podeEditarCadastro) {
+      navigate("/ativo");
+      return;
+    }
+
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/");
+  };
 
   const [ativo, setAtivo] = useState<Ativo | null>(null);
   const [inspecoes, setInspecoes] = useState<Inspecao[]>([]);
@@ -306,8 +321,8 @@ export function AtivoDetalhe() {
     return (
       <div className="p-6 text-center">
         <p className="text-muted-foreground">Ativo nao encontrado</p>
-        <Button asChild className="mt-4">
-          <Link to="/ativo">Voltar</Link>
+        <Button type="button" onClick={voltar} className="mt-4">
+          Voltar
         </Button>
       </div>
     );
@@ -316,17 +331,19 @@ export function AtivoDetalhe() {
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Button variant="outline" size="sm" asChild className="w-fit">
-          <Link to="/ativo">Voltar</Link>
+        <Button variant="outline" size="sm" onClick={voltar} className="w-fit">
+          Voltar
         </Button>
 
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link to={`/ativo/${ativo.id_ativo}/editar`}>
-              <PenLine />
-              Editar cadastro
-            </Link>
-          </Button>
+          {podeEditarCadastro && (
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/ativo/${ativo.id_ativo}/editar`}>
+                <PenLine />
+                Editar cadastro
+              </Link>
+            </Button>
+          )}
           <Button variant="outline" size="sm" asChild>
             <Link
               to={`/os?id_ativo=${ativo.id_ativo}`}
