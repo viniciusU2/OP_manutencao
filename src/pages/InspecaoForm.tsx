@@ -846,8 +846,11 @@ export default function InspecaoForm() {
                         )}
 
                         <Input
-                          type="url"
+                          type="text"
                           inputMode="url"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          spellCheck={false}
                           placeholder="ou cole o link da foto (Drive, SharePoint...)"
                           value={resultado?.foto ?? ""}
                           onChange={(e) => updateResultado(index, "foto", e.target.value)}
